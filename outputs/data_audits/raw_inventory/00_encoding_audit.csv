@@ -1,0 +1,7 @@
+file,guessed_encoding,guess_confidence,encoding_used,repaired_column_names,repaired_cell_values,columns_with_repairs
+all.diag.results.csv,ASCII,1,ASCII,0,0,0
+tblBadger.csv,ASCII,1,ASCII,0,0,0
+tblCaptures.csv,ISO-8859-1,0.3,ISO-8859-1,0,0,0
+tblCulture.csv,ASCII,1,ASCII,0,0,0
+tblDPPTest.csv,ASCII,1,ASCII,0,0,0
+tblIFN_Gamma_ELISA.csv,ASCII,1,ASCII,0,0,0

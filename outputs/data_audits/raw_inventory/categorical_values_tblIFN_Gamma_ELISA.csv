@@ -1,0 +1,36 @@
+file,column,value,count
+tblIFN_Gamma_ELISA.csv,Blood_Quality,F,1464
+tblIFN_Gamma_ELISA.csv,Blood_Quality,P,2327
+tblIFN_Gamma_ELISA.csv,WellStage_96_PWM_1,CL,1
+tblIFN_Gamma_ELISA.csv,WellStage_96_PWM_1,GD,3821
+tblIFN_Gamma_ELISA.csv,WellStage_96_PWM_1,NS,16
+tblIFN_Gamma_ELISA.csv,WellStage_96_PWM_2,CL,3
+tblIFN_Gamma_ELISA.csv,WellStage_96_PWM_2,GD,3791
+tblIFN_Gamma_ELISA.csv,WellStage_96_PWM_2,IV,28
+tblIFN_Gamma_ELISA.csv,WellStage_96_PWM_2,NS,16
+tblIFN_Gamma_ELISA.csv,WellStage_96_PPD-A_1,GD,3833
+tblIFN_Gamma_ELISA.csv,WellStage_96_PPD-A_1,NS,5
+tblIFN_Gamma_ELISA.csv,WellStage_96_PPD-A_2,GD,3831
+tblIFN_Gamma_ELISA.csv,WellStage_96_PPD-A_2,IV,2
+tblIFN_Gamma_ELISA.csv,WellStage_96_PPD-A_2,NS,5
+tblIFN_Gamma_ELISA.csv,WellStage_96_PPD-B_1,GD,3834
+tblIFN_Gamma_ELISA.csv,WellStage_96_PPD-B_1,NS,4
+tblIFN_Gamma_ELISA.csv,WellStage_96_PPD-B_2,GD,3832
+tblIFN_Gamma_ELISA.csv,WellStage_96_PPD-B_2,IV,2
+tblIFN_Gamma_ELISA.csv,WellStage_96_PPD-B_2,NS,4
+tblIFN_Gamma_ELISA.csv,WellStage_96_Nil_1,GD,3828
+tblIFN_Gamma_ELISA.csv,WellStage_96_Nil_1,NS,10
+tblIFN_Gamma_ELISA.csv,WellStage_96_Nil_2,CL,1
+tblIFN_Gamma_ELISA.csv,WellStage_96_Nil_2,GD,3823
+tblIFN_Gamma_ELISA.csv,WellStage_96_Nil_2,IV,2
+tblIFN_Gamma_ELISA.csv,WellStage_96_Nil_2,NS,12
+tblIFN_Gamma_ELISA.csv,Retest,A OUTLIER,9
+tblIFN_Gamma_ELISA.csv,Retest,B & A,6
+tblIFN_Gamma_ELISA.csv,Retest,B OUTLIER,43
+tblIFN_Gamma_ELISA.csv,Retest,MISSING ODs,36
+tblIFN_Gamma_ELISA.csv,Retest,NIL AVG HIGH,205
+tblIFN_Gamma_ELISA.csv,Test_Failed,NO SAMPLE,18
+tblIFN_Gamma_ELISA.csv,Test_Info,LOW PWM,1446
+tblIFN_Gamma_ELISA.csv,Result,Negative,2879
+tblIFN_Gamma_ELISA.csv,Result,Positive,642
+tblIFN_Gamma_ELISA.csv,pm,No,3838

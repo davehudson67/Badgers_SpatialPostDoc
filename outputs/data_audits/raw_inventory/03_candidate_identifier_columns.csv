@@ -1,0 +1,7 @@
+file,candidate_id_column,n_rows,n_missing,n_blank,n_unique_non_missing,n_values_with_whitespace,n_lowercase_values,example_values
+all.diag.results.csv,tattoo,16591,0,0,3551,0,0,UN001 | GX001 | GX002 | GX003 | GX004 | GX005 | GX006 | GX007 | GX009 | W001 | G001 | G002 | G044 | G004 | G005 | G006 | UN002 | UN003 | UN004 | UN005
+tblBadger.csv,tattoo,3615,0,0,3615,0,0,001A | 001B | 001C | 001E | 001F | 001G | 001H | 001K | 001L | 001M | 001N | 001P | 001R | 001T | 001V | 001W | 001Y | 001Z | 002A | 002B
+tblCaptures.csv,tattoo,16902,0,0,3615,0,0,UN616 | UN617 | 025M | 001A | 029M | 003H | 013Z | 014Z | 001H | 002H | 017Z | 020T | 046M | 046Z | 004Z | 009Z | 020Z | 024Z | 025Z | 035Z
+tblCulture.csv,tattoo,47188,0,0,3460,0,4,001A | 001B | 001C | 001E | 001F | 001G | 001H | 001K | 001L | 001M | 001N | 001P | 001R | 001T | 001V | 001W | 001Y | 001Z | 002A | 002B
+tblDPPTest.csv,BadgerID,2361,0,0,365,0,0,001A | 002A | 003A | 003E | 015E | 023N | 025E | 029E | 030E | 033K | 037E | 044E | 058Y | 004A | 005A | 006A | 006L | 007A | 012E | 031E
+tblIFN_Gamma_ELISA.csv,BadgerId,3838,0,0,828,0,0,002B | 003B | 004B | 005B | 007B | 009B | 036B | 037B | 015B | 016B | 024B | 026Y | 036Y | 051R | 063Y | J054 | 001P | 029B | 029Y | 063W

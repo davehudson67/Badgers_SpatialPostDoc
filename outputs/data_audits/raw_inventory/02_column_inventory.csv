@@ -1,0 +1,140 @@
+file,column,imported_type,n_rows,n_missing,proportion_missing,n_blank_strings,n_unique_non_missing,example_values
+all.diag.results.csv,tattoo,character,16591,0,0,0,3551,UN001 | GX001 | GX002 | GX003 | GX004 | GX005 | GX006 | GX007 | GX009 | W001
+all.diag.results.csv,date,character,16591,0,0,0,2257,13/12/1975 | 09/02/1976 | 16/02/1976 | 24/02/1976 | 30/03/1976 | 18/05/1976 | 07/06/1976 | 22/06/1976 | 19/07/1976 | 20/09/1976
+all.diag.results.csv,pm,character,16591,0,0,0,2,Yes | No
+all.diag.results.csv,socg,character,16591,544,0.032788861430896266,0,45,OUTSIDE | BEECH | YEW | TOP_SETT | WEST | CEDAR | HONEYWELL | ATCOMBE_WEST | COLE_PARK | HOGARTHS
+all.diag.results.csv,sett,character,16591,620,0.03736965824844796,0,494,A46_SO_841017 | BEECH | YEW | TOP_SETT | WEST | CEDAR | TOWER25 | PLATFORDS_SE_9 | SECOND_PASTURE_7 | PONTINS_PLANTATIO?N
+all.diag.results.csv,supergroup,character,16591,4633,0.27924778494364416,0,40,BEECH | YEW | TOP_SETT | WEST | CEDAR | HONEYWELL | COLE_PARK | COLLIERS_WOOD | LARCH | ARTHURS
+all.diag.results.csv,weight,character,16591,389,0.02344644686878428,0,175,14.6 | 9 | 10.9 | 9.1 | 8.3 | 9.7 | 7.5 | 7.9 | 9.9 | 14.9
+all.diag.results.csv,toothwear,character,16591,1856,0.11186788017599904,0,5,0.25 | 0.75 | 0.5 | 0 | 1
+all.diag.results.csv,condition,character,16591,827,0.04984630221204268,0,4,VERY_GOOD | GOOD | FAIR | POOR
+all.diag.results.csv,body_length,character,16591,9060,0.5460791995660298,0,121,38.7 | 79 | 68 | 64.5 | 67.5 | 62.5 | 80.5 | 83 | 77.5 | 81.5
+all.diag.results.csv,temp,character,16591,2330,0.14043758664336087,0,69,38.5 | 39.1 | 38.8 | 39 | 38.3 | 37.7 | 39.8 | 38 | 39.7 | 38.6
+all.diag.results.csv,neck_diameter,character,16591,15001,0.9041649086854319,0,43,27.5 | 28 | 26 | 25 | 26.5 | 29.5 | 24 | 23.5 | 27 | 23
+all.diag.results.csv,captureyear,character,16591,0,0,0,44,1975 | 1976 | 1977 | 1978 | 1979 | 1980 | 1981 | 1982 | 1983 | 1984
+all.diag.results.csv,sex,character,16591,32,0.001928756554758604,0,2,MALE | FEMALE
+all.diag.results.csv,age,character,16591,128,0.007715026219034416,0,2,ADULT | CUB
+all.diag.results.csv,age_years,character,16591,1950,0.11753360255560244,0,15,0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+all.diag.results.csv,statpak,character,16591,13790,0.831173527816286,0,2,0 | 1
+all.diag.results.csv,IFNgamma,character,16591,13393,0.807244891808812,0,2,0 | 1
+all.diag.results.csv,cult_SUM,character,16591,751,0.045265505394490986,0,10,2 | 0 | 1 | 4 | 3 | 7 | 9 | 8 | 6 | 5
+all.diag.results.csv,cult_OA,character,16591,2552,0.15381833524199867,0,2,0 | 1
+all.diag.results.csv,cult_TA,character,16591,13174,0.7940449641371828,0,2,0 | 1
+all.diag.results.csv,cult_FAECES,character,16591,5366,0.32342836477608344,0,2,0 | 1
+all.diag.results.csv,cult_URINE,character,16591,4842,0.2918449761919113,0,2,0 | 1
+all.diag.results.csv,cult_OTHER,character,16591,14022,0.8451570128382858,0,9,2 | 0 | 1 | 4 | 3 | 7 | 8 | 6 | 5
+all.diag.results.csv,CaptureDate,character,16591,15623,0.9416551142185522,0,94,20/05/2014 | 21/05/2014 | 03/06/2014 | 04/06/2014 | 24/06/2014 | 25/06/2014 | 12/08/2014 | 13/08/2014 | 14/08/2014 | 19/08/2014
+all.diag.results.csv,VisualLine1,character,16591,15623,0.9416551142185522,0,2,0 | 1
+all.diag.results.csv,OpticalDensity1,character,16591,15625,0.9417756615032247,0,466,0 | 6321.53 | 4256.55 | 527.3 | 109.4 | 716.28 | 47.56 | 1186.36 | 91.86 | 6560.86
+all.diag.results.csv,VisualLine2,character,16591,15623,0.9416551142185522,0,2,0 | 1
+all.diag.results.csv,OpticalDensity2,character,16591,15625,0.9417756615032247,0,440,5.41 | 156.6 | 3.06 | 0 | 0.49 | 50.5 | 4.22 | 9.74 | 18.85 | 4.42
+all.diag.results.csv,PM,character,16591,15623,0.9416551142185522,0,2,No | no
+all.diag.results.csv,brock,character,16591,4055,0.24440961967331687,0,2,0 | 1
+tblBadger.csv,tattoo,character,3615,0,0,0,3615,001A | 001B | 001C | 001E | 001F | 001G | 001H | 001K | 001L | 001M
+tblBadger.csv,elect_tag,character,3615,3483,0.9634854771784233,0,131,013273092 | 012617884 | 012264806 | 010860306 | 014803065 | 014371114 | 014317552 | 013355266 | 012576001 | 013283094
+tblBadger.csv,age_fc,character,3615,111,0.030705394190871368,0,3,CUB | ADULT | YEARLING
+tblBadger.csv,year_fc,character,3615,9,0.0024896265560165973,0,47,2014 | 2006 | 2016 | 2013 | 2010 | 2003 | 2020 | 2012 | 2011 | 2018
+tblBadger.csv,sex,character,3615,16,0.004426002766251729,0,3,FEMALE | MALE | UNKNOWN
+tblBadger.csv,TimeBetweenCapture,character,3615,0,0,0,82,0 | 36 | 4 | 5 | 17 | 2 | 38 | 12 | 19 | 25
+tblCaptures.csv,tattoo,character,16902,0,0,0,3615,UN616 | UN617 | 025M | 001A | 029M | 003H | 013Z | 014Z | 001H | 002H
+tblCaptures.csv,date,character,16902,0,0,0,2297,03/05/2020 | 05/03/2020 | 07/02/2020 | 23/01/2020 | 22/01/2020 | 21/01/2020 | 10/12/2019 | 20/11/2019 | 19/11/2019 | 23/10/2019
+tblCaptures.csv,pm,character,16902,0,0,0,4,Yes | No | NO | YES
+tblCaptures.csv,name,character,16902,16391,0.9697668914921311,0,133,ZADIE | OLGA | JULES | JACINTA | JULIE | JOOLS | HENRY | JANE | HILDEGARD | HEATHER
+tblCaptures.csv,moc,character,16902,199,0.011773754585256183,0,14,PUT DOWN | RTA | FOUND DEAD | TRAP | SHOT (GP) | FOUND EXT | SNARE | NET | REMOVAL | ON ROAD
+tblCaptures.csv,socg,character,16902,557,0.03295467991953615,0,45,TOP SETT | WEST | BEECH | SEPTIC TANK | CEDAR | INCHBROOK | PARK MILL | WINDSOR EDGE | KENNEL | WOOD FARM
+tblCaptures.csv,sett,character,16902,633,0.03745118920837771,0,497,TOP | WEST | BEECH | HUNTING GATE | CEDAR | INCHBROOK | PARK MILL | WINDSOR EDGE | KENNEL | WOOD FARM
+tblCaptures.csv,CaptureYear,character,16902,58,0.0034315465625369777,0,46,2020 | 2019 | 2018 | 2017 | 2016 | 2015 | 2014 | 2013 | 2012 | 2011
+tblCaptures.csv,supergroup,character,16902,4944,0.29250976215832447,0,40,JUNCTION | ARTHURS | HEDGE | BEECH | LARCH | WEST | NEW SOCIAL GROUP APPEARS | PARK MILL | COLE PARK/HONEYWELL | WINDSOR EDGE
+tblCaptures.csv,where,character,16902,186,0.011004614838480652,0,567,"Woodchester Park | B4066 400 mtrs from cattle grid on verge on roadside | Roadside junction between Spring Hill & Moffat Road | Parkmill Sett | Parkmill Sett COLLAR | SETT | St Davids Lane, Nympsfield | Leg of Mutton, above Peglars | B4066 next  to glider club field | on the verge on B4066 200m east of Longwood Bungalow"
+tblCaptures.csv,weight,character,16902,231,0.013667021654242101,0,177,9 | 0 | 9.5 | 4 | 10.4 | 9.8 | 10 | 9.1 | 8.5 | 11.6
+tblCaptures.csv,eartags,character,16902,7731,0.45740149094781685,0,9,NONE | RIGHT | NOT TAGGED | LEFT | BOTH | REMOVED | NEITHER | NOT TAGûGED | RETAGGEûD
+tblCaptures.csv,retag,character,16902,16884,0.9989350372736954,0,17,10 | K75 | 01 | Y42 | B81 | W99 | B97 | W92 | W90 | B90
+tblCaptures.csv,toothwear,character,16902,1870,0.11063779434386463,0,5,0.25 | 0.75 | 0.5 | 0 | 1
+tblCaptures.csv,condition,character,16902,831,0.04916577919772808,0,5,FAIR | GOOD | POOR | VERY GOOD | V.GOOD
+tblCaptures.csv,reproc,character,16902,9821,0.5810554963909597,0,13,NEVER LACTATING | LACTATING SOMETIME | LACTATING THIS YEAR | LACTATING | UNSURE | PREGNANT | TESTES DESCENDED | MID | TESTES ASCENDED | UNKNOWN
+tblCaptures.csv,testes,character,16902,13180,0.7797893740385753,0,3,MID | ASCENDED | DESCENDED
+tblCaptures.csv,CollarActionTaken,character,16902,15833,0.9367530469766892,0,2,No | Yes
+tblCaptures.csv,CollarActionTaker,character,16902,16630,0.9839072299136197,0,8,RD | RC | PS | TG | IV | SB | FS | SC
+tblCaptures.csv,transmitter,character,16902,15796,0.9345639569281742,0,9,PRESENT | FITTED | REMOVAL | REPLACED | LOST | 4 | PRES | FIT | REPL
+tblCaptures.csv,txno,character,16902,16500,0.9762158324458644,0,315,32178 | 32176 | 32202 | 32185 | 32195 | 32194 | 32197 | 32196 | 32189 | 32183
+tblCaptures.csv,best_tune,character,16902,16538,0.9784640870902852,0,320,173.640 | 173.620 | 173.890 | 173.710 | 173.810 | 173.800 | 173.830 | 173.820 | 173.750 | 173.690
+tblCaptures.csv,ppm,character,16902,16803,0.9941427050053249,0,28,40 | 42 | 60 | 60 per min | 1 PER SEC | HIGH | .9006 | 62 | 45 | 56
+tblCaptures.csv,comment,character,16902,13684,0.8096083303751035,0,1904,Anal swab taken. | Phage sample (4ml). Anal swab taken. Tattoo (1H*) number marked on wrong side so as across on the right. | Anal swab. Hair sample. | Phage taken 4ml. Anal swab taken. | 1 testicle. 2 broken canines old. Anal swab. 4ml phage. | Anal swab. 4ml phage. Collar 65 present. | 4ml Phage sample. Anal swab taken. | 4ml Phage. Anal swab taken. | Anal swab taken. Soft lump on chin -  Biopsy not taken. | Anal Swab taken. 4ml Phage sample taken.
+tblCaptures.csv,body_length,character,16902,9073,0.5368003786534138,0,122,86 | 83 | 89 | 82 | 88 | 84 | 75 | 80 | 79 | 71
+tblCaptures.csv,temp,character,16902,2346,0.13880014199503019,0,69,38.5 | 38.59999847 | 37.20000076 | 36.29999924 | 37.90000153 | 38.70000076 | 37.5 | 38.09999847 | 38.29999924 | 38.20000076
+tblCaptures.csv,blood,character,16902,0,0,0,2,TRUE | FALSE
+tblCaptures.csv,pmstat,character,16902,16355,0.967636966039522,0,2,NOT POSSIBLE | POSSIBLE
+tblCaptures.csv,pm_cause,character,16902,15841,0.9372263637439356,0,433,"BADGER FOUND IN EXTREMIS BY BUCKHOLT GATE, COLLECTED AND RETURNED TO WP AND EUTHANASED. TOOTHWARE 1/4.60CM LONG HAEMORAGE IN THORAX INDICATIVE OF TRAUMA. | DESCENDED TESTICLES | 63CM. 1/2 TOOTHWARE. SEVERE HEAD TRAUMA - FRUCTURED SKULL AND LOWER JAW. SEVERE ABDOMINAL TRAUMA - RUPTURED ABDOMINAL WALL, +++ HAEMORRAGE, RUPTURED LIVER, SPLEEN AND DIAPHRAGM. FINDINGS CONSSISTENT WITH RTA. POOL OF LN COLLECTED FOR TB CULTURE. MASSIVE INTERNAL TRAUMA DUE TO LIKELY RTA. | BADGER FOUND DEAD ON SETT (WITH COLLAR). TOOTHWEAR 1/2. 67CM. NON GRAVID. PM DATE 24/01/2020. MODERATE AUTOLYSIS. NUMEROUS GREY-GRITTY FOCI SCATTERED THROUGHOUT BOTH LUNGS. PALE FOCI IN RETROPHARENYGEAL LNS. LIVER AND SPLEEN NAD. KIDNEYS FIRM AND PALE. MINIMAL CARCASS FAT. GIT DEVOID OF CONTENTS. +++ LICE. SUPERFICAL SKIN SCABS ON HEAD, FLANK & RUMP. POOL OF LNS AND VL TISSUE (LUNG) SUBMITTED FOR TB CULTURE. POSSIBLE TB? M.BOVIS ISOLATED SPOLIOGOTYPE 17. 29/4/2020 | .MODERATE AUTOLYSIS. NUMEROUS GREY-GRITTY FOCI SCATTERED THROUGHOUT LUNGS. PALE FOCI IN RETROPHARANGEAL LNS. LIVER AND SPLEEN NAD. KIDNEYS FIRM AND PALE. MINIMAL CARCASS FAT. GIT DEVOID OF CONTENTS. +++ LICE. SUPERFICIAL SKIN SCABS ON HEAD, FLANK & RUMP. POOL OF LNS AND VL TISSUE (LUNG) SUBMITTED FOR TB CULTURE/. POSSIBLLE TB? 67CM. 1/2 TOOTHWEAR. COLLAR | SEVERE MULTIPLE INTERNAL INJURIES TO CHEST AND ABDOMEN. SEVERE TRAUMA - RTA. COD AND LENGTH QUERIED BY LA; BUT PATHOLOGIST UNABLE TO BE CERTAIN ON CAUSE OF DEATH AS FROM DID NOT STILPLATE 'HOW FOUND' ON 'WOODCHESTER PARK CARCASE POST MORTEM DATA' FORM. ALL STAFF FILLING OUT A PM FORM MUST MAKE THIS CLEAR. | SEVERE ABDOMINAL TRAUMA/LOWER CHEST TRAUMA. STOMACH/INTESTINAL RUPTURE, WITH INGESTA IN ABDOMEN. COD AND LENGTH QUERIED BY LA; BUT PATHOLOGIST UNABLE TO BE CERTAIN ON CAUSE OF DEATH AS FROM DID NOT STILPLATE 'HOW FOUND' ON 'WOODCHESTER PARK CARCASE POST MORTEM DATA' FORM. ALL STAFF FILLING OUT A PM FORM MUST MAKE THIS CLEAR. SEVERE TRAUMA - RTA. | RTA DAMAGE TO LIVER WITH RUPTURE TO DIAPHRAGM AND EXTREME PLEURAL HAEMORRHAGE. RTA TRAUMA TO UPPER ABDOMEN. | SEVERE HEMORAGE INTO ABDOMEN - LIVER RUPTURE. NO SUSPECTED TB LESIONS. CAUSE OF DEATH = ABDOMINAL HEMORAGE FROM RTA? | SERVERE HEAD AND CHEST INJURIES. NO TB LESIONS VISIBLE. CAUSE OF DEATH: RTA - SEVERE HEAD/CHEST INJURIES."
+tblCaptures.csv,os_ref,character,16902,16358,0.9678144598272393,0,425,SO795014 | SO821022 | ST843999 | SO835008 | SO803018 | SO817020 | ST 810 983 | SO 808 0111 | SO 808007 | SO811022
+tblCaptures.csv,Recorder,character,16902,10532,0.6231215240799906,0,70,CS | TG | BD | AG | AR | JE | RS | RB | RC | RD
+tblCaptures.csv,HealthMonitoring,character,16902,533,0.03153472961779671,0,3,No | Yes | N
+tblCaptures.csv,DiseaseStatus,character,16902,1158,0.06851260205892794,0,4,1 | 2 | 3 | 4
+tblCaptures.csv,Sampler,character,16902,16028,0.948290143178322,0,12,DH | RD | GW | SB | LR | SR | ADL | PS | RY | MW
+tblCaptures.csv,Time_blood_taken,character,16902,13434,0.7948171813986511,0,1,00/01/1900
+tblCaptures.csv,Red_Volume,character,16902,13464,0.7965921192758253,0,22,10 | 6 | 11.5 | 8.5 | 12.5 | 5 | 12 | 16 | 9 | 4
+tblCaptures.csv,Green_Volume,character,16902,13463,0.7965329546799196,0,30,6 | 10 | 12 | 8 | 13 | 9 | 5 | 4 | 2 | 16
+tblCaptures.csv,Purple_Volume,character,16902,15806,0.9351556028872323,0,9,6 | 10 | 2 | 2.5 | 0 | 1 | 8 | 3.5 | 1.5
+tblCaptures.csv,Yellow_Volume,character,16902,15978,0.9453319133830316,0,1,0
+tblCaptures.csv,Peach_Volume,character,16902,16757,0.9914211335936576,0,8,5 | 8.5 | 4 | 3.5 | 1 | 2.5 | 2 | 10
+tblCaptures.csv,neck_diameter,character,16902,15137,0.8955744882262454,0,47,30.5 | 30 | 31 | 29 | 28 | 33 | 26.5 | 28.5 | 27 | 32
+tblCaptures.csv,hair_sample,character,16902,0,0,0,2,FALSE | TRUE
+tblCaptures.csv,Furclip,character,16902,0,0,0,2,FALSE | TRUE
+tblCaptures.csv,WhiskerTaken,character,16902,0,0,0,2,FALSE | TRUE
+tblCaptures.csv,HOSupervisor,character,16902,16806,0.9943201987930422,0,7,PS | RD | IV | SB | FS | SC | FR
+tblCaptures.csv,SeverityAss,character,16902,16433,0.9722518045201751,0,1,Mild
+tblCaptures.csv,SevInitial,character,16902,16433,0.9722518045201751,0,4,SB | PS | JJ | FS
+tblCaptures.csv,ReleaseAss,character,16902,15595,0.9226718731511063,0,2,Fit | Death
+tblCaptures.csv,RelInitial,character,16902,15595,0.9226718731511063,0,5,SB | IV | PS | FS | JJ
+tblCaptures.csv,AdverseEffects,character,16902,16064,0.9504200686309312,0,2,No | Yes
+tblCaptures.csv,AdvEffSampler,character,16902,16064,0.9504200686309312,0,15,PS | RD | RC | RS | IV | TG | ps | FS | SB | AR
+tblCaptures.csv,AdvEffComment,character,16902,16897,0.999704177020471,0,5,"See notes in comments box above and email sent to Ute Weyer (named veterinary surgeon - NVS). | Morbidity - Badger had breathing problems after induction with anaaesthetic. See comments | Lactating female. Released in afternoon on 22.05.2018. | Lactating female, realsed in afternoon on 22.05.2018. | Animal Euthanased 18:10 pm (SB). See above comments"
+tblCulture.csv,tattoo,character,47188,0,0,0,3460,001A | 001B | 001C | 001E | 001F | 001G | 001H | 001K | 001L | 001M
+tblCulture.csv,date,character,47188,0,0,0,2049,20/05/2014 | 23/01/2020 | 25/01/2006 | 24/05/2006 | 05/05/2009 | 26/01/2016 | 21/05/2013 | 15/07/2015 | 19/01/2010 | 24/05/2010
+tblCulture.csv,pm,character,47188,0,0,0,4,No | Yes | NO | YES
+tblCulture.csv,sample,character,47188,0,0,0,42,FAECES | OA | TA | POOLED | URINE | KIDNEYS | LIVER | LUNG | LYMPH NODE | SPLEEN
+tblCulture.csv,afno,character,47188,10585,0.2243155039416801,0,35935,59140003 | 59140001 | 59140002 | 0210518020 | 59061211 | 59061212 | 59060177 | 59090013 | 59090010 | 59090011
+tblCulture.csv,result,character,47188,1505,0.03189370178859032,0,7,NEGATIVE | M.BOVIS | FAILED | PENDING | CONTAMINATED | M.AVIUM | M.OTHER
+tblCulture.csv,lesions,character,47188,44734,0.9479952530304314,0,2,VL | NVL
+tblCulture.csv,abscesses,character,47188,46271,0.9805670933288124,0,6,NOT HEALED | SINUS | HEALED | OPEN | CLOSED | HEALING
+tblCulture.csv,Spoligo,character,47188,46487,0.9851445282698992,0,12,17 | RETEST | FAIL | 9 | 21 | 15 | 11 | 25 | 10 | 22
+tblCulture.csv,SpolPrime,character,47188,47182,0.9998728490294143,0,1,Y
+tblCulture.csv,Sampler1,character,47188,30181,0.639590573874714,0,34,FR | SB | CH | GW | PS | RD | JF | KP | ACC | SC
+tblCulture.csv,Sampler2,character,47188,47171,0.9996397389166737,0,7,SB | CH | RD | AT | PS | DH | LR
+tblDPPTest.csv,CaptureDate,character,2361,0,0,0,125,20/05/2014 | 21/05/2014 | 03/06/2014 | 04/06/2014 | 24/06/2014 | 25/06/2014 | 12/08/2014 | 13/08/2014 | 14/08/2014 | 19/08/2014
+tblDPPTest.csv,BadgerID,character,2361,0,0,0,365,001A | 002A | 003A | 003E | 015E | 023N | 025E | 029E | 030E | 033K
+tblDPPTest.csv,TestType,character,2361,0,0,0,2,Double | Single
+tblDPPTest.csv,SampleType,character,2361,0,0,0,4,Serum Frozen | WB Field | Whole Blood | Serum Fresh
+tblDPPTest.csv,VisualLine1,character,2361,0,0,0,4,N | P | Nx | Px
+tblDPPTest.csv,OpticalDensity1,character,2361,56,0.023718763235916984,0,1389,0 | 51.94 | 54.62 | 1.97 | 58.3 | 67.54 | 5.41 | 78.83 | 12.79 | 6321.53
+tblDPPTest.csv,VisualLine2,character,2361,151,0.06395595086827616,0,4,N | P | Nx | Px
+tblDPPTest.csv,OpticalDensity2,character,2361,57,0.0241423125794155,0,1239,5.41 | 0 | 12.2 | 156.6 | 3.06 | 0.49 | 50.5 | 20.7 | 4.22 | 34.73
+tblDPPTest.csv,PM,character,2361,0,0,0,2,No | no
+tblIFN_Gamma_ELISA.csv,PlateNo,character,3838,0,0,0,598,WP_P1/1 | WP_P1/2 | WP_P100/1 | WP_P101/1 | WP_P102/1 | WP_P103/1 | WP_P104/1 | WP_P105/1 | WP_P106/1 | WP_P106/2
+tblIFN_Gamma_ELISA.csv,BadgerId,character,3838,0,0,0,828,002B | 003B | 004B | 005B | 007B | 009B | 036B | 037B | 015B | 016B
+tblIFN_Gamma_ELISA.csv,CaptureDate,character,3838,0,0,0,291,18/07/2006 | 03/06/2008 | 22/07/2008 | 23/07/2008 | 02/08/2006 | 05/08/2008 | 19/08/2008 | 20/08/2008 | 21/10/2008 | 05/11/2008
+tblIFN_Gamma_ELISA.csv,ImportFileName,character,3838,0,0,0,599,WP_P1_1.XLS | WP_P1_2.XLS | WP_P100_1.XLS | WP_P101_1.XLS | WP_P102_1.XLS | WP_P103_1.XLS | WP_P104_1.XLS | WP_P105_1.XLS | WP_P106_1.XLS | WP_P106_2.XLS
+tblIFN_Gamma_ELISA.csv,Import_DateTime,character,3838,0,0,0,122,16/04/2007 | 23/05/2007 | 15/07/2008 | 29/09/2008 | 20/08/2008 | 17/12/2008 | 17/05/2007 | 27/08/2008 | 10/12/2008 | 15/12/2008
+tblIFN_Gamma_ELISA.csv,Experiment_Date,character,3838,0,0,0,130,23/01/2007 | 27/04/2007 | 06/06/2008 | 12/08/2008 | 17/12/2008 | 13/08/2008 | 31/01/2007 | 16/05/2007 | 10/12/2008 | 11/12/2008
+tblIFN_Gamma_ELISA.csv,Blood_Quality,character,3838,47,0.012245961438249088,0,2,P | F
+tblIFN_Gamma_ELISA.csv,Comments,character,3838,3838,1,0,0,
+tblIFN_Gamma_ELISA.csv,WellStage_96_PWM_1,character,3838,0,0,0,3,GD | NS | CL
+tblIFN_Gamma_ELISA.csv,WellStage_96_PWM_2,character,3838,0,0,0,4,GD | IV | NS | CL
+tblIFN_Gamma_ELISA.csv,WellStage_96_PPD-A_1,character,3838,0,0,0,2,GD | NS
+tblIFN_Gamma_ELISA.csv,WellStage_96_PPD-A_2,character,3838,0,0,0,3,GD | NS | IV
+tblIFN_Gamma_ELISA.csv,WellStage_96_PPD-B_1,character,3838,0,0,0,2,GD | NS
+tblIFN_Gamma_ELISA.csv,WellStage_96_PPD-B_2,character,3838,0,0,0,3,GD | IV | NS
+tblIFN_Gamma_ELISA.csv,WellStage_96_Nil_1,character,3838,0,0,0,2,GD | NS
+tblIFN_Gamma_ELISA.csv,WellStage_96_Nil_2,character,3838,0,0,0,4,GD | IV | NS | CL
+tblIFN_Gamma_ELISA.csv,PWM_1,character,3838,17,0.004429390307451798,0,976,2.85 | 1.83 | 2.86 | 2.63 | 2.7 | 1.99 | 2.74 | 2.78 | 1.75 | 1.07
+tblIFN_Gamma_ELISA.csv,PWM_2,character,3838,47,0.012245961438249088,0,964,2.81 | 1.74 | 2.82 | 2.71 | 2.54 | 1.77 | 2.69 | 2.53 | 1.52 | 0.85
+tblIFN_Gamma_ELISA.csv,PPD-A_1,character,3838,5,0.0013027618551328818,0,163,0.26 | 0.23 | 0.22 | 0.24 | 0.07 | 0.06 | 0.11 | 0.13 | 0.1 | 0.12
+tblIFN_Gamma_ELISA.csv,PPD-A_2,character,3838,7,0.0018238665971860343,0,160,0.24 | 0.22 | 0.23 | 0.21 | 0.07 | 0.06 | 0.1 | 0.11 | 0.13 | 0.09
+tblIFN_Gamma_ELISA.csv,PPD-B_1,character,3838,4,0.0010422094841063053,0,304,0.25 | 0.22 | 0.33 | 0.24 | 0.2 | 1.27 | 0.69 | 0.06 | 0.05 | 0.53
+tblIFN_Gamma_ELISA.csv,PPD-B_2,character,3838,6,0.001563314226159458,0,304,0.25 | 0.23 | 0.22 | 0.2 | 1.2 | 0.66 | 0.07 | 0.06 | 0.48 | 0.21
+tblIFN_Gamma_ELISA.csv,Nil_1,character,3838,10,0.0026055237102657635,0,155,0.24 | 0.21 | 0.23 | 0.2 | 0.22 | 0.07 | 0.06 | 0.08 | 0.1 | 0.12
+tblIFN_Gamma_ELISA.csv,Nil_2,character,3838,15,0.0039082855653986455,0,166,0.26 | 0.24 | 0.22 | 0.38 | 0.23 | 0.25 | 0.07 | 0.06 | 0.08 | 0.14
+tblIFN_Gamma_ELISA.csv,Retest,character,3838,3539,0.9220948410630537,0,5,NIL AVG HIGH | MISSING ODs | B & A | B OUTLIER | A OUTLIER
+tblIFN_Gamma_ELISA.csv,Test_Failed,character,3838,3820,0.9953100573215217,0,1,NO SAMPLE
+tblIFN_Gamma_ELISA.csv,Test_Info,character,3838,2392,0.6232412714955706,0,1,LOW PWM
+tblIFN_Gamma_ELISA.csv,Result,character,3838,317,0.0825951016154247,0,2,Negative | Positive
+tblIFN_Gamma_ELISA.csv,pm,character,3838,0,0,0,1,No

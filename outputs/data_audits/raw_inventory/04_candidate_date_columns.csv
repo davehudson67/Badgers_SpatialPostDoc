@@ -1,0 +1,9 @@
+file,candidate_date_column,n_non_missing_source,n_parsed,n_failed_to_parse,proportion_parsed,earliest_parsed,latest_parsed,failed_examples
+all.diag.results.csv,date,16591,16591,0,1,1975-12-13,2018-10-06,
+all.diag.results.csv,CaptureDate,968,968,0,1,2014-05-20,2018-09-26,
+tblCaptures.csv,date,16902,16902,0,1,1975-12-13,2020-05-03,
+tblCulture.csv,date,47188,47188,0,1,1975-12-13,2020-01-23,
+tblDPPTest.csv,CaptureDate,2361,2361,0,1,2014-05-20,2020-01-22,
+tblIFN_Gamma_ELISA.csv,CaptureDate,3838,3838,0,1,2006-07-18,2020-01-22,
+tblIFN_Gamma_ELISA.csv,Import_DateTime,3838,3838,0,1,2007-04-16,2020-04-17,
+tblIFN_Gamma_ELISA.csv,Experiment_Date,3838,3838,0,1,2007-01-23,2919-07-25,

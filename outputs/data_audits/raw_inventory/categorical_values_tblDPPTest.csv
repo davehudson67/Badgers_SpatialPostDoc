@@ -1,0 +1,17 @@
+file,column,value,count
+tblDPPTest.csv,TestType,Double,2210
+tblDPPTest.csv,TestType,Single,151
+tblDPPTest.csv,SampleType,Serum Fresh,709
+tblDPPTest.csv,SampleType,Serum Frozen,758
+tblDPPTest.csv,SampleType,WB Field,34
+tblDPPTest.csv,SampleType,Whole Blood,860
+tblDPPTest.csv,VisualLine1,N,1898
+tblDPPTest.csv,VisualLine1,Nx,53
+tblDPPTest.csv,VisualLine1,P,407
+tblDPPTest.csv,VisualLine1,Px,3
+tblDPPTest.csv,VisualLine2,N,1938
+tblDPPTest.csv,VisualLine2,Nx,52
+tblDPPTest.csv,VisualLine2,P,216
+tblDPPTest.csv,VisualLine2,Px,4
+tblDPPTest.csv,PM,no,816
+tblDPPTest.csv,PM,No,1545

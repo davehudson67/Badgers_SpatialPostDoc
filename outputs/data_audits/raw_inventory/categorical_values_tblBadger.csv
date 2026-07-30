@@ -1,0 +1,7 @@
+file,column,value,count
+tblBadger.csv,age_fc,ADULT,718
+tblBadger.csv,age_fc,CUB,2701
+tblBadger.csv,age_fc,YEARLING,85
+tblBadger.csv,sex,FEMALE,1890
+tblBadger.csv,sex,MALE,1692
+tblBadger.csv,sex,UNKNOWN,17

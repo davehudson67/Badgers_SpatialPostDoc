@@ -1,0 +1,29 @@
+RAW BADGER DATA INVENTORY
+=========================
+
+Run date: 2026-07-28 10:45:50.12311
+Project root: /home/ebs/dh526/Badgers_SpatialPostDoc
+Raw-data directory: /home/ebs/dh526/Badgers_SpatialPostDoc/data/rawBadgers
+Number of CSV files: 6
+Cells requiring encoding repair: 0
+
+Files:
+  - all.diag.results.csv: 16,591 rows x 31 columns
+  - tblBadger.csv:  3,615 rows x 6 columns
+  - tblCaptures.csv: 16,902 rows x 52 columns
+  - tblCulture.csv: 47,188 rows x 12 columns
+  - tblDPPTest.csv:  2,361 rows x 9 columns
+  - tblIFN_Gamma_ELISA.csv:  3,838 rows x 29 columns
+
+Total duplicated full rows across files: 0
+Potential duplicated identifier-date combinations: 16342
+
+No cleaning, recoding, filtering or joining was performed.
+All CSV columns were imported as character values.
+
+Next manual checks:
+  1. Confirm which column is the true badger identifier in each file.
+  2. Confirm the intended date format for every date-like column.
+  3. Review all diagnostic result codes in 05_low_cardinality_values.csv.
+  4. Review duplicate rows and duplicate identifier-date combinations.
+  5. Confirm whether all source files come from the same database snapshot.
