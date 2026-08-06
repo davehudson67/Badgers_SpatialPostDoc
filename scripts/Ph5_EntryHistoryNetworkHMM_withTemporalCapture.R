@@ -117,11 +117,10 @@ death_data <- cmr_q %>% filter(has_pm_record) %>%
 all_unique_badgers <- unique(cmr_q$tattoo)
 
 # ---- THE TEST SUBSET ----
-set.seed(42)   # Keeps the random sample reproducible!
-test_n <- 150  # Sample 150 badgers for the trial run
-unique_badgers <- sample(all_unique_badgers, min(test_n, length(all_unique_badgers)))
+#set.seed(1)   # Keeps the random sample reproducible!
+#test_n <- 100  # Sample 150 badgers for the trial run
+#unique_badgers <- sample(all_unique_badgers, min(test_n, length(all_unique_badgers)))
 # -------------------------
-
 nind_raw <- length(unique_badgers)
 
 n_true_states <- n_sg + 2  
@@ -335,45 +334,141 @@ code_Quarterly_HMM_Time <- nimbleCode({
 })
 
 # ==============================================================================
-# ---- 5. COMPILE & CHECK ----
+# ---- 5. BUILD MODEL ----
 # ==============================================================================
+
 consts_q <- list(
-  n_sg = n_sg, n_true_states = n_true_states, n_obs_states = n_obs_states,
-  nind_hmm = nind_hmm, first_q_hmm = first_q_hmm, K_q_hmm = K_q_hmm, 
-  run_length_hmm = run_length_hmm, first_sg_hmm = first_sg_hmm, entry_group_hmm = entry_group_hmm,
-  nind_one = nind_one, first_sg_one = first_sg_one, entry_group_one = entry_group_one, q_one = q_one,
-  neighbor_probs = neighbor_probs, non_neighbor_probs = non_neighbor_probs,
-  n_quarters = n_quarters, n_years = n_years, season_vec = season_vec, year_vec = year_vec
+  n_sg = n_sg,
+  n_true_states = n_true_states,
+  n_obs_states = n_obs_states,
+  
+  nind_hmm = nind_hmm,
+  first_q_hmm = as.integer(first_q_hmm),
+  K_q_hmm = as.integer(K_q_hmm),
+  run_length_hmm = as.integer(run_length_hmm),
+  first_sg_hmm = as.integer(first_sg_hmm),
+  entry_group_hmm = as.integer(entry_group_hmm),
+  
+  nind_one = nind_one,
+  first_sg_one = as.integer(first_sg_one),
+  entry_group_one = as.integer(entry_group_one),
+  q_one = as.integer(q_one),
+  
+  neighbor_probs = neighbor_probs,
+  non_neighbor_probs = non_neighbor_probs,
+  
+  n_quarters = n_quarters,
+  n_years = n_years,
+  season_vec = as.integer(season_vec),
+  year_vec = as.integer(year_vec)
 )
 
-data_q <- list(y_hmm = y_hmm, y_one = y_one)
+data_q <- list(
+  y_hmm = y_hmm,
+  y_one = as.integer(y_one)
+)
 
 inits_q <- list(
-  list(alpha_phi_annual = c(1.38, 1.38), alpha_tau_q = c(1.73, 1.73), alpha_p = c(-1.38, -1.38), alpha_gamma_q = c(-4.59, -4.59), alpha_p_dead_q = -2.94, sd_year = 0.3, beta_season = c(NA, 0, 0, 0), z_year = rep(0, n_years)),
-  list(alpha_phi_annual = c(2.94, 2.94), alpha_tau_q = c(3.89, 3.89), alpha_p = c(-0.40, -0.40), alpha_gamma_q = c(-2.94, -2.94), alpha_p_dead_q = -1.38, sd_year = 0.8, beta_season = c(NA, 0.5, -0.5, 0), z_year = rep(0.1, n_years))
+  list(
+    alpha_phi_annual = c(1.38, 1.38),
+    alpha_tau_q = c(1.73, 1.73),
+    alpha_p = c(-1.38, -1.38),
+    alpha_gamma_q = c(-4.59, -4.59),
+    alpha_p_dead_q = -2.94,
+    sd_year = 0.3,
+    beta_season = c(NA, 0, 0, 0),
+    z_year = rep(0, n_years)
+  ),
+  list(
+    alpha_phi_annual = c(2.94, 2.94),
+    alpha_tau_q = c(3.89, 3.89),
+    alpha_p = c(-0.40, -0.40),
+    alpha_gamma_q = c(-2.94, -2.94),
+    alpha_p_dead_q = -1.38,
+    sd_year = 0.8,
+    beta_season = c(NA, 0.5, -0.5, 0),
+    z_year = rep(0.1, n_years)
+  )
 )
 
-message("\nBuilding NIMBLE Model...")
+message("Building NIMBLE model...")
 model_q <- nimbleModel(code_Quarterly_HMM_Time, constants = consts_q, data = data_q, inits = inits_q[[1]], check = TRUE, calculate = FALSE)
 
 initial_log_prob <- model_q$calculate()
 if (!is.finite(initial_log_prob)) {
-  stop("CRITICAL ERROR: Initial model log-probability is not finite. Check row sums or bounds.")
-} else {
-  message("PASS: Model calculated successfully! Initial Log-Prob: ", round(initial_log_prob, 2))
+  stop(
+    "Initial model log-probability is not finite."
+  )
 }
 
-# ==============================================================================
-# ---- 6. RUN MCMC ----
-# ==============================================================================
-message("Compiling to C++...")
-cModel_q <- compileNimble(model_q)
+message("PASS: R model log-probability = ", round(initial_log_prob, 2))
 
-config_q <- configureMCMC(model_q, monitors = c("phi_annual", "phi_q", "tau_q", "gamma_q", "p_dead_q", "alpha_p", "beta_season", "sd_year", "eps_year", "p_reference_year"), thin = 1)
+# ==============================================================================
+# ---- 6. CONFIGURE AND COMPILE ----
+# ==============================================================================
+
+config_q <- configureMCMC(
+  model_q,
+  monitors = c(
+    "phi_annual",
+    "phi_q",
+    "tau_q",
+    "gamma_q",
+    "p_dead_q",
+    "alpha_p",
+    "beta_season",
+    "sd_year",
+    "eps_year",
+    "p_reference_year"
+  ),
+  thin = 1
+)
+
+config_q$printSamplers()
+
 Rmcmc_q <- buildMCMC(config_q)
-cMCMC_q <- compileNimble(Rmcmc_q, project = model_q)
 
-message("Running MCMC...")
-system.time({
-  samples_q <- runMCMC(cMCMC_q, niter = 10000, nburnin = 3000, nchains = 2, inits = inits_q, samplesAsCodaMCMC = TRUE)
-})
+message("Compiling model to C++...")
+
+cModel_q <- compileNimble(
+  model_q,
+  resetFunctions = TRUE
+)
+
+compiled_log_prob <- cModel_q$calculate()
+
+if (!is.finite(compiled_log_prob)) {
+  stop(
+    "Compiled model log-probability is not finite."
+  )
+}
+
+message(
+  "PASS: Compiled model log-probability = ",
+  round(compiled_log_prob, 2)
+)
+
+message("Compiling MCMC...")
+
+cMCMC_q <- compileNimble(
+  Rmcmc_q,
+  project = cModel_q,
+  resetFunctions = TRUE
+)
+
+# ==============================================================================
+# ---- 7. SHORT TEST RUN ----
+# ==============================================================================
+
+message("Running short MCMC test...")
+
+test_samples <- runMCMC(
+  cMCMC_q,
+  niter = 50,
+  nburnin = 0,
+  nchains = 1,
+  inits = inits_q[[1]],
+  samplesAsCodaMCMC = TRUE,
+  progressBar = TRUE,
+  setSeed = 1451
+)
