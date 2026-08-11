@@ -114,7 +114,7 @@ sett_aliases <- c(
   "\\bDINGLEVALLEY\\b"   = "DINGLE"
 )
 
-# Clean the official list (Applying the standardisation rules)
+# Clean the official list
 true_setts <- official_setts_df %>%
   pull(SETT) %>%
   toupper() %>%
@@ -137,7 +137,6 @@ encounters_all <- encounters_all %>%
                            TRUE ~ where),
          # Overwrite the final sett column with the PERFECT official name (or NA if unofficial/junk)
          sett = if_else(!is_official, NA_character_, sett_clean_temp)) %>%
-  # Clean up our temporary working column
   select(-is_official, -sett_clean_temp)
 
 # ==============================================================================
@@ -191,7 +190,7 @@ dropped_observations <- encounters_useful %>%
 
 cat("Original records:", nrow(encounters_useful), "\n")
 cat("Collapsed CMR records:", nrow(encounters_cmr_ready), "\n")
-cat("Observations safely compressed away:", nrow(dropped_observations), "\n")
+cat("Observations compressed away:", nrow(dropped_observations), "\n")
 
 # ==============================================================================
 # 9. Import and Clean Diagnostic Data
@@ -250,7 +249,7 @@ hist_diag_clean <- read_csv(file.path(raw_dir, "all.diag.results.csv"), show_col
             actually_tested = !is.na(statpak) | !is.na(brock),
             is_pos = (statpak == 1) | (brock == 1)) %>% 
   
-  # NEW: Only keep rows where they actually performed the test!
+  # Only keep rows where they actually performed the test!
   filter(!is.na(tattoo), !is.na(date), actually_tested == TRUE) %>% 
   
   group_by(tattoo, primary_year, trap_season) %>%
