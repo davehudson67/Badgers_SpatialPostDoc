@@ -3,6 +3,7 @@ library(lubridate)
 library(nimble)
 library(nimbleEcology)
 library(coda)
+library(MCMCvis)
 
 # ==============================================================================
 # ---- 1. SPATIAL & NETWORK SETUP ----
@@ -309,21 +310,20 @@ cModel_q <- compileNimble(model_q, resetFunctions = TRUE)
 config_q <- configureMCMC(model_q, monitors = c("phi_annual", "phi_q", "tau_q", "gamma_q", "p_dead_q", "alpha_p", "beta_season", "beta_period"), thin = 1)
 cMCMC_q <- compileNimble(buildMCMC(config_q), project = model_q, resetFunctions = TRUE)
 
-message("3. Launching 1,000 Iteration TEST Run...")
-system.time({
-  samples_q <- runMCMC(cMCMC_q, niter = 1000, nburnin = 200, nchains = 2, inits = inits_q, samplesAsCodaMCMC = TRUE, setSeed = c(1451, 1452))
-})
+#message("3. Launching 1,000 Iteration TEST Run...")
+#system.time({
+#  samples_q <- runMCMC(cMCMC_q, niter = 1000, nburnin = 200, nchains = 2, inits = inits_q, samplesAsCodaMCMC = TRUE, setSeed = c(1451, 1452))
+#})
 
-saveRDS(samples_q, "samples_q.rds")
-samples_q <- readRDS("samples_q.rds")
+#saveRDS(samples_q, "samples_q.rds")
 
 message("3. Launching 12,000 Iteration TEST Run...")
 system.time({
   samples_q_longer <- runMCMC(cMCMC_q, niter = 12000, nburnin = 2000, nchains = 2, inits = inits_q, samplesAsCodaMCMC = TRUE, setSeed = c(1451, 1452))
 })
-
-saveRDS(samples_q_longer, "samples_q_longer.rds")
+saveRDS(samples_q_longer, "samples_q_12k.rds")
 
 # Diagnostics
-summary(samples_q)
-plot(samples_q)
+summary(samples_q_longer)
+plot(samples_q_longer)
+MCMCsummary(samples_q_longer)
