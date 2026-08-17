@@ -3,6 +3,7 @@ library(lubridate)
 library(nimble)
 library(nimbleEcology)
 library(coda)
+library(MCMCvis)
 
 # ==============================================================================
 # ---- 1. SPATIAL & NETWORK SETUP ----
@@ -117,8 +118,8 @@ death_data <- cmr_q %>% filter(has_pm_record) %>%
 all_unique_badgers <- unique(cmr_q$tattoo)
 
 # ---- THE TEST SUBSET ----
-#set.seed(1)   # Keeps the random sample reproducible!
-#test_n <- 100  # Sample 150 badgers for the trial run
+#set.seed(47)   # Keeps the random sample reproducible!
+#test_n <- 200  # Sample 150 badgers for the trial run
 #unique_badgers <- sample(all_unique_badgers, min(test_n, length(all_unique_badgers)))
 # -------------------------
 nind_raw <- length(unique_badgers)
@@ -391,84 +392,80 @@ inits_q <- list(
   )
 )
 
-message("Building NIMBLE model...")
-model_q <- nimbleModel(code_Quarterly_HMM_Time, constants = consts_q, data = data_q, inits = inits_q[[1]], check = TRUE, calculate = FALSE)
+# ==============================================================================
+# ---- 5. BUILD & CHECK THE NIMBLE MODEL ----
+# ==============================================================================
+message("1. Building NIMBLE model in R...")
+model_q <- nimbleModel(
+  code_Quarterly_HMM_Time, 
+  constants = consts_q, 
+  data = data_q, 
+  inits = inits_q[[1]], 
+  check = TRUE, 
+  calculate = FALSE # Prevents R from freezing!
+)
 
+# Safety Check 1: Test R-level math
 initial_log_prob <- model_q$calculate()
 if (!is.finite(initial_log_prob)) {
-  stop(
-    "Initial model log-probability is not finite."
-  )
+  stop("CRITICAL ERROR: Initial R-model log-probability is not finite. Check bounds.")
 }
+message("PASS: R-model calculated successfully! Initial Log-Prob: ", round(initial_log_prob, 2))
 
-message("PASS: R model log-probability = ", round(initial_log_prob, 2))
 
 # ==============================================================================
-# ---- 6. CONFIGURE AND COMPILE ----
+# ---- 6. CONFIGURE & COMPILE TO C++ ----
 # ==============================================================================
-
+message("2. Configuring MCMC...")
 config_q <- configureMCMC(
-  model_q,
-  monitors = c(
-    "phi_annual",
-    "phi_q",
-    "tau_q",
-    "gamma_q",
-    "p_dead_q",
-    "alpha_p",
-    "beta_season",
-    "sd_year",
-    "eps_year",
-    "p_reference_year"
-  ),
+  model_q, 
+  monitors = c("phi_annual", "phi_q", "tau_q", "gamma_q", "p_dead_q", 
+               "alpha_p", "beta_season", "sd_year", "eps_year", "p_reference_year"), 
   thin = 1
 )
-
-config_q$printSamplers()
-
 Rmcmc_q <- buildMCMC(config_q)
 
-message("Compiling model to C++...")
+message("3. Compiling model and MCMC to C++ (This may take a minute)...")
+cModel_q <- compileNimble(model_q, resetFunctions = TRUE)
+cMCMC_q <- compileNimble(Rmcmc_q, project = model_q, resetFunctions = TRUE)
 
-cModel_q <- compileNimble(
-  model_q,
-  resetFunctions = TRUE
-)
-
+# Safety Check 2: Test C++ math matches R math
 compiled_log_prob <- cModel_q$calculate()
-
 if (!is.finite(compiled_log_prob)) {
-  stop(
-    "Compiled model log-probability is not finite."
-  )
+  stop("CRITICAL ERROR: Compiled C++ model log-probability is not finite.")
 }
+message("PASS: C++ model calculated successfully! Compiled Log-Prob: ", round(compiled_log_prob, 2))
 
-message(
-  "PASS: Compiled model log-probability = ",
-  round(compiled_log_prob, 2)
-)
-
-message("Compiling MCMC...")
-
-cMCMC_q <- compileNimble(
-  Rmcmc_q,
-  project = cModel_q,
-  resetFunctions = TRUE
-)
 
 # ==============================================================================
-# ---- 7. SHORT TEST RUN ----
+# ---- 7. RUN FULL MCMC & SAVE ----
 # ==============================================================================
+message("4. Launching FULL MCMC (50,000 iterations)...")
 
-message("Running short MCMC test...")
+# This will run for several hours.
+system.time({
+  samples_q <- runMCMC(
+    cMCMC_q,
+    niter = 50000,
+    nburnin = 10000,
+    nchains = 2,
+    inits = inits_q,            # Feeds both chains their dispersed starting values!
+    samplesAsCodaMCMC = TRUE,
+    progressBar = TRUE,
+    setSeed = c(1451, 1452)     # Ensures completely reproducible parallel chains
+  )
+})
 
-test_samples <- runMCMC(
-  cMCMC_q,
-  niter = 50,
-  nburnin = 0,
-  nchains = 1,
-  inits = inits_q[[1]],
-  samplesAsCodaMCMC = TRUE,
-  progressBar = TRUE,
-  setSeed = 1451
-)
+# Save the masterpiece
+message("5. Saving posterior samples...")
+dir.create("data/processed", showWarnings = FALSE)
+saveRDS(samples_q, "data/processed/Phase3A_Quarterly_HMM_Full_Posterior.rds")
+
+# Print Basic Diagnostics
+message("6. Generating Diagnostics...")
+summary(samples_q)
+plot(samples_q)
+
+MCMCsummary(samples_q)
+gelman.diag(samples_q,multivariate=FALSE)
+effectiveSize(samples_q)
