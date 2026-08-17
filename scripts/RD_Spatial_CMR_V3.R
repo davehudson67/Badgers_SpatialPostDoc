@@ -143,25 +143,50 @@ if(N[1]==0L || N[1]==N[2]) stop("Current compact loops require both single- and 
 
 # ---- initial values ----------------------------------------------------------
 make_inits <- function(chain=1L){
-  z_init <- matrix(0L,nind,n_prim); S_init <- array(NA_real_,c(nind,2,n_prim))
-  for(i in seq_len(nind)){
-    d <- live %>% filter(tattoo==ids[i]) %>% group_by(primary) %>% summarise(x=mean(x),y=mean(y),.groups="drop")
+  
+  z_init <- matrix(0L,nind,n_prim)
+  S_init <- array(NA_real_,c(nind,2,n_prim))
+  
+  for(i in seq_len(nind)) {
+    
+    d <- live %>%
+      filter(tattoo==ids[i]) %>%
+      arrange(primary,trap_season,capture_date) %>%
+      group_by(primary) %>%
+      slice(1) %>%
+      ungroup() %>%
+      select(primary,x,y)
+    
     xy <- matrix(NA_real_,n_prim,2)
-    for(k in first[i]:K[i]){
+    
+    for(k in first[i]:K[i]) {
+      
       dk <- d %>% filter(primary==k)
-      if(nrow(dk)) xy[k,] <- c(dk$x[1],dk$y[1]) else if(k>first[i]) xy[k,] <- xy[k-1,]
+      
+      if(nrow(dk)) xy[k,] <- c(dk$x[1],dk$y[1])
+      else if(k>first[i]) xy[k,] <- xy[k-1,]
     }
+    
     S_init[i,,first[i]:K[i]] <- t(xy[first[i]:K[i],,drop=FALSE])
     z_init[i,first[i]:K[i]] <- 1L
   }
+  
   z_init[!is.na(z_data)] <- NA
-  list(alpha_phi=c(qlogis(.70),qlogis(.68))+rnorm(2,0,.03),
-       alpha_p=c(qlogis(.20),qlogis(.20))+rnorm(2,0,.03),
-       alpha_logsigma=log(c(150,120))+rnorm(2,0,.03),
-       alpha_logmove=log(c(70,50))+rnorm(2,0,.03),
-       beta_season_raw=rnorm(3,0,.03),beta_period_raw=rnorm(n_periods-1L,0,.03),
-       beta_sg=.5+runif(1,-.05,.05),S=S_init,z=z_init)
+  
+  list(
+    alpha_phi=c(qlogis(.70),qlogis(.68))+rnorm(2,0,.03),
+    alpha_p=c(qlogis(.20),qlogis(.20))+rnorm(2,0,.03),
+    alpha_logsigma=log(c(150,120))+rnorm(2,0,.03),
+    alpha_logmove=log(c(70,50))+rnorm(2,0,.03),
+    beta_season_raw=rnorm(3,0,.03),
+    beta_period_raw=rnorm(n_periods-1L,0,.03),
+    beta_sg=.5+runif(1,-.05,.05),
+    S=S_init,
+    z=z_init
+  )
 }
+
+inits <- lapply(seq_len(NCHAINS),make_inits)
 inits <- lapply(seq_len(NCHAINS),make_inits)
 
 # ---- V3 model ----------------------------------------------------------------
