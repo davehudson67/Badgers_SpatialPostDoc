@@ -713,3 +713,7 @@ saveRDS(
 MCMCsummary(samples_M2)
 gelman.diag(samples_M2,multivariate=FALSE)
 effectiveSize(samples_M2)
+
+
+which(cmr_raw$sett == "SELSEY")
+cmr_raw <- arrange(cmr_raw, sett)
