@@ -1,18 +1,21 @@
 # =============================================================================
-# WOODCHESTER SPATIAL CMR V3
-# M2 + 50 m habitat/social-group grid
+# WOODCHESTER SPATIAL CMR V3 DEVELOPMENT TEST
+# M2 + 50 m habitat state space
+# 400-badger AF_slice test; SG resistance temporarily removed until a
+# formally normalized SG-dependent movement kernel is implemented
 # =============================================================================
 library(tidyverse); library(lubridate); library(nimble); library(coda); library(MCMCvis)
 
 set.seed(123)
 
 # ---- options ----------------------------------------------------------------
-SAMPLE_N <- 200L
+SAMPLE_N <- 400L
 NITER <- 3000; NBURN <- 750; NCHAINS <- 2
 
 cmr_file <- "data/badger_final_CMRready_wDisease.rds"
 sett_file <- "data/WoodchesterSettLocations.csv"
 spatial_file <- "data/spatial/V3_spatial_inputs_50m_2km.rds"
+dir.create("results",showWarnings=FALSE)
 
 # ---- sett cleaning -----------------------------------------------------------
 sett_aliases <- c("\\bCHESTNUT\\b"="CHESNUT","\\bJACKS\\b"="JACKSMIREY","\\bGRAVEL\\b"="GRAVELPIT",
@@ -143,48 +146,45 @@ if(N[1]==0L || N[1]==N[2]) stop("Current compact loops require both single- and 
 
 # ---- initial values ----------------------------------------------------------
 make_inits <- function(chain=1L){
-  z_init <- matrix(0L,nind,n_prim)
-  S_init <- array(NA_real_,c(nind,2,n_prim))
-  
+  z_init <- matrix(0L,nind,n_prim); S_init <- array(NA_real_,c(nind,2,n_prim))
   for(i in seq_len(nind)){
-    d <- live %>%
-      filter(tattoo==ids[i]) %>%
-      arrange(primary,trap_season,capture_date) %>%
-      group_by(primary) %>%
-      slice(1) %>%
-      ungroup() %>%
-      select(primary,x,y)
-    
+    d <- live %>% filter(tattoo==ids[i]) %>% arrange(primary,trap_season,capture_date) %>%
+      group_by(primary) %>% slice(1) %>% ungroup() %>% select(primary,x,y)
     xy <- matrix(NA_real_,n_prim,2)
-    
     for(k in first[i]:K[i]){
       dk <- d %>% filter(primary==k)
-      
-      if(nrow(dk)) xy[k,] <- c(dk$x[1],dk$y[1])
-      else if(k>first[i]) xy[k,] <- xy[k-1,]
+      if(nrow(dk)) xy[k,] <- c(dk$x[1],dk$y[1]) else if(k>first[i]) xy[k,] <- xy[k-1,]
     }
-    
     S_init[i,,first[i]:K[i]] <- t(xy[first[i]:K[i],,drop=FALSE])
     z_init[i,first[i]:K[i]] <- 1L
   }
-  
   z_init[!is.na(z_data)] <- NA
-  
-  list(
-    alpha_phi=c(qlogis(.70),qlogis(.68))+rnorm(2,0,.03),
-    alpha_p=c(qlogis(.20),qlogis(.20))+rnorm(2,0,.03),
-    alpha_logsigma=log(c(150,120))+rnorm(2,0,.03),
-    alpha_logmove=log(c(70,50))+rnorm(2,0,.03),
-    beta_season_raw=rnorm(3,0,.03),
-    beta_period_raw=rnorm(n_periods-1L,0,.03),
-    beta_sg=.5+runif(1,-.05,.05),
-    S=S_init,
-    z=z_init
-  )
+  list(alpha_phi=c(qlogis(.70),qlogis(.68))+rnorm(2,0,.03),
+       alpha_p=c(qlogis(.20),qlogis(.20))+rnorm(2,0,.03),
+       alpha_logsigma=log(c(150,120))+rnorm(2,0,.03),
+       alpha_logmove=log(c(70,50))+rnorm(2,0,.03),
+       beta_season_raw=rnorm(3,0,.03),beta_period_raw=rnorm(n_periods-1L,0,.03),
+       S=S_init,z=z_init)
 }
+inits <- lapply(seq_len(NCHAINS),make_inits)
 
-inits <- lapply(seq_len(NCHAINS),make_inits)
-inits <- lapply(seq_len(NCHAINS),make_inits)
+
+# ---- V3 initialization habitat audit -----------------------------------------
+# Every living initial AC must lie inside the grid and on habitat = 1.
+bad_init <- list()
+for(i in seq_len(nind)) for(k in first[i]:K[i]){
+  sx <- inits[[1]]$S[i,1,k]; sy <- inits[[1]]$S[i,2,k]
+  col <- floor((sx-grid_xmin)/cell_size)+1L; row <- floor((grid_ymax-sy)/cell_size)+1L
+  inb <- row>=1L && row<=n_rows && col>=1L && col<=n_cols
+  hab <- if(inb) habitat_mat[row,col] else NA_integer_
+  z0 <- if(is.na(z_data[i,k])) 1L else z_data[i,k]
+  if(z0==1L && (!inb || is.na(hab) || hab!=1L))
+    bad_init[[length(bad_init)+1L]] <- tibble(i=i,tattoo=ids[i],k=k,year=years[k],
+      x=sx,y=sy,row=row,col=col,in_bounds=inb,habitat=hab)
+}
+bad_init <- bind_rows(bad_init)
+if(nrow(bad_init)){print(bad_init,n=Inf); stop("Invalid living AC initial values detected.")}
+cat("\nInitial AC habitat audit: PASS\n")
 
 # ---- V3 model ----------------------------------------------------------------
 code_V3 <- nimbleCode({
@@ -197,8 +197,6 @@ code_V3 <- nimbleCode({
     mean_move[grp] <- sigma_move[grp]*sqrt(3.141593/2)
   }
 
-  beta_sg ~ dexp(1)
-  sg_transition_multiplier <- exp(-beta_sg)
 
   for(s in 1:3){beta_season_raw[s] ~ dnorm(0,sd=1); beta_season[s] <- beta_season_raw[s]}
   beta_season[4] <- -sum(beta_season_raw[1:3])
@@ -219,7 +217,6 @@ code_V3 <- nimbleCode({
     in_bounds[i,first[i]] <- step(S[i,1,first[i]]-grid_xmin)*step(grid_xmax-S[i,1,first[i]])*
       step(S[i,2,first[i]]-grid_ymin)*step(grid_ymax-S[i,2,first[i]])
     habitat_here[i,first[i]] <- habitat_mat[row_S[i,first[i]],col_S[i,first[i]]]
-    SG_here[i,first[i]] <- SG_mat[row_S[i,first[i]],col_S[i,first[i]]]
     state_ok[i,first[i]] ~ dbern(in_bounds[i,first[i]]*habitat_here[i,first[i]])
 
     g[i,first[i],1] <- 0
@@ -253,7 +250,6 @@ code_V3 <- nimbleCode({
     in_bounds[i,first[i]] <- step(S[i,1,first[i]]-grid_xmin)*step(grid_xmax-S[i,1,first[i]])*
       step(S[i,2,first[i]]-grid_ymin)*step(grid_ymax-S[i,2,first[i]])
     habitat_here[i,first[i]] <- habitat_mat[row_S[i,first[i]],col_S[i,first[i]]]
-    SG_here[i,first[i]] <- SG_mat[row_S[i,first[i]],col_S[i,first[i]]]
     state_ok[i,first[i]] ~ dbern(in_bounds[i,first[i]]*habitat_here[i,first[i]])
 
     g[i,first[i],1] <- 0
@@ -291,18 +287,11 @@ code_V3 <- nimbleCode({
         step(S[i,2,k]-grid_ymin)*step(grid_ymax-S[i,2,k])
 
       habitat_here[i,k] <- habitat_mat[row_S[i,k],col_S[i,k]]
-      SG_here[i,k] <- SG_mat[row_S[i,k],col_S[i,k]]
 
       # living AC must occupy valid land inside the state space
       valid_state[i,k] <- in_bounds[i,k]*habitat_here[i,k]
       state_prob[i,k] <- (1-z[i,k])+z[i,k]*valid_state[i,k]
       state_ok[i,k] ~ dbern(state_prob[i,k])
-
-      # endpoint SG-transition resistance
-      same_SG[i,k] <- equals(SG_here[i,k],SG_here[i,k-1])
-      sg_live_prob[i,k] <- same_SG[i,k]+(1-same_SG[i,k])*sg_transition_multiplier
-      sg_prob[i,k] <- (1-z[i,k])+z[i,k]*sg_live_prob[i,k]
-      sg_ok[i,k] ~ dbern(sg_prob[i,k])
 
       g[i,k,1] <- 0
       for(r in 1:R){
@@ -332,12 +321,12 @@ consts <- list(R=R,N=N,K=as.integer(K),J=J,first=as.integer(first),X=X,H=H,
   cell_size=cell_size,n_rows=n_rows,n_cols=n_cols)
 
 data_list <- list(Ones=array(1L,dim(H)),z=z_data,state_ok=matrix(1L,nind,n_prim),
-  sg_ok=matrix(1L,nind,n_prim),habitat_mat=habitat_mat,SG_mat=SG_mat)
+  habitat_mat=habitat_mat)
 
 message("\nBuilding V3...")
 model_V3 <- nimbleModel(code_V3,constants=consts,data=data_list,inits=inits[[1]],
-  dimensions=list(Ones=dim(H),z=dim(z_data),state_ok=c(nind,n_prim),sg_ok=c(nind,n_prim),
-                  habitat_mat=dim(habitat_mat),SG_mat=dim(SG_mat)),check=TRUE,calculate=FALSE)
+  dimensions=list(Ones=dim(H),z=dim(z_data),state_ok=c(nind,n_prim)),
+  check=TRUE,calculate=FALSE)
 
 print(model_V3$initializeInfo())
 lp <- model_V3$calculate()
@@ -347,11 +336,10 @@ if(!is.finite(lp)) stop("V3 initial log probability is not finite.")
 message("\nCompiling model...")
 cModel_V3 <- compileNimble(model_V3,resetFunctions=TRUE)
 
-monitors <- c("phi_annual","sigma_move","mean_move","sigma","alpha_p","beta_season","beta_period",
-              "beta_sg","sg_transition_multiplier")
+monitors <- c("phi_annual","sigma_move","mean_move","sigma","alpha_p","beta_season","beta_period")
 config_V3 <- configureMCMC(model_V3,monitors=monitors,thin=1)
 
-# Block annual X/Y AC coordinates, as in the current M2 test.
+# Jointly update annual X/Y AC coordinates with NIMBLE's automated-factor slice sampler.
 for(i in seq_len(nind)) for(k in first[i]:K[i]){
   nodes <- c(paste0("S[",i,", 1, ",k,"]"),paste0("S[",i,", 2, ",k,"]"))
   config_V3$removeSamplers(nodes,print=FALSE)
@@ -369,8 +357,10 @@ runtime_V3 <- system.time(samples_V3 <- runMCMC(cMCMC_V3,niter=NITER,nburnin=NBU
 print(runtime_V3)
 
 saveRDS(list(samples=samples_V3,runtime=runtime_V3,ids=ids,detectors=detectors,det_audit=det_audit,
-  settings=list(sample_n=SAMPLE_N,niter=NITER,nburn=NBURN,nchains=NCHAINS),spatial_file=spatial_file),
-  paste0("results/RD_SCR_V3_hybrid_",nind,"_badgers.rds"))
+  settings=list(sample_n=SAMPLE_N,niter=NITER,nburn=NBURN,nchains=NCHAINS,
+                ac_sampler="AF_slice",sg_model="removed_pending_normalized_kernel"),
+  spatial_file=spatial_file),
+  paste0("results/RD_SCR_V3_habitat_AF_",nind,"_badgers.rds"))
 
 MCMCsummary(samples_V3)
 gelman.diag(samples_V3,multivariate=FALSE)
