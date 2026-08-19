@@ -12,6 +12,22 @@ DETECTOR_RADII_M <- c(100,200,300,500)
 OUT_DIR <- "results/V3_spatial_audit"
 dir.create(OUT_DIR,recursive=TRUE,showWarnings=FALSE)
 
+sp <- readRDS("data/spatial/V3_spatial_inputs_50m_2km.rds")
+
+grid <- sp$grid
+SG_mat <- sp$SG_mat
+habitat_mat <- sp$habitat_mat
+zone_mat <- sp$zone_mat
+
+cell_size <- sp$cell_size
+grid_xmin <- sp$xmin
+grid_xmax <- sp$xmax
+grid_ymin <- sp$ymin
+grid_ymax <- sp$ymax
+
+n_rows <- sp$n_rows
+n_cols <- sp$n_cols
+
 req <- c("grid","detectors","habitat_mat","SG_mat","zone_mat","cell_size",
          "grid_xmin","grid_xmax","grid_ymin","grid_ymax")
 miss <- req[!vapply(req,exists,logical(1),inherits=TRUE)]
@@ -137,7 +153,7 @@ outer_boundary <- tibble(zone=c("core","peripheral"),
                          outer_boundary_m=as.numeric(outer_edge_by_zone))
 
 cat("\n--- SG GEOMETRY ---\n"); print(sg_geometry,n=Inf)
-cat("\n--- SG ADJACENCY ---\n"); print(adj_tbl,n=Inf)
+cat("\n--- SG ADJACENCY ---\n"); print(adj_tbl)
 cat("\n--- OUTER STATE-SPACE BOUNDARY ---\n"); print(outer_boundary,n=Inf)
 
 # 4. Movement opportunity from each core-land cell
@@ -240,7 +256,7 @@ audit <- list(det_lookup=det_lookup,det_by_zone=det_by_zone,det_by_sg=det_by_sg,
               movement_sg=movement_sg,kernel_overall=kernel_overall,kernel_sg=kernel_sg,
               settings=list(radii_m=RADII_M,sigma_move_test=SIGMA_MOVE_TEST,
                             detector_radii_m=DETECTOR_RADII_M,cell_size=cell_size))
-saveRDS(audit,file.path(OUT_DIR,"V3_spatial_audit.rds"))
+saveRDS(audit,file.path("V3_spatial_audit.rds"))
 
 cat("\n========================================\nAUDIT COMPLETE\n========================================\n")
 cat("Send back these printed objects:\n",
