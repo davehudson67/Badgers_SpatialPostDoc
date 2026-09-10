@@ -5,4 +5,4 @@ Sys.setenv(
   SEED="7092042",
   RESULT_TAG="FULL_1500"
 )
-source("scripts/Woodchester_V7bM_samegroup_pressure_models.R")
+source("scripts/Woodchester_V7bM_samegroup_pressure_models_FACTORFIX.R")
