@@ -18,21 +18,11 @@ contrasts can be applied only to factors with 2 or more levels
 
 Therefore the first 100-pair smoke run and the first 1,500-pair full run contain **no valid estimate of the infection-pressure effect or movement × pressure interaction**.
 
-The valid part of the first full run was the complete-case benchmark. It gave a movement odds ratio around 0.79 with a broad interval, qualitatively close to the frozen primary V7b result (around 0.82). This is reassuring, but the two models use different estimation engines, so the difference cannot be attributed purely to pressure-support sample restriction.
+The valid part of the first full run was the complete-case benchmark. It gave a movement odds ratio around 0.79 with a broad interval, qualitatively close to the frozen primary V7b result (around 0.82). This was reassuring, but the two models used different estimation engines, so the difference could not be attributed purely to pressure-support sample restriction.
 
-## Why a V2 model was created
+## V2 correction: add a full-support calibration model
 
-Two changes were needed before another full run.
-
-### 1. Stable factor levels
-
-Quarter and 5-year period levels are now defined globally and retained consistently across every paired history. This removes the factor-contrast failure that stopped all pressure-adjusted models.
-
-### 2. Add `M0_FULL`
-
-The corrected model now fits an additional full-support benchmark using the same GLM + badger-cluster-robust engine as the pressure models.
-
-The model ladder is now:
+The next version added `M0_FULL`, giving the model ladder:
 
 ```text
 M0_FULL        movement + sex + quarter + period, all eligible V7b rows
@@ -46,8 +36,8 @@ This gives a cleaner decomposition:
 
 ```text
 Frozen primary V7b → M0_FULL
-    checks how the simpler sensitivity estimation engine compares with the
-    frozen primary importance-sampling analysis.
+    calibrates the simpler GLM + badger-cluster-robust sensitivity engine
+    against the frozen primary importance-sampling model.
 
 M0_FULL → M0_CC
     shows the effect of restricting to rows where same-group pressure is
@@ -58,18 +48,51 @@ M0_CC → M1_RAW / M1_SMOOTH
     exactly the same rows.
 ```
 
-The interaction remains exploratory.
+### V2 100-pair smoke result
+
+`M0_FULL` and `M0_CC` both fitted in all 100 paired histories, but the three pressure models still failed in all 100 histories with the same factor-contrast error.
+
+The two valid V2 smoke estimates were:
+
+```text
+M0_FULL movement OR ≈ 0.80   (95% interval ≈ 0.29–1.77)
+M0_CC   movement OR ≈ 0.78   (95% interval ≈ 0.19–1.97)
+```
+
+This is useful despite the failed pressure fits:
+
+1. `M0_FULL` closely reproduces the frozen primary V7b movement result (OR ≈ 0.82), so the simpler GLM/cluster-robust sensitivity engine is well calibrated to the primary analysis.
+2. Restricting to pressure-supported rows changes the point estimate very little (`M0_FULL` ≈ 0.80 → `M0_CC` ≈ 0.78), although uncertainty increases because information is lost.
+3. Therefore there is currently no sign that pressure-support sample restriction is masking a strong positive movement effect.
+
+No inference about same-group pressure itself can be made from this V2 smoke run because `M1_RAW`, `M1_SMOOTH` and `M2_INTERACTION` did not fit.
+
+## V3 implementation fix: remove factor contrasts entirely
+
+Because stable factor levels did not solve the repeated `contrasts` error, the next implementation keeps the **same scientific models** but replaces the quarter and 5-year period factors with explicit numeric treatment-coded dummy variables before `glm()` is called.
+
+For example, quarter is represented internally as numeric indicators for Q2, Q3 and Q4 with Q1 as the reference; 5-year periods are handled similarly. This is algebraically equivalent to the intended categorical adjustment but bypasses R's factor-contrast machinery completely.
+
+The run launchers now use:
+
+`scripts/Woodchester_V7bM_samegroup_pressure_models_NUMERIC_DUMMIES.R`
+
+and write results with `V3` in the result tag so earlier failed outputs are retained as an audit trail rather than overwritten.
 
 ## Current next step
 
-Run the corrected **100-pair smoke test only**. Do not run the 1,500-pair version until all five models fit cleanly in the smoke test.
-
-Use:
+Run the corrected **100-pair smoke test only**:
 
 ```r
 source("scripts/run_V7bM_samegroup_pressure_SMOKE_100.R")
 ```
 
-The corrected run writes new files with `V2` in the result tag so the earlier failed-run audit files are not overwritten.
+Do not start the 1,500-pair run until the fit audit reports successful fits for all five models:
 
-Only if the smoke-test fit audit reports successful fits for all five models should the full run be started.
+```text
+M0_FULL
+M0_CC
+M1_RAW
+M1_SMOOTH
+M2_INTERACTION
+```
