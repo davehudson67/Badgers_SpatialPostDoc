@@ -3,6 +3,6 @@ Sys.setenv(
   N_KEEP="50",
   MIN_GROUP_N="1",
   SEED="7092042",
-  RESULT_TAG="SMOKE_100_V2"
+  RESULT_TAG="SMOKE_100_V3"
 )
-source("scripts/Woodchester_V7bM_samegroup_pressure_models_V2.R")
+source("scripts/Woodchester_V7bM_samegroup_pressure_models_NUMERIC_DUMMIES.R")
