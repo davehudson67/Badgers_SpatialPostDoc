@@ -23,7 +23,10 @@ x <- readLines(src,warn=FALSE)
 txt <- paste(x,collapse="\n")
 
 old_start <- "fit_one <- function(formula,d,nkeep){"
-old_end <- "\n\nmake_risk_data <- function(move_draw,inf_col,require_pressure=TRUE){"
+# Deliberately match only the start of make_risk_data(), not its full argument
+# list. This avoids the brittle V2/V3 mismatch that previously stopped the
+# wrapper before any model was fitted.
+old_end <- "\n\nmake_risk_data <- function"
 
 if(!grepl(old_start,txt,fixed=TRUE)) stop("Could not find fit_one() in V2 script.")
 if(!grepl(old_end,txt,fixed=TRUE)) stop("Could not find make_risk_data() boundary in V2 script.")
