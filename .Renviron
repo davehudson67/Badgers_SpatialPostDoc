@@ -1,0 +1,5 @@
+BADGER_DB_HOST=aws-1-eu-west-1.pooler.supabase.com
+BADGER_DB_PORT=5432
+BADGER_DB_NAME=postgres
+BADGER_DB_USER=postgres.klpvihubzlyzubyyubtw
+BADGER_DB_PASSWORD=jdXwosIU09b4OYz3

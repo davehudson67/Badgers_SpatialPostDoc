@@ -1,0 +1,4 @@
+population,badgers,badger_years,exact_xy_pct,xy_within_1yr_pct,xy_within_2yr_pct,exact_socg_pct,socg_within_1yr_pct,socg_within_2yr_pct
+All infection-model badgers,3224,10334,0,NA,NA,85.61060576736985,97.17437584671956,99.10973485581576
+Phase-2 movement badgers,1285,7257,0,NA,NA,83.50558081852006,97.43695742042166,99.4074686509577
+Matched Phase-2 movement+infection,1285,7257,0,NA,NA,83.50558081852006,97.43695742042166,99.4074686509577

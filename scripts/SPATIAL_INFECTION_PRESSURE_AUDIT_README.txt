@@ -1,0 +1,16 @@
+WOODCHESTER SPATIAL INFECTION-PRESSURE INPUT AUDIT
+
+Run:
+source("scripts/run_SPATIAL_INFECTION_PRESSURE_input_audit.R")
+
+Paste back:
+A. MOVEMENT POSTERIOR OBJECT
+B. FINAL MOVEMENT CHAIN FILES
+C. ENCOUNTER-LEVEL SPATIAL FIELDS
+D. Annual coverage summary
+E. PHASE-2 MOVEMENT-INTERVAL ENDPOINT SUPPORT
+F. SOCIAL-GROUP/YEAR SUPPORT
+H. DECISION SUMMARY
+
+The script does not impute locations. +/-1y and +/-2y coverage values are
+only diagnostics.

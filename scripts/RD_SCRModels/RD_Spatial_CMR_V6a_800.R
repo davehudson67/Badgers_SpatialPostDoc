@@ -1,0 +1,1387 @@
+# =============================================================================
+# WOODCHESTER SPATIAL CMR V6a OPTIMIZED
+# LATENT MOVEMENT PHENOTYPE: RESIDENT <-> DISPERSER
+#
+# OPTIMISATIONS:
+#   - Movement-informative badgers only: >=2 observed live years
+#   - No individual movement random effect (for now)
+#   - Time-varying resident/disperser state retained
+#   - Only 4 movement scales: sex x movement state
+#   - Global movement-grid interpolation for those 4 scales
+#   - Default NIMBLE RW_block retained for dmvt eps nodes
+#   - No 18,000+ manual eps sampler assignments
+#   - Latent states not monitored during development
+#   - Landscape arrays supplied as constants
+#   - Initial spatial audit before model construction
+#   - nimbleModel(check=FALSE)
+#   - Model + MCMC compiled together
+# =============================================================================
+
+library(tidyverse); library(lubridate); library(nimble); library(coda); library(MCMCvis); library(sf)
+
+set.seed(123)
+
+# ---- options ----------------------------------------------------------------
+DEVELOPMENT_MODE <- TRUE
+MIN_LIVE_YEARS <- 2L
+SAVE_LATENT_STATES <- FALSE
+
+if(DEVELOPMENT_MODE){
+  SAMPLE_N <- 500L
+  MAX_ADULT_ENTRY <- 250L
+  NITER <- 5000; NBURN <- 1250; NCHAINS <- 2
+} else {
+  SAMPLE_N <- 800L
+  MAX_ADULT_ENTRY <- 400L
+  NITER <- 12000; NBURN <- 3500; NCHAINS <- 2
+}
+
+MOVE_DF <- 3
+if(MOVE_DF<=2) stop("MOVE_DF must be > 2.")
+
+T_SCALE_FACTOR <- sqrt((MOVE_DF-2)/MOVE_DF)
+MOVE_MEAN_FACTOR <- sqrt(MOVE_DF-2)*sqrt(pi)/2*gamma((MOVE_DF-1)/2)/gamma(MOVE_DF/2)
+
+SIGMA_MOVE_INIT <- 72
+MOVE_PRIOR_LOGMEAN <- log(SIGMA_MOVE_INIT)
+
+N_SIGMA_GRID <- 31L
+LOG_SIGMA_MIN <- log(10)
+LOG_SIGMA_MAX <- log(800)
+LOG_SIGMA_STEP <- (LOG_SIGMA_MAX-LOG_SIGMA_MIN)/(N_SIGMA_GRID-1)
+SIGMA_GRID <- exp(seq(LOG_SIGMA_MIN,LOG_SIGMA_MAX,length.out=N_SIGMA_GRID))
+
+SOCIAL_ZERO_CONST <- 50
+
+cat("\n============================================================\n")
+cat("V6a OPTIMIZED LATENT MOVEMENT-PHENOTYPE MODEL\n")
+cat("Resident <-> disperser | Student-t3 movement\n")
+cat("Development mode:",DEVELOPMENT_MODE,"\n")
+cat("Target sample:",SAMPLE_N,"| max adult-entry:",MAX_ADULT_ENTRY,"\n")
+cat("Minimum observed live years:",MIN_LIVE_YEARS,"\n")
+cat("============================================================\n\n")
+
+# ---- prepared data -----------------------------------------------------------
+encounter_file <- "data/badger_encounters_useful.rds"
+individual_file <- "data/badger_individuals.rds"
+sett_file <- "data/WoodchesterSettLocations.csv"
+spatial_file <- "data/spatial/V3_spatial_inputs_50m_2km.rds"
+
+required_files <- c(encounter_file,individual_file,sett_file,spatial_file)
+missing_files <- required_files[!file.exists(required_files)]
+if(length(missing_files))
+  stop("Missing required file(s):\n",paste(missing_files,collapse="\n"))
+
+cmr_raw <- readRDS(encounter_file)
+individuals <- readRDS(individual_file)
+dir.create("results",showWarnings=FALSE)
+
+# ---- sett cleaning -----------------------------------------------------------
+sett_aliases <- c("\\bCHESTNUT\\b"="CHESNUT","\\bJACKS\\b"="JACKSMIREY","\\bGRAVEL\\b"="GRAVELPIT",
+                  "\\bBUCKHOLE\\b"="BUCKHOLT","\\bTOPSETT\\b"="TOP","\\bFOXCUB\\b"="FOX",
+                  "\\bGULLEY\\b"="GULLY","\\bBLACKBERRY\\b"="BRAMBLE","\\bBOC\\b"="BOG",
+                  "\\bCEDARBANK\\b"="CEDAR","\\bCLAYTRAP\\b"="CLAY","\\bCLIFF\\b"="CLIFFFACE",
+                  "\\bDINGLEVALLEY\\b"="DINGLE")
+
+clean_sett <- function(x) x %>% as.character() %>% toupper() %>%
+  str_replace_all("[[:punct:]]"," ") %>% str_squish() %>%
+  str_remove_all("\\b(SETT|MAIN|OUTLIER)\\b") %>% str_replace_all(sett_aliases) %>%
+  str_replace_all("\\s+","")
+
+# ---- spatial inputs ----------------------------------------------------------
+sp <- readRDS(spatial_file)
+SG_mat <- sp$SG_mat; habitat_mat <- sp$habitat_mat; zone_mat <- sp$zone_mat
+grid_xmin <- sp$xmin; grid_xmax <- sp$xmax
+grid_ymin <- sp$ymin; grid_ymax <- sp$ymax
+cell_size <- sp$cell_size; n_rows <- sp$n_rows; n_cols <- sp$n_cols
+
+stopifnot(!anyNA(SG_mat),!anyNA(habitat_mat),!anyNA(zone_mat))
+
+cat("Grid:",n_rows,"x",n_cols,"@",cell_size,"m\n")
+
+# ---- sett coordinates --------------------------------------------------------
+sett_raw <- read_csv(sett_file,show_col_types=FALSE)
+name_col <- intersect(c("Sett_Clean","Sett","sett","SettName","Sett_Upper","Name"),names(sett_raw))[1]
+x_col <- intersect(c("SettX","sett_x","X","x","Easting","easting"),names(sett_raw))[1]
+y_col <- intersect(c("SettY","sett_y","Y","y","Northing","northing"),names(sett_raw))[1]
+
+if(any(is.na(c(name_col,x_col,y_col)))) stop("Could not identify sett name/X/Y columns.")
+
+sett_xy <- sett_raw %>%
+  transmute(Sett_Clean=clean_sett(.data[[name_col]]),
+            x=as.numeric(.data[[x_col]]),y=as.numeric(.data[[y_col]])) %>%
+  filter(!is.na(Sett_Clean),Sett_Clean!="",!is.na(x),!is.na(y)) %>%
+  distinct(Sett_Clean,.keep_all=TRUE)
+
+# ---- encounters --------------------------------------------------------------
+cmr <- cmr_raw %>%
+  mutate(Sett_Clean=clean_sett(sett),
+         primary_year=as.integer(primary_year),
+         trap_season=as.integer(trap_season)) %>%
+  left_join(sett_xy,by="Sett_Clean")
+
+years <- min(cmr$primary_year,na.rm=TRUE):max(cmr$primary_year,na.rm=TRUE)
+n_prim <- length(years); n_sec <- 4L
+
+cmr <- cmr %>% mutate(primary=match(primary_year,years))
+
+period_vec <- as.integer(match(floor(years/5)*5,sort(unique(floor(years/5)*5))))
+n_periods <- max(period_vec)
+
+# ---- demographics ------------------------------------------------------------
+demog <- individuals %>%
+  transmute(individual_id,tattoo,age_fc=as.character(age_fc),
+            entry_group=case_when(age_fc %in% c("Cub","Yearling")~1L,
+                                  age_fc=="Adult"~2L,TRUE~NA_integer_))
+
+sex_lookup <- individuals %>%
+  transmute(individual_id,tattoo,sex_raw=as.character(sex)) %>%
+  mutate(sex_clean=toupper(str_squish(sex_raw)),
+         sex_code=case_when(sex_clean %in% c("F","FEMALE")~0L,
+                            sex_clean %in% c("M","MALE")~1L,TRUE~NA_integer_))
+
+# ---- one live detector observation per individual-quarter -------------------
+live <- cmr %>%
+  filter(has_live_capture,!is.na(primary),!is.na(trap_season),!is.na(x),!is.na(y)) %>%
+  arrange(individual_id,primary,trap_season,capture_date) %>%
+  group_by(individual_id,primary,trap_season) %>%
+  arrange(desc(differs_from_modal),desc(capture_date),.by_group=TRUE) %>%
+  slice(1) %>%
+  ungroup()
+
+stopifnot(nrow(live %>% count(individual_id,primary,trap_season) %>% filter(n>1))==0)
+
+# ---- movement information ----------------------------------------------------
+live_years <- live %>%
+  distinct(individual_id,tattoo,primary) %>%
+  count(individual_id,tattoo,name="n_live_years")
+
+cat("\nObserved live-year distribution before selection:\n")
+print(live_years %>% count(n_live_years))
+
+# Movement phenotype requires >=2 observed live years.
+eligible <- live %>%
+  distinct(individual_id,tattoo) %>%
+  inner_join(live_years,by=c("individual_id","tattoo")) %>%
+  inner_join(demog,by=c("individual_id","tattoo")) %>%
+  left_join(sex_lookup %>% select(individual_id,tattoo,sex_code),
+            by=c("individual_id","tattoo")) %>%
+  filter(entry_group %in% 1:2,n_live_years>=MIN_LIVE_YEARS,!tattoo %in% "007V")
+
+cat("\nMovement-informative eligible badgers:",nrow(eligible),"\n")
+cat("  adult-entry:",sum(eligible$entry_group==2L),"\n")
+cat("  young-entry:",sum(eligible$entry_group==1L),"\n")
+
+# ---- adult-enriched sample ---------------------------------------------------
+eligible_adult <- eligible %>% filter(entry_group==2L)
+eligible_young <- eligible %>% filter(entry_group==1L)
+
+n_adult_take <- min(MAX_ADULT_ENTRY,nrow(eligible_adult),SAMPLE_N)
+n_young_take <- min(SAMPLE_N-n_adult_take,nrow(eligible_young))
+
+adult_sample <- if(n_adult_take<nrow(eligible_adult))
+  eligible_adult %>% slice_sample(n=n_adult_take) else eligible_adult
+
+young_sample <- if(n_young_take<nrow(eligible_young))
+  eligible_young %>% slice_sample(n=n_young_take) else eligible_young
+
+eligible <- bind_rows(adult_sample,young_sample) %>% slice_sample(prop=1)
+
+if(nrow(eligible)<SAMPLE_N)
+  warning("Fewer movement-informative badgers than SAMPLE_N.")
+
+cat("\nSelected sample:\n")
+cat("  total:",nrow(eligible),"\n")
+cat("  adult-entry:",sum(eligible$entry_group==2L),"\n")
+cat("  young-entry:",sum(eligible$entry_group==1L),"\n")
+cat("  median live years:",median(eligible$n_live_years),"\n")
+
+ids <- eligible$tattoo
+nind <- length(ids)
+
+live <- live %>% filter(tattoo %in% ids)
+cmr <- cmr %>% filter(tattoo %in% ids)
+
+# ---- detectors ---------------------------------------------------------------
+detectors <- live %>%
+  distinct(Sett_Clean,x,y) %>%
+  arrange(Sett_Clean) %>%
+  mutate(detector=row_number())
+
+X <- as.matrix(detectors %>% select(x,y))
+R <- nrow(X)
+
+live <- live %>%
+  left_join(detectors %>% select(Sett_Clean,detector),by="Sett_Clean")
+
+det_audit <- detectors %>%
+  mutate(col_R=floor((x-grid_xmin)/cell_size)+1L,
+         row_R=floor((grid_ymax-y)/cell_size)+1L,
+         in_bounds=col_R>=1 & col_R<=n_cols & row_R>=1 & row_R<=n_rows)
+
+if(any(!det_audit$in_bounds)) stop("Used detector outside spatial grid.")
+
+# ---- metadata ----------------------------------------------------------------
+meta <- live %>%
+  arrange(tattoo,primary,trap_season,capture_date) %>%
+  group_by(tattoo) %>%
+  summarise(first=first(primary),.groups="drop") %>%
+  right_join(tibble(tattoo=ids),by="tattoo") %>%
+  left_join(eligible %>% select(tattoo,entry_group,sex_code,n_live_years),by="tattoo") %>%
+  arrange(match(tattoo,ids))
+
+first <- as.integer(meta$first)
+entry_group <- as.integer(meta$entry_group)
+sex_data <- as.integer(meta$sex_code)
+adult_entry <- as.integer(entry_group==2L)
+
+stopifnot(!anyNA(first),!anyNA(entry_group))
+if(any(!is.na(sex_data) & !sex_data %in% 0:1))
+  stop("Known sex values must be 0=female or 1=male.")
+
+# ---- death -------------------------------------------------------------------
+death <- cmr %>%
+  filter(has_pm_record,!is.na(primary)) %>%
+  group_by(tattoo) %>%
+  summarise(death_primary=min(primary),
+            death_season={
+              q <- trap_season[primary==min(primary)]
+              q <- q[!is.na(q)]
+              if(length(q)) min(q) else NA_integer_
+            },.groups="drop")
+
+death_primary <- rep(n_prim+1L,nind)
+death_season <- rep(NA_integer_,nind)
+
+m <- match(ids,death$tattoo)
+has_death <- !is.na(m)
+
+death_primary[has_death] <- death$death_primary[m[has_death]]
+death_season[has_death] <- death$death_season[m[has_death]]
+
+known_death <- death_primary<=n_prim
+
+K <- rep(n_prim,nind)
+K[known_death] <- pmin(n_prim,death_primary[known_death]+1L)
+
+# Every selected animal has >=2 live primary years, so every history must have
+# at least one movement interval.
+if(any(K<=first))
+  stop("V6a requires at least one movement interval for every selected badger.")
+
+# ---- capture histories -------------------------------------------------------
+H <- array(1L,c(nind,n_sec,n_prim))
+
+for(r in seq_len(nrow(live)))
+  H[match(live$tattoo[r],ids),live$trap_season[r],live$primary[r]] <-
+  live$detector[r]+1L
+
+J <- matrix(n_sec,nind,n_prim)
+
+for(i in seq_len(nind))
+  if(known_death[i] && !is.na(death_season[i]))
+    J[i,death_primary[i]] <- max(1L,death_season[i])
+
+z_data <- matrix(NA_integer_,nind,n_prim)
+
+for(i in seq_len(nind)){
+  z_data[i,unique(live$primary[live$tattoo==ids[i]])] <- 1L
+  
+  if(known_death[i]){
+    z_data[i,death_primary[i]] <- 1L
+    if(death_primary[i]<n_prim)
+      z_data[i,(death_primary[i]+1L):n_prim] <- 0L
+  }
+}
+
+# ---- reorder histories -------------------------------------------------------
+ord <- order(K-first)
+
+ids <- ids[ord]
+H <- H[ord,,,drop=FALSE]
+J <- J[ord,,drop=FALSE]
+z_data <- z_data[ord,,drop=FALSE]
+first <- first[ord]
+K <- K[ord]
+entry_group <- entry_group[ord]
+adult_entry <- adult_entry[ord]
+sex_data <- sex_data[ord]
+death_primary <- death_primary[ord]
+
+known_death <- death_primary<=n_prim
+unknown_sex_idx <- which(is.na(sex_data))
+
+stopifnot(all(K>first))
+
+cat("\nFinal V6a sample:\n")
+cat("  nind:",nind,"\n")
+cat("  movement intervals:",sum(K-first),"\n")
+cat("  known deaths:",sum(known_death),"\n")
+cat("  known sex:",sum(!is.na(sex_data)),"\n")
+cat("  unknown sex:",length(unknown_sex_idx),"\n")
+cat("  adult-entry:",sum(adult_entry==1L),"\n")
+cat("  young-entry:",sum(adult_entry==0L),"\n")
+
+# ---- latent-state index ------------------------------------------------------
+disp_index <- map_dfr(seq_len(nind),function(i){
+  kk <- first[i]:(K[i]-1L)
+  
+  tibble(node=paste0("disp[",i,", ",kk,"]"),
+         model_i=i,tattoo=ids[i],
+         from_primary=kk,to_primary=kk+1L,
+         from_year=years[kk],to_year=years[kk+1L])
+})
+
+disp_nodes <- disp_index$node
+
+cat("  possible disperser intervals:",nrow(disp_index),"\n")
+
+# ---- initial values ----------------------------------------------------------
+make_inits <- function(chain=1L){
+  
+  z_init <- matrix(0L,nind,n_prim)
+  S_init <- array(NA_real_,c(nind,2,n_prim))
+  eps_init <- array(NA_real_,c(nind,2,n_prim))
+  disp_init <- matrix(NA_integer_,nind,n_prim)
+  
+  alpha_logmove_init <- log(SIGMA_MOVE_INIT)+rnorm(1,0,.03)
+  beta_move_sex_init <- log(1.5)+rnorm(1,0,.03)
+  beta_move_disp_init <- log(1.8)+rnorm(1,0,.03)
+  
+  sex_init <- sex_data
+  
+  if(length(unknown_sex_idx))
+    sex_init[unknown_sex_idx] <- rbinom(length(unknown_sex_idx),1,.47)
+  
+  # Latent movement states.
+  for(i in seq_len(nind)){
+    p0 <- plogis(qlogis(.12)+.80*adult_entry[i])
+    disp_init[i,first[i]] <- rbinom(1,1,p0)
+    
+    for(k in (first[i]+1L):K[i]){
+      pnext <- if(disp_init[i,k-1L]==1L) .60 else .08
+      disp_init[i,k] <- rbinom(1,1,pnext)
+    }
+  }
+  
+  # Exact initial spatial reconstruction.
+  for(i in seq_len(nind)){
+    
+    d <- live %>%
+      filter(tattoo==ids[i]) %>%
+      arrange(primary,trap_season,capture_date) %>%
+      group_by(primary) %>%
+      slice(1) %>%
+      ungroup() %>%
+      select(primary,x,y)
+    
+    xy <- matrix(NA_real_,n_prim,2)
+    
+    for(k in first[i]:K[i]){
+      dk <- d %>% filter(primary==k)
+      
+      if(nrow(dk)) xy[k,] <- c(dk$x[1],dk$y[1])
+      else if(k>first[i]) xy[k,] <- xy[k-1,]
+    }
+    
+    S_init[i,,first[i]] <- xy[first[i],]
+    z_init[i,first[i]:K[i]] <- 1L
+    
+    for(k in (first[i]+1L):K[i]){
+      
+      log_sig_init <- alpha_logmove_init+
+        beta_move_sex_init*sex_init[i]+
+        beta_move_disp_init*disp_init[i,k-1L]
+      
+      sig_init <- exp(log_sig_init)
+      
+      eps_init[i,1,k] <- (xy[k,1]-xy[k-1,1])/sig_init
+      eps_init[i,2,k] <- (xy[k,2]-xy[k-1,2])/sig_init
+    }
+  }
+  
+  z_init[!is.na(z_data)] <- NA
+  
+  list(
+    alpha_phi=qlogis(.81)+rnorm(1,0,.03),
+    alpha_p=qlogis(.17)+rnorm(1,0,.03),
+    alpha_logsigma=log(132)+rnorm(1,0,.03),
+    
+    alpha_logmove=alpha_logmove_init,
+    beta_move_sex=beta_move_sex_init,
+    beta_move_disp=beta_move_disp_init,
+    
+    beta_phi_sex=-.50+rnorm(1,0,.03),
+    beta_p_sex=.10+rnorm(1,0,.03),
+    beta_sigma_sex=.05+rnorm(1,0,.02),
+    
+    alpha_disp_init=qlogis(.12)+rnorm(1,0,.05),
+    beta_disp_adult=.80+rnorm(1,0,.05),
+    p_RD=runif(1,.05,.12),
+    p_DD=runif(1,.50,.70),
+    disp=disp_init,
+    
+    psi_sex=runif(1,.43,.50),
+    
+    sex={
+      s <- rep(NA_integer_,nind)
+      if(length(unknown_sex_idx))
+        s[unknown_sex_idx] <- sex_init[unknown_sex_idx]
+      s
+    },
+    
+    beta_season_raw=rnorm(3,0,.03),
+    beta_period_raw=rnorm(n_periods-1L,0,.03),
+    
+    beta_sg=runif(1,.02,.15),
+    beta_peripheral=runif(1,.10,.40),
+    
+    S=S_init,eps=eps_init,z=z_init
+  )
+}
+
+inits <- lapply(seq_len(NCHAINS),make_inits)
+
+# ---- cheap spatial initialization audit -------------------------------------
+audit_init <- function(init){
+  
+  bad <- list()
+  
+  for(i in seq_len(nind)){
+    
+    sx <- init$S[i,1,first[i]]
+    sy <- init$S[i,2,first[i]]
+    
+    sex_i <- if(is.na(sex_data[i])) init$sex[i] else sex_data[i]
+    
+    # Check initial state.
+    col <- floor((sx-grid_xmin)/cell_size)+1L
+    row <- floor((grid_ymax-sy)/cell_size)+1L
+    in_bounds <- col>=1L && col<=n_cols && row>=1L && row<=n_rows
+    habitat <- if(in_bounds) habitat_mat[row,col] else 0L
+    
+    if(!in_bounds || habitat!=1L)
+      bad[[length(bad)+1L]] <- tibble(i=i,tattoo=ids[i],primary=first[i],
+                                      year=years[first[i]],x=sx,y=sy)
+    
+    for(k in (first[i]+1L):K[i]){
+      
+      sig <- exp(init$alpha_logmove+
+                   init$beta_move_sex*sex_i+
+                   init$beta_move_disp*init$disp[i,k-1L])
+      
+      z_here <- if(!is.na(z_data[i,k])) z_data[i,k] else 1L
+      
+      sx <- sx+z_here*sig*init$eps[i,1,k]
+      sy <- sy+z_here*sig*init$eps[i,2,k]
+      
+      col <- floor((sx-grid_xmin)/cell_size)+1L
+      row <- floor((grid_ymax-sy)/cell_size)+1L
+      
+      in_bounds <- col>=1L && col<=n_cols && row>=1L && row<=n_rows
+      habitat <- if(in_bounds) habitat_mat[row,col] else 0L
+      
+      if(z_here==1L && (!in_bounds || habitat!=1L))
+        bad[[length(bad)+1L]] <- tibble(i=i,tattoo=ids[i],primary=k,
+                                        year=years[k],x=sx,y=sy)
+    }
+  }
+  
+  if(length(bad)) bind_rows(bad) else tibble()
+}
+
+init_audit <- audit_init(inits[[1]])
+
+cat("\nInitialization spatial audit:\n")
+cat("  invalid alive states:",nrow(init_audit),"\n")
+
+if(nrow(init_audit)){
+  print(init_audit)
+  stop("Initial spatial reconstruction contains invalid alive states.")
+}
+
+cat("  PASS\n")
+
+# ---- normalization grid ------------------------------------------------------
+cat("\nPreparing dynamic t3 landscape-normalization arrays...\n")
+
+grid_df <- sp$grid %>% sf::st_drop_geometry()
+
+if(!all(c("row_R","col_R","SG_id","habitat","zone") %in% names(grid_df)))
+  stop("sp$grid must contain row_R, col_R, SG_id, habitat and zone.")
+
+grid_xy <- sf::st_coordinates(sp$grid)
+land_idx <- which(grid_df$habitat==1L)
+core_idx <- which(grid_df$habitat==1L & grid_df$zone==1L)
+
+q_cache_file <- file.path(
+  "data","spatial",
+  paste0("V6_qgrid_t",MOVE_DF,"_",N_SIGMA_GRID,"knots_",
+         round(min(SIGMA_GRID)),"to",round(max(SIGMA_GRID)),"m.rds")
+)
+
+cache_ok <- FALSE
+
+if(file.exists(q_cache_file)){
+  qcache <- readRDS(q_cache_file)
+  
+  cache_ok <- identical(qcache$n_rows,n_rows) &&
+    identical(qcache$n_cols,n_cols) &&
+    identical(qcache$move_df,MOVE_DF) &&
+    isTRUE(all.equal(qcache$sigma_grid,SIGMA_GRID,tolerance=1e-12))
+}
+
+if(cache_ok){
+  
+  cat("Loading cached normalization grid:",q_cache_file,"\n")
+  
+  q_same_grid <- qcache$q_same
+  q_other_grid <- qcache$q_other
+  q_peripheral_grid <- qcache$q_peripheral
+  
+} else {
+  
+  cat("No matching cache found; computing normalization grid...\n")
+  
+  q_same_grid <- array(1,c(N_SIGMA_GRID,n_rows,n_cols))
+  q_other_grid <- array(0,c(N_SIGMA_GRID,n_rows,n_cols))
+  q_peripheral_grid <- array(0,c(N_SIGMA_GRID,n_rows,n_cols))
+  
+  calc_q_chunk <- function(origin_idx){
+    
+    ns <- length(SIGMA_GRID)
+    
+    out_same <- matrix(0,length(origin_idx),ns)
+    out_other <- matrix(0,length(origin_idx),ns)
+    out_per <- matrix(0,length(origin_idx),ns)
+    
+    for(a in seq_along(origin_idx)){
+      
+      oi <- origin_idx[a]
+      
+      dx <- grid_xy[land_idx,1]-grid_xy[oi,1]
+      dy <- grid_xy[land_idx,2]-grid_xy[oi,2]
+      d2 <- dx^2+dy^2
+      
+      same <- grid_df$zone[land_idx]==1L &
+        grid_df$SG_id[land_idx]==grid_df$SG_id[oi]
+      
+      other <- grid_df$zone[land_idx]==1L &
+        grid_df$SG_id[land_idx]!=grid_df$SG_id[oi]
+      
+      per <- grid_df$zone[land_idx]==2L
+      
+      for(ss in seq_len(ns)){
+        sig <- SIGMA_GRID[ss]
+        w <- (1+d2/(sig^2*(MOVE_DF-2)))^(-(MOVE_DF+2)/2)
+        den <- sum(w)
+        
+        out_same[a,ss] <- sum(w[same])/den
+        out_other[a,ss] <- sum(w[other])/den
+        out_per[a,ss] <- sum(w[per])/den
+      }
+    }
+    
+    list(origin_idx=origin_idx,same=out_same,other=out_other,per=out_per)
+  }
+  
+  nc_detected <- parallel::detectCores()
+  if(is.na(nc_detected)) nc_detected <- 1L
+  
+  ncores <- max(1L,min(8L,nc_detected-1L))
+  nchunks <- min(ncores,length(core_idx))
+  
+  if(nchunks==1L) chunks <- list(core_idx)
+  else chunks <- split(core_idx,cut(seq_along(core_idx),
+                                    breaks=nchunks,labels=FALSE))
+  
+  q_time <- system.time({
+    if(.Platform$OS.type!="windows" && ncores>1L)
+      q_parts <- parallel::mclapply(chunks,calc_q_chunk,mc.cores=ncores)
+    else
+      q_parts <- lapply(chunks,calc_q_chunk)
+  })
+  
+  print(q_time)
+  
+  for(part in q_parts) for(a in seq_along(part$origin_idx)){
+    oi <- part$origin_idx[a]
+    rr <- grid_df$row_R[oi]
+    cc <- grid_df$col_R[oi]
+    
+    q_same_grid[,rr,cc] <- part$same[a,]
+    q_other_grid[,rr,cc] <- part$other[a,]
+    q_peripheral_grid[,rr,cc] <- part$per[a,]
+  }
+  
+  saveRDS(
+    list(q_same=q_same_grid,q_other=q_other_grid,
+         q_peripheral=q_peripheral_grid,
+         sigma_grid=SIGMA_GRID,n_rows=n_rows,n_cols=n_cols,
+         move_df=MOVE_DF),
+    q_cache_file
+  )
+}
+
+stopifnot(all(is.finite(q_same_grid)),
+          all(is.finite(q_other_grid)),
+          all(is.finite(q_peripheral_grid)))
+
+core_rc <- cbind(grid_df$row_R[core_idx],grid_df$col_R[core_idx])
+max_q_error <- 0
+min_q_same <- Inf
+
+for(ss in seq_len(N_SIGMA_GRID)){
+  qsum_ss <- q_same_grid[ss,,]+q_other_grid[ss,,]+q_peripheral_grid[ss,,]
+  
+  max_q_error <- max(max_q_error,max(abs(qsum_ss[core_rc]-1)))
+  min_q_same <- min(min_q_same,min(q_same_grid[ss,,][core_rc]))
+}
+
+cat("Normalization max |sum(q)-1|:",max_q_error,"\n")
+
+if(SOCIAL_ZERO_CONST<=-log(min_q_same)+5)
+  stop("SOCIAL_ZERO_CONST is too small.")
+
+# ---- compiled detection likelihood ------------------------------------------
+calc_capture_prob <- nimbleFunction(
+  run=function(Sx=double(0),Sy=double(0),X=double(2),sigma=double(0),
+               lambda0_vec=double(1),H_vec=double(1),z=double(0)){
+    
+    returnType(double(1))
+    
+    R <- dim(X)[1]
+    J <- length(H_vec)
+    G_sum <- 0.0
+    
+    g_vec <- numeric(R+1,init=FALSE)
+    g_vec[1] <- 0.0
+    
+    for(r in 1:R){
+      d2 <- (Sx-X[r,1])^2+(Sy-X[r,2])^2
+      g_val <- exp(-d2/(2.0*sigma^2))
+      g_vec[r+1] <- g_val
+      G_sum <- G_sum+g_val
+    }
+    
+    captureProb <- numeric(J,init=FALSE)
+    
+    for(j in 1:J){
+      P_alive <- (1.0-exp(-lambda0_vec[j]*G_sum))*z
+      H_j <- as.integer(H_vec[j])
+      
+      if(H_j>=2)
+        captureProb[j] <- (g_vec[H_j]/(G_sum+1e-10))*P_alive
+      else
+        captureProb[j] <- 1.0-P_alive
+    }
+    
+    return(captureProb)
+  }
+)
+
+# =============================================================================
+# MODEL
+# =============================================================================
+
+code_V6a <- nimbleCode({
+  
+  # ---- survival / detection --------------------------------------------------
+  alpha_phi ~ dnorm(qlogis(.80),sd=1.5)
+  alpha_p ~ dnorm(qlogis(.17),sd=1.5)
+  alpha_logsigma ~ dnorm(log(150),sd=1)
+  
+  beta_phi_sex ~ dnorm(0,sd=1)
+  beta_p_sex ~ dnorm(0,sd=1)
+  beta_sigma_sex ~ dnorm(0,sd=.75)
+  
+  psi_sex ~ dbeta(1,1)
+  
+  for(i in 1:nind){
+    sex[i] ~ dbern(psi_sex)
+    
+    phi_i[i] <- ilogit(alpha_phi+beta_phi_sex*sex[i])
+    sigma_i[i] <- exp(alpha_logsigma+beta_sigma_sex*sex[i])
+  }
+  
+  phi_female <- ilogit(alpha_phi)
+  phi_male <- ilogit(alpha_phi+beta_phi_sex)
+  p0_female <- ilogit(alpha_p)
+  p0_male <- ilogit(alpha_p+beta_p_sex)
+  sigma_female <- exp(alpha_logsigma)
+  sigma_male <- exp(alpha_logsigma+beta_sigma_sex)
+  
+  # ---- movement phenotype ----------------------------------------------------
+  alpha_logmove ~ dnorm(MOVE_PRIOR_LOGMEAN,sd=.60)
+  beta_move_sex ~ dnorm(0,sd=.50)
+  
+  # disp=1 is defined as the higher-movement state.
+  beta_move_disp ~ dexp(1)
+  
+  alpha_disp_init ~ dnorm(qlogis(.12),sd=1.25)
+  beta_disp_adult ~ dnorm(0,sd=1)
+  
+  p_disp_init_young <- ilogit(alpha_disp_init)
+  p_disp_init_adult <- ilogit(alpha_disp_init+beta_disp_adult)
+  
+  p_RD ~ dbeta(1,4)
+  p_DD ~ dbeta(2,2)
+  
+  p_RR <- 1-p_RD
+  p_DR <- 1-p_DD
+  
+  # Only FOUR possible movement scales.
+  log_sigma_move_state[1] <- alpha_logmove
+  log_sigma_move_state[2] <- alpha_logmove+beta_move_sex
+  log_sigma_move_state[3] <- alpha_logmove+beta_move_disp
+  log_sigma_move_state[4] <- alpha_logmove+beta_move_sex+beta_move_disp
+  
+  for(m in 1:4){
+    sigma_move_state[m] <- exp(log_sigma_move_state[m])
+    
+    move_support[m] <- step(log_sigma_move_state[m]-LOG_SIGMA_MIN)*
+      step(LOG_SIGMA_MAX-log_sigma_move_state[m])
+    
+    move_support_ok[m] ~ dbern(move_support[m])
+    
+    sigma_grid_pos_state[m] <-
+      (log_sigma_move_state[m]-LOG_SIGMA_MIN)/LOG_SIGMA_STEP+1
+    
+    sigma_grid_lo_raw_state[m] <- trunc(sigma_grid_pos_state[m])
+    
+    sigma_grid_lo_state[m] <-
+      max(1,min(N_SIGMA_GRID-1,sigma_grid_lo_raw_state[m]))
+    
+    sigma_grid_frac_state[m] <-
+      max(0,min(1,sigma_grid_pos_state[m]-sigma_grid_lo_state[m]))
+  }
+  
+  move_multiplier_disp <- exp(beta_move_disp)
+  move_multiplier_male <- exp(beta_move_sex)
+  
+  sigma_move_female_resident <- sigma_move_state[1]
+  sigma_move_male_resident <- sigma_move_state[2]
+  sigma_move_female_disperser <- sigma_move_state[3]
+  sigma_move_male_disperser <- sigma_move_state[4]
+  
+  mean_move_female_resident <- sigma_move_state[1]*MOVE_MEAN_FACTOR
+  mean_move_male_resident <- sigma_move_state[2]*MOVE_MEAN_FACTOR
+  mean_move_female_disperser <- sigma_move_state[3]*MOVE_MEAN_FACTOR
+  mean_move_male_disperser <- sigma_move_state[4]*MOVE_MEAN_FACTOR
+  
+  # ---- landscape -------------------------------------------------------------
+  beta_sg ~ dexp(1)
+  beta_peripheral ~ dexp(1)
+  
+  sg_multiplier <- exp(-beta_sg)
+  peripheral_multiplier <- exp(-beta_peripheral)
+  
+  # ---- detection time effects ------------------------------------------------
+  for(s in 1:3){
+    beta_season_raw[s] ~ dnorm(0,sd=1)
+    beta_season[s] <- beta_season_raw[s]
+  }
+  
+  beta_season[4] <- -sum(beta_season_raw[1:3])
+  
+  for(p in 1:(n_periods-1)){
+    beta_period_raw[p] ~ dnorm(0,sd=1)
+    beta_period[p] <- beta_period_raw[p]
+  }
+  
+  beta_period[n_periods] <- -sum(beta_period_raw[1:(n_periods-1)])
+  
+  # ===========================================================================
+  # All selected animals have >=1 movement interval
+  # ===========================================================================
+  
+  for(i in 1:nind){
+    
+    # ---- initial disperser state ---------------------------------------------
+    logit_p_disp_init[i] <- alpha_disp_init+beta_disp_adult*adult_entry[i]
+    p_disp_init[i] <- ilogit(logit_p_disp_init[i])
+    
+    disp[i,first[i]] ~ dbern(p_disp_init[i])
+    
+    # ---- initial alive/spatial state -----------------------------------------
+    z[i,first[i]] ~ dbern(1)
+    
+    S[i,1,first[i]] ~ dunif(grid_xmin,grid_xmax)
+    S[i,2,first[i]] ~ dunif(grid_ymin,grid_ymax)
+    
+    col_raw[i,first[i]] <- trunc((S[i,1,first[i]]-grid_xmin)/cell_size)+1
+    row_raw[i,first[i]] <- trunc((grid_ymax-S[i,2,first[i]])/cell_size)+1
+    
+    col_S[i,first[i]] <- max(1,min(n_cols,col_raw[i,first[i]]))
+    row_S[i,first[i]] <- max(1,min(n_rows,row_raw[i,first[i]]))
+    
+    in_bounds[i,first[i]] <-
+      step(S[i,1,first[i]]-grid_xmin)*
+      step(grid_xmax-S[i,1,first[i]])*
+      step(S[i,2,first[i]]-grid_ymin)*
+      step(grid_ymax-S[i,2,first[i]])
+    
+    habitat_here[i,first[i]] <-
+      habitat_mat[row_S[i,first[i]],col_S[i,first[i]]]
+    
+    SG_here[i,first[i]] <-
+      SG_mat[row_S[i,first[i]],col_S[i,first[i]]]
+    
+    zone_here[i,first[i]] <-
+      zone_mat[row_S[i,first[i]],col_S[i,first[i]]]
+    
+    state_ok[i,first[i]] ~
+      dbern(in_bounds[i,first[i]]*habitat_here[i,first[i]])
+    
+    for(j in 1:J[i,first[i]]){
+      
+      lp0[i,j,first[i]] <-
+        alpha_p+beta_p_sex*sex[i]+
+        beta_season[j]+beta_period[period_vec[first[i]]]
+      
+      lambda0[i,j,first[i]] <-
+        -log(1-ilogit(lp0[i,j,first[i]]))
+    }
+    
+    captureProb[i,1:J[i,first[i]],first[i]] <-
+      calc_capture_prob(
+        S[i,1,first[i]],S[i,2,first[i]],
+        X[1:R,1:2],sigma_i[i],
+        lambda0[i,1:J[i,first[i]],first[i]],
+        H[i,1:J[i,first[i]],first[i]],
+        z[i,first[i]]
+      )
+    
+    for(j in 1:J[i,first[i]])
+      Ones[i,j,first[i]] ~ dbern(captureProb[i,j,first[i]])
+    
+    # =========================================================================
+    # annual transitions
+    # =========================================================================
+    
+    for(k in (first[i]+1):K[i]){
+      
+      # ---- survival ----------------------------------------------------------
+      Palive[i,k-1] <- z[i,k-1]*phi_i[i]
+      
+      z[i,k] ~
+        dbern(Palive[i,k-1]*step(death_primary[i]-k))
+      
+      # ---- movement state ----------------------------------------------------
+      # index:
+      # 1 female resident
+      # 2 male resident
+      # 3 female disperser
+      # 4 male disperser
+      move_state_idx[i,k] <-
+        1+sex[i]+2*disp[i,k-1]
+      
+      sigma_move[i,k] <-
+        sigma_move_state[move_state_idx[i,k]]
+      
+      grid_lo_here[i,k] <-
+        sigma_grid_lo_state[move_state_idx[i,k]]
+      
+      grid_frac_here[i,k] <-
+        sigma_grid_frac_state[move_state_idx[i,k]]
+      
+      # ---- Student-t movement ------------------------------------------------
+      eps[i,1:2,k] ~
+        dmvt(mu=eps_zero[1:2],
+             scale=eps_scale[1:2,1:2],
+             df=MOVE_DF)
+      
+      S[i,1,k] <-
+        S[i,1,k-1]+z[i,k]*sigma_move[i,k]*eps[i,1,k]
+      
+      S[i,2,k] <-
+        S[i,2,k-1]+z[i,k]*sigma_move[i,k]*eps[i,2,k]
+      
+      # ---- next movement state ----------------------------------------------
+      p_disp[i,k] <-
+        (1-disp[i,k-1])*p_RD+
+        disp[i,k-1]*p_DD
+      
+      disp[i,k] ~ dbern(p_disp[i,k])
+      
+      # ---- current spatial state --------------------------------------------
+      col_raw[i,k] <- trunc((S[i,1,k]-grid_xmin)/cell_size)+1
+      row_raw[i,k] <- trunc((grid_ymax-S[i,2,k])/cell_size)+1
+      
+      col_S[i,k] <- max(1,min(n_cols,col_raw[i,k]))
+      row_S[i,k] <- max(1,min(n_rows,row_raw[i,k]))
+      
+      in_bounds[i,k] <-
+        step(S[i,1,k]-grid_xmin)*
+        step(grid_xmax-S[i,1,k])*
+        step(S[i,2,k]-grid_ymin)*
+        step(grid_ymax-S[i,2,k])
+      
+      habitat_here[i,k] <-
+        habitat_mat[row_S[i,k],col_S[i,k]]
+      
+      SG_here[i,k] <-
+        SG_mat[row_S[i,k],col_S[i,k]]
+      
+      zone_here[i,k] <-
+        zone_mat[row_S[i,k],col_S[i,k]]
+      
+      valid_state[i,k] <-
+        in_bounds[i,k]*habitat_here[i,k]
+      
+      state_prob[i,k] <-
+        (1-z[i,k])+z[i,k]*valid_state[i,k]
+      
+      state_ok[i,k] ~ dbern(state_prob[i,k])
+      
+      # ---- normalized SG/peripheral resistance ------------------------------
+      apply_social[i,k] <-
+        z[i,k]*equals(zone_here[i,k-1],1)
+      
+      q_same_lo[i,k] <-
+        q_same_grid[
+          grid_lo_here[i,k],
+          row_S[i,k-1],col_S[i,k-1]
+        ]
+      
+      q_same_hi[i,k] <-
+        q_same_grid[
+          grid_lo_here[i,k]+1,
+          row_S[i,k-1],col_S[i,k-1]
+        ]
+      
+      q_other_lo[i,k] <-
+        q_other_grid[
+          grid_lo_here[i,k],
+          row_S[i,k-1],col_S[i,k-1]
+        ]
+      
+      q_other_hi[i,k] <-
+        q_other_grid[
+          grid_lo_here[i,k]+1,
+          row_S[i,k-1],col_S[i,k-1]
+        ]
+      
+      q_per_lo[i,k] <-
+        q_peripheral_grid[
+          grid_lo_here[i,k],
+          row_S[i,k-1],col_S[i,k-1]
+        ]
+      
+      q_per_hi[i,k] <-
+        q_peripheral_grid[
+          grid_lo_here[i,k]+1,
+          row_S[i,k-1],col_S[i,k-1]
+        ]
+      
+      q_same_here[i,k] <-
+        q_same_lo[i,k]+
+        grid_frac_here[i,k]*(q_same_hi[i,k]-q_same_lo[i,k])
+      
+      q_other_here[i,k] <-
+        q_other_lo[i,k]+
+        grid_frac_here[i,k]*(q_other_hi[i,k]-q_other_lo[i,k])
+      
+      q_per_here[i,k] <-
+        q_per_lo[i,k]+
+        grid_frac_here[i,k]*(q_per_hi[i,k]-q_per_lo[i,k])
+      
+      social_Z[i,k] <-
+        q_same_here[i,k]+
+        q_other_here[i,k]*sg_multiplier+
+        q_per_here[i,k]*peripheral_multiplier
+      
+      dest_other_core[i,k] <-
+        equals(zone_here[i,k],1)*
+        (1-equals(SG_here[i,k],SG_here[i,k-1]))
+      
+      dest_peripheral[i,k] <-
+        equals(zone_here[i,k],2)
+      
+      log_R_dest[i,k] <-
+        -beta_sg*dest_other_core[i,k]-
+        beta_peripheral*dest_peripheral[i,k]
+      
+      log_social_correction[i,k] <-
+        apply_social[i,k]*
+        (log_R_dest[i,k]-log(social_Z[i,k]))
+      
+      social_lambda[i,k] <-
+        SOCIAL_ZERO_CONST-log_social_correction[i,k]
+      
+      social_zero[i,k] ~
+        dpois(social_lambda[i,k])
+      
+      # ---- detection ---------------------------------------------------------
+      for(j in 1:J[i,k]){
+        
+        lp0[i,j,k] <-
+          alpha_p+beta_p_sex*sex[i]+
+          beta_season[j]+beta_period[period_vec[k]]
+        
+        lambda0[i,j,k] <-
+          -log(1-ilogit(lp0[i,j,k]))
+      }
+      
+      captureProb[i,1:J[i,k],k] <-
+        calc_capture_prob(
+          S[i,1,k],S[i,2,k],
+          X[1:R,1:2],sigma_i[i],
+          lambda0[i,1:J[i,k],k],
+          H[i,1:J[i,k],k],
+          z[i,k]
+        )
+      
+      for(j in 1:J[i,k])
+        Ones[i,j,k] ~ dbern(captureProb[i,j,k])
+    }
+  }
+})
+
+# ---- constants/data ----------------------------------------------------------
+eps_zero <- c(0,0)
+eps_scale <- diag(T_SCALE_FACTOR^2,2)
+
+# ---- constants/data ----------------------------------------------------------
+eps_zero <- c(0,0)
+eps_scale <- diag(T_SCALE_FACTOR^2,2)
+
+consts <- list(
+  nind=nind,R=R,K=as.integer(K),J=J,first=as.integer(first),
+  X=X,H=H,n_periods=n_periods,period_vec=period_vec,
+  death_primary=death_primary,adult_entry=adult_entry,
+  
+  grid_xmin=grid_xmin,grid_xmax=grid_xmax,
+  grid_ymin=grid_ymin,grid_ymax=grid_ymax,
+  cell_size=cell_size,n_rows=n_rows,n_cols=n_cols,
+  
+  MOVE_DF=MOVE_DF,MOVE_MEAN_FACTOR=MOVE_MEAN_FACTOR,
+  eps_zero=eps_zero,eps_scale=eps_scale,
+  MOVE_PRIOR_LOGMEAN=MOVE_PRIOR_LOGMEAN,
+  
+  N_SIGMA_GRID=N_SIGMA_GRID,
+  LOG_SIGMA_MIN=LOG_SIGMA_MIN,
+  LOG_SIGMA_MAX=LOG_SIGMA_MAX,
+  LOG_SIGMA_STEP=LOG_SIGMA_STEP,
+  SOCIAL_ZERO_CONST=SOCIAL_ZERO_CONST
+)
+
+data_list <- list(
+  Ones=array(1L,dim(H)),
+  z=z_data,
+  sex=sex_data,
+  
+  state_ok=matrix(1L,nind,n_prim),
+  social_zero=matrix(0L,nind,n_prim),
+  move_support_ok=rep(1L,4),
+  
+  # Must be DATA because they are dynamically indexed
+  habitat_mat=habitat_mat,
+  SG_mat=SG_mat,
+  zone_mat=zone_mat,
+  
+  q_same_grid=q_same_grid,
+  q_other_grid=q_other_grid,
+  q_peripheral_grid=q_peripheral_grid
+)
+# ---- model checks ------------------------------------------------------------
+code_txt <- paste(deparse(code_V6a),collapse=" ")
+
+if(!grepl("dmvt",code_txt))
+  stop("Student-t movement missing.")
+
+if(!grepl("beta_move_disp",code_txt) || !grepl("disp\\[i",code_txt))
+  stop("Latent movement-state structure missing.")
+
+if(grepl("move_re",code_txt))
+  stop("Individual movement random effect should not occur in V6a.")
+
+if(!grepl("p_RD",code_txt) || !grepl("p_DD",code_txt))
+  stop("Movement-state transition process missing.")
+
+if(!grepl("social_Z",code_txt))
+  stop("Normalized landscape resistance missing.")
+
+cat("\nV6a structural checks: PASS\n")
+
+# ---- build -------------------------------------------------------------------
+message("\nBuilding optimized V6a model...")
+
+build_time_V6a <- system.time(
+  model_V6a <- nimbleModel(
+    code_V6a,
+    constants=consts,
+    data=data_list,
+    inits=inits[[1]],
+    dimensions=list(
+      Ones=dim(H),
+      z=dim(z_data),
+      disp=c(nind,n_prim),
+      state_ok=c(nind,n_prim),
+      social_zero=c(nind,n_prim),
+      move_support_ok=4
+    ),
+    check=FALSE,
+    calculate=FALSE
+  )
+)
+
+cat("\nModel build time:\n")
+print(build_time_V6a)
+
+lp <- model_V6a$calculate()
+
+cat("\nInitial log probability:",lp,"\n")
+
+if(!is.finite(lp)){
+  print(model_V6a$initializeInfo())
+  stop("V6a initial log probability is not finite.")
+}
+
+# ---- monitors ----------------------------------------------------------------
+core_monitors <- c(
+  "alpha_phi","beta_phi_sex",
+  "alpha_p","beta_p_sex",
+  "alpha_logsigma","beta_sigma_sex",
+  
+  "alpha_logmove","beta_move_sex","beta_move_disp",
+  "alpha_disp_init","beta_disp_adult",
+  "p_RD","p_DD","p_RR","p_DR",
+  "p_disp_init_young","p_disp_init_adult",
+  
+  "move_multiplier_disp","move_multiplier_male",
+  "sigma_move_female_resident","sigma_move_male_resident",
+  "sigma_move_female_disperser","sigma_move_male_disperser",
+  "mean_move_female_resident","mean_move_male_resident",
+  "mean_move_female_disperser","mean_move_male_disperser",
+  
+  "p0_female","p0_male",
+  "sigma_female","sigma_male",
+  "phi_female","phi_male",
+  
+  "beta_season","beta_period",
+  "beta_sg","beta_peripheral",
+  "sg_multiplier","peripheral_multiplier",
+  "psi_sex"
+)
+
+monitors <- core_monitors
+
+if(length(unknown_sex_idx))
+  monitors <- c(monitors,paste0("sex[",unknown_sex_idx,"]"))
+
+if(SAVE_LATENT_STATES)
+  monitors <- c(monitors,disp_nodes)
+
+# NIMBLE automatically assigns RW_block to the multivariate dmvt eps nodes.
+config_V6a <- configureMCMC(
+  model_V6a,
+  monitors=unique(monitors),
+  thin=1
+)
+
+# ---- only customise small GLOBAL blocks -------------------------------------
+move_global <- c("alpha_logmove","beta_move_sex","beta_move_disp")
+surv_global <- c("alpha_phi","beta_phi_sex")
+detect_p_global <- c("alpha_p","beta_p_sex")
+detect_sigma_global <- c("alpha_logsigma","beta_sigma_sex")
+disp_init_global <- c("alpha_disp_init","beta_disp_adult")
+landscape_global <- c("beta_sg","beta_peripheral")
+
+config_V6a$removeSamplers(move_global,print=FALSE)
+config_V6a$addSampler(target=move_global,type="AF_slice")
+
+config_V6a$removeSamplers(surv_global,print=FALSE)
+config_V6a$addSampler(target=surv_global,type="AF_slice")
+
+config_V6a$removeSamplers(detect_p_global,print=FALSE)
+config_V6a$addSampler(target=detect_p_global,type="AF_slice")
+
+config_V6a$removeSamplers(detect_sigma_global,print=FALSE)
+config_V6a$addSampler(target=detect_sigma_global,type="AF_slice")
+
+config_V6a$removeSamplers(disp_init_global,print=FALSE)
+config_V6a$addSampler(target=disp_init_global,type="AF_slice")
+
+config_V6a$removeSamplers(landscape_global,print=FALSE)
+config_V6a$addSampler(target=landscape_global,type="AF_slice")
+
+cat("\nSampler configuration:\n")
+cat("  eps nodes: default NIMBLE RW_block\n")
+cat("  movement block:",paste(move_global,collapse=", "),"\n")
+cat("  survival block:",paste(surv_global,collapse=", "),"\n")
+cat("  detection-p block:",paste(detect_p_global,collapse=", "),"\n")
+cat("  detection-sigma block:",paste(detect_sigma_global,collapse=", "),"\n")
+cat("  initial-state block:",paste(disp_init_global,collapse=", "),"\n")
+cat("  landscape block:",paste(landscape_global,collapse=", "),"\n")
+cat("  latent states monitored:",SAVE_LATENT_STATES,"\n")
+
+# ---- build MCMC --------------------------------------------------------------
+build_mcmc_time_V6a <- system.time(
+  Rmcmc_V6a <- buildMCMC(config_V6a)
+)
+
+cat("\nMCMC build time:\n")
+print(build_mcmc_time_V6a)
+
+# ---- compile model + MCMC together ------------------------------------------
+message("\nCompiling model + MCMC together...")
+
+compile_time_V6a <- system.time(
+  compiled_V6a <- compileNimble(
+    model_V6a,
+    Rmcmc_V6a,
+    resetFunctions=TRUE
+  )
+)
+
+cat("\nCombined compile time:\n")
+print(compile_time_V6a)
+
+cMCMC_V6a <- compiled_V6a$Rmcmc_V6a
+
+# ---- run ---------------------------------------------------------------------
+message("\nRunning V6a...")
+
+runtime_V6a <- system.time(
+  samples_V6a <- runMCMC(
+    cMCMC_V6a,
+    niter=NITER,
+    nburnin=NBURN,
+    nchains=NCHAINS,
+    inits=inits,
+    samplesAsCodaMCMC=TRUE,
+    progressBar=TRUE,
+    setSeed=3451:(3451+NCHAINS-1L)
+  )
+)
+
+print(runtime_V6a)
+
+# ---- optional latent-state summaries ----------------------------------------
+if(SAVE_LATENT_STATES){
+  
+  posterior_means <-
+    Reduce("+",lapply(samples_V6a,function(x)
+      colMeans(as.matrix(x))))/length(samples_V6a)
+  
+  disp_summary <- disp_index %>%
+    mutate(p_disperser=unname(posterior_means[node]))
+  
+  individual_movement_summary <- disp_summary %>%
+    group_by(model_i,tattoo) %>%
+    summarise(
+      n_intervals=n(),
+      mean_p_disperser=mean(p_disperser,na.rm=TRUE),
+      max_p_disperser=max(p_disperser,na.rm=TRUE),
+      n_intervals_p50=sum(p_disperser>=.50,na.rm=TRUE),
+      n_intervals_p80=sum(p_disperser>=.80,na.rm=TRUE),
+      .groups="drop"
+    )
+  
+} else {
+  
+  disp_summary <- NULL
+  individual_movement_summary <- NULL
+}
+
+# ---- save --------------------------------------------------------------------
+result_file <- paste0(
+  "results/RD_SCR_V6a_OPTIMIZED_t",MOVE_DF,"_",
+  nind,"_badgers.rds"
+)
+
+saveRDS(
+  list(
+    samples=samples_V6a,
+    runtime=runtime_V6a,
+    build_time=build_time_V6a,
+    build_mcmc_time=build_mcmc_time_V6a,
+    compile_time=compile_time_V6a,
+    
+    ids=ids,
+    sex_data=sex_data,
+    entry_group=entry_group,
+    adult_entry=adult_entry,
+    first=first,
+    K=K,
+    years=years,
+    
+    detectors=detectors,
+    det_audit=det_audit,
+    
+    disp_index=disp_index,
+    disp_summary=disp_summary,
+    individual_movement_summary=individual_movement_summary,
+    
+    settings=list(
+      model="V6a_optimized_latent_movement_phenotype",
+      development_mode=DEVELOPMENT_MODE,
+      sample_n=nind,
+      min_live_years=MIN_LIVE_YEARS,
+      max_adult_entry=MAX_ADULT_ENTRY,
+      niter=NITER,
+      nburn=NBURN,
+      nchains=NCHAINS,
+      
+      movement_kernel="bivariate_Student_t",
+      move_df=MOVE_DF,
+      
+      latent_state="resident_vs_disperser",
+      state_definition="disp[i,k] controls movement interval k -> k+1",
+      persistent_individual_random_effect=FALSE,
+      adult_entry_effect="initial_disperser_probability_only",
+      transition_model="first_order_Markov_p_RD_p_DD",
+      
+      movement_scales="four_global_sex_x_state_scales",
+      eps_sampler="NIMBLE_default_RW_block_for_dmvt",
+      
+      movement_sample="badgers_with_at_least_two_observed_live_years",
+      survival_interpretation="conditional_on_movement_informative_sample",
+      
+      sg_model="dynamic_normalized_core_SG_plus_peripheral",
+      disease_effects="none_in_V6a",
+      
+      latent_states_saved=SAVE_LATENT_STATES,
+      
+      data_source="PostgreSQL/Supabase -> DataPrep.R -> fixed RDS snapshots",
+      encounter_file=encounter_file,
+      individual_file=individual_file
+    ),
+    
+    spatial_file=spatial_file,
+    q_cache_file=q_cache_file
+  ),
+  result_file
+)
+
+cat("\n============================================================\n")
+cat("V6a COMPLETE\n")
+cat("============================================================\n")
+cat("Saved:",result_file,"\n")
+
+
+library(MCMCvis); library(coda)
+
+core_pars <- c(
+  "alpha_logmove","beta_move_sex","beta_move_disp",
+  "alpha_disp_init","beta_disp_adult","p_RD","p_DD",
+  "sigma_move_female_resident","sigma_move_male_resident",
+  "sigma_move_female_disperser","sigma_move_male_disperser",
+  "mean_move_female_resident","mean_move_male_resident",
+  "mean_move_female_disperser","mean_move_male_disperser",
+  "alpha_phi","beta_phi_sex",
+  "alpha_p","beta_p_sex",
+  "alpha_logsigma","beta_sigma_sex",
+  "beta_sg","beta_peripheral"
+)
+
+MCMCsummary(samples_V6a,params=core_pars)
+gelman.diag(samples_V6a[,core_pars],multivariate=FALSE)
+effectiveSize(samples_V6a[,core_pars])
+
+cat("\nTIMINGS\n")
+cat("Model build:\n"); print(build_time_V6a)
+cat("MCMC build:\n"); print(build_mcmc_time_V6a)
+cat("Compile:\n"); print(compile_time_V6a)
+cat("MCMC runtime:\n"); print(runtime_V6a)
