@@ -79,6 +79,18 @@ The run launchers now use:
 
 and write results with `V3` in the result tag so earlier failed outputs are retained as an audit trail rather than overwritten.
 
+### V3 wrapper boundary bug
+
+The first attempt to launch V3 stopped immediately with:
+
+```text
+Could not find make_risk_data() boundary in V2 script.
+```
+
+This happened because the wrapper was looking for the exact function signature with `require_pressure=TRUE`, whereas the actual V2 function has `require_pressure=FALSE` as its default. No model fitting had started at this point, so no statistical output was affected.
+
+The wrapper has now been corrected to identify the start of `make_risk_data()` without depending on its argument list.
+
 ## Current next step
 
 Run the corrected **100-pair smoke test only**:
