@@ -1,28 +1,22 @@
 # Same-group infection-pressure model — run log
 
+This file records the implementation history of the same-social-group pressure sensitivity so failed development runs are not accidentally interpreted later.
+
 ## First smoke and full runs
 
-The first same-group pressure runs completed their loops, but the pressure-adjusted models did **not** fit successfully.
-
-The complete-case benchmark `M0_CC` fitted in all paired histories, but:
-
-- `M1_RAW` failed in every history;
-- `M1_SMOOTH` failed in every history;
-- `M2_INTERACTION` failed in every history.
-
-The repeated error was:
+The first implementation fitted the complete-case benchmark `M0_CC`, but every pressure-adjusted model failed with:
 
 ```text
 contrasts can be applied only to factors with 2 or more levels
 ```
 
-Therefore the first 100-pair smoke run and the first 1,500-pair full run contain **no valid estimate of the infection-pressure effect or movement × pressure interaction**.
+Therefore those first smoke/full outputs contain **no valid estimate of the pressure effect or movement × pressure interaction**.
 
-The valid part of the first full run was the complete-case benchmark. It gave a movement odds ratio around 0.79 with a broad interval, qualitatively close to the frozen primary V7b result (around 0.82). This was reassuring, but the two models used different estimation engines, so the difference could not be attributed purely to pressure-support sample restriction.
+The valid complete-case benchmark was still useful: its movement OR was about 0.79, qualitatively close to the frozen primary V7b-M result (about 0.82).
 
-## V2 correction: add a full-support calibration model
+## V2 — add `M0_FULL`
 
-The next version added `M0_FULL`, giving the model ladder:
+The model ladder was expanded to:
 
 ```text
 M0_FULL        movement + sex + quarter + period, all eligible V7b rows
@@ -32,74 +26,74 @@ M1_SMOOTH      M0_CC + smoothed same-group prevalence
 M2_INTERACTION M1_RAW + movement × pressure
 ```
 
-This gives a cleaner decomposition:
+This creates three useful comparisons:
 
 ```text
-Frozen primary V7b → M0_FULL
-    calibrates the simpler GLM + badger-cluster-robust sensitivity engine
-    against the frozen primary importance-sampling model.
-
-M0_FULL → M0_CC
-    shows the effect of restricting to rows where same-group pressure is
-    available, using the same estimation engine on both sides.
-
-M0_CC → M1_RAW / M1_SMOOTH
-    shows what changes after adjusting for same-group infection pressure on
-    exactly the same rows.
+Frozen primary V7b -> M0_FULL : estimation-framework calibration
+M0_FULL -> M0_CC              : pressure-support sample restriction
+M0_CC -> M1_RAW/M1_SMOOTH     : pressure adjustment on identical rows
 ```
 
-### V2 100-pair smoke result
+The V2 smoke run fitted `M0_FULL` and `M0_CC` cleanly, with movement ORs about 0.80 and 0.78 respectively, but all pressure models still failed with the factor-contrast error.
 
-`M0_FULL` and `M0_CC` both fitted in all 100 paired histories, but the three pressure models still failed in all 100 histories with the same factor-contrast error.
+## V3 — numeric dummy wrapper
 
-The two valid V2 smoke estimates were:
+V3 attempted to replace quarter and period factors with explicit numeric dummies while patching the V2 script at run time.
+
+The first launch exposed a brittle wrapper-boundary bug (`Could not find make_risk_data() boundary in V2 script`). After that was corrected, the pressure models got further but failed with:
 
 ```text
-M0_FULL movement OR ≈ 0.80   (95% interval ≈ 0.29–1.77)
-M0_CC   movement OR ≈ 0.78   (95% interval ≈ 0.19–1.97)
+Argument mu must be a nonempty numeric vector
 ```
 
-This is useful despite the failed pressure fits:
+Again, `M0_FULL` and `M0_CC` fitted and gave the same movement result, so the risk-set construction remained stable.
 
-1. `M0_FULL` closely reproduces the frozen primary V7b movement result (OR ≈ 0.82), so the simpler GLM/cluster-robust sensitivity engine is well calibrated to the primary analysis.
-2. Restricting to pressure-supported rows changes the point estimate very little (`M0_FULL` ≈ 0.80 → `M0_CC` ≈ 0.78), although uncertainty increases because information is lost.
-3. Therefore there is currently no sign that pressure-support sample restriction is masking a strong positive movement effect.
+## V4 — matrix-fit wrapper
 
-No inference about same-group pressure itself can be made from this V2 smoke run because `M1_RAW`, `M1_SMOOTH` and `M2_INTERACTION` did not fit.
+V4 bypassed formula expansion and used an explicit numeric design matrix with `glm.fit()`.
 
-## V3 implementation fix: remove factor contrasts entirely
-
-Because stable factor levels did not solve the repeated `contrasts` error, the next implementation keeps the **same scientific models** but replaces the quarter and 5-year period factors with explicit numeric treatment-coded dummy variables before `glm()` is called.
-
-For example, quarter is represented internally as numeric indicators for Q2, Q3 and Q4 with Q1 as the reference; 5-year periods are handled similarly. This is algebraically equivalent to the intended categorical adjustment but bypasses R's factor-contrast machinery completely.
-
-The run launchers now use:
-
-`scripts/Woodchester_V7bM_samegroup_pressure_models_NUMERIC_DUMMIES.R`
-
-and write results with `V3` in the result tag so earlier failed outputs are retained as an audit trail rather than overwritten.
-
-### V3 wrapper boundary bug
-
-The first attempt to launch V3 stopped immediately with:
+The 100-pair smoke test again fitted both benchmark models cleanly:
 
 ```text
-Could not find make_risk_data() boundary in V2 script.
+M0_FULL movement OR ≈ 0.80
+M0_CC   movement OR ≈ 0.78
 ```
 
-This happened because the wrapper was looking for the exact function signature with `require_pressure=TRUE`, whereas the actual V2 function has `require_pressure=FALSE` as its default. No model fitting had started at this point, so no statistical output was affected.
+but every pressure model failed before fitting because the constructed pressure-model design matrices contained non-finite values. The failure counts were close to the number of pressure-supported rows in each paired history.
 
-The wrapper has now been corrected to identify the start of `make_risk_data()` without depending on its argument list.
+This showed that continuing to patch and rewrite older scripts dynamically was making the debugging harder than the statistical problem itself.
+
+## V5 — complete standalone implementation
+
+V5 therefore abandons the run-time patching approach entirely.
+
+The current implementation is a complete standalone file:
+
+```text
+scripts/Woodchester_V7bM_samegroup_pressure_models_V5_STANDALONE.R
+```
+
+Key differences:
+
+- no `eval(parse())`;
+- no text replacement of older scripts;
+- no formula/factor machinery in model fitting;
+- pressure columns are rebuilt directly from the finite `pressure` and `pressure_smooth` columns in the risk data;
+- quarter and period adjustment are explicit numeric dummy variables;
+- model fitting uses a numeric design matrix and `glm.fit()`;
+- any non-finite input is reported by **column name and count**, rather than only by total bad rows.
+
+The scientific model and risk-set timing are unchanged.
 
 ## Current next step
 
-Run the corrected **100-pair smoke test only**:
+Pull the branch and run only the V5 100-pair smoke test:
 
 ```r
 source("scripts/run_V7bM_samegroup_pressure_SMOKE_100.R")
 ```
 
-Do not start the 1,500-pair run until the fit audit reports successful fits for all five models:
+Do not start the 1,500-pair V5 run until the fit audit reports successful fits for all five models:
 
 ```text
 M0_FULL
@@ -108,3 +102,5 @@ M1_RAW
 M1_SMOOTH
 M2_INTERACTION
 ```
+
+Earlier V2-V4 output files are development/audit artefacts only and must not be used for inference about same-group infection pressure.
