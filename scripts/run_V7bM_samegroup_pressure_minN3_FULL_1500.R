@@ -3,6 +3,6 @@ Sys.setenv(
   N_KEEP="100",
   MIN_GROUP_N="3",
   SEED="7092043",
-  RESULT_TAG="FULL_1500_V3"
+  RESULT_TAG="FULL_1500_V4"
 )
-source("scripts/Woodchester_V7bM_samegroup_pressure_models_NUMERIC_DUMMIES.R")
+source("scripts/Woodchester_V7bM_samegroup_pressure_models_MATRIX_FIT.R")
