@@ -111,9 +111,6 @@ live_bounds <- live %>%
   group_by(tattoo) %>%
   summarise(first_live_q=min(qtime),last_live_q=max(qtime),.groups="drop")
 
-# Exact quarter/group membership uses any exact live capture in that group and
-# quarter. If an animal was observed in >1 group in a quarter, both exact
-# observations are retained rather than choosing one arbitrarily.
 quarter_members <- live %>%
   filter(!is.na(socg),socg!="") %>%
   distinct(tattoo,year,quarter,qtime,socg)
@@ -162,21 +159,19 @@ exclude_source_rows <- function(d){
     select(-is_source)
 }
 
-# Exact-quarter recipients.
 pairs_exact <- source_gq %>%
-  inner_join(
-    quarter_members %>% rename(tattoo=tattoo),
-    by=c("year","quarter","qtime","socg")
-  ) %>%
+  inner_join(quarter_members,by=c("year","quarter","qtime","socg")) %>%
   exclude_source_rows() %>%
   left_join(live_bounds,by="tattoo") %>%
   mutate(membership="EXACT_QUARTER")
 
-# Annual-group recipients, bounded by observed live history at exposure.
+# This group-year join is intentionally many-to-many: a social group can have
+# several infectious source quarters in a year and several observed recipients.
 pairs_annual <- source_gq %>%
   inner_join(
     annual2 %>% select(tattoo,year,annual_socg,first_live_q,last_live_q),
-    by=c("year","socg"="annual_socg")
+    by=c("year","socg"="annual_socg"),
+    relationship="many-to-many"
   ) %>%
   filter(qtime>=first_live_q,qtime<=last_live_q) %>%
   exclude_source_rows() %>%
@@ -230,11 +225,12 @@ repeat_exposure <- pairs %>%
 # 5. POSTERIOR SUPPORT BY FOLLOW-UP WINDOW
 # =============================================================================
 
-# Each exposure definition is evaluated separately. SUPER_PRESENT is a subset
-# of infectious source group-quarters; INFECTIOUS_PRESENT includes all.
-make_pair_subset <- function(membership,exposure){
-  z <- pairs %>% filter(.data$membership==membership)
-  if(exposure=="SUPER_PRESENT") z <- z %>% filter(any_super)
+# IMPORTANT: use .env$membership_value here. A bare `membership` on the RHS of
+# dplyr::filter() resolves to the data column and would compare the column with
+# itself, accidentally pooling EXACT_QUARTER and ANNUAL_GROUP.
+make_pair_subset <- function(membership_value,exposure_value){
+  z <- pairs %>% filter(.data$membership==.env$membership_value)
+  if(exposure_value=="SUPER_PRESENT") z <- z %>% filter(any_super)
   z
 }
 
@@ -249,7 +245,6 @@ for(mm in c("EXACT_QUARTER","ANNUAL_GROUP")){
     q0 <- z$qtime
     lastq <- z$last_live_q
 
-    # Susceptible through the source quarter.
     SUS <- matrix(FALSE,nrow(z),N_DRAW)
     for(i in seq_len(nrow(z))){
       tt <- as.integer(IT[i,])
@@ -267,8 +262,6 @@ for(mm in c("EXACT_QUARTER","ANNUAL_GROUP")){
       nrisk <- colSums(SUS)
       nevent_rows <- colSums(EVT & SUS)
 
-      # Unique recipient acquisitions: each badger counted at most once per draw
-      # even if the same infection falls in overlapping exposure windows.
       unique_events <- integer(N_DRAW)
       for(dd in seq_len(N_DRAW)){
         ii <- which(SUS[,dd] & EVT[,dd])
@@ -298,8 +291,6 @@ for(mm in c("EXACT_QUARTER","ANNUAL_GROUP")){
       )
     }
 
-    # Exact lag support through eight quarters. This is descriptive only and is
-    # used to choose parsimonious lag bins for the subsequent hazard model.
     for(lag in 1:8){
       event_rows <- integer(N_DRAW)
       unique_events <- integer(N_DRAW)
@@ -327,6 +318,14 @@ for(mm in c("EXACT_QUARTER","ANNUAL_GROUP")){
 support_summary <- bind_rows(support_rows)
 lag_summary <- bind_rows(lag_rows)
 
+# Fail loudly if the membership-specific follow-up tables ever get pooled again.
+san <- support_summary %>%
+  filter(exposure=="INFECTIOUS_PRESENT",followup_quarters==WINDOWS[1]) %>%
+  select(membership,followup_rows=recipient_exposure_rows) %>%
+  left_join(static_support %>% select(membership,static_rows=recipient_exposure_rows),by="membership")
+if(any(is.na(san$static_rows)) || any(san$followup_rows!=san$static_rows))
+  stop("Internal audit failure: membership-specific follow-up rows do not match static support rows.")
+
 # =============================================================================
 # 6. PRINT AUDIT
 # =============================================================================
@@ -342,13 +341,10 @@ cat("Source group-quarters containing >=1 Super excretor:",sum(source_gq$any_sup
 
 cat("STATIC RECIPIENT SUPPORT\n")
 print(static_support,n=Inf,width=Inf)
-
 cat("\nREPEATED EXPOSURE BURDEN\n")
 print(repeat_exposure,n=Inf,width=Inf)
-
 cat("\nFOLLOW-UP SUPPORT BY WINDOW\n")
 print(support_summary,n=Inf,width=Inf)
-
 cat("\nEVENT SUPPORT BY EXACT LAG QUARTER\n")
 print(lag_summary,n=Inf,width=Inf)
 
