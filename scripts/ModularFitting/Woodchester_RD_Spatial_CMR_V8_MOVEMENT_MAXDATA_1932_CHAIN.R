@@ -23,8 +23,12 @@ if(!file.exists(BASE_FILE)) stop("Missing frozen base model: ",BASE_FILE)
 src <- readLines(BASE_FILE,warn=FALSE)
 
 replace_block <- function(x,start_pattern,end_pattern,replacement,label){
-  s <- grep(start_pattern,x,fixed=TRUE); e <- grep(end_pattern,x,fixed=TRUE)
-  if(length(s)!=1L || length(e)!=1L || e<s) stop("Could not uniquely patch ",label," in frozen base model.")
+  s <- grep(start_pattern,x,fixed=TRUE)
+  if(length(s)!=1L) stop("Could not uniquely identify start of ",label," in frozen base model.")
+  e <- grep(end_pattern,x,fixed=TRUE)
+  e <- e[e>=s]
+  if(!length(e)) stop("Could not identify end of ",label," after its start in frozen base model.")
+  e <- e[1L]
   c(x[seq_len(s-1L)],replacement,x[(e+1L):length(x)])
 }
 replace_once <- function(x,old,new,label){
