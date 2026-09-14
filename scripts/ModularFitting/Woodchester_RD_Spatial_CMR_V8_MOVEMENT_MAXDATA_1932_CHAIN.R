@@ -38,6 +38,20 @@ src <- src[!grepl('AUDIT_FILE <- "results/V7_all_badger_all_trajectory_informati
 src <- replace_block(src,"required_files <- c(encounter_file,individual_file,sett_file,spatial_file,","                    V6C_RESULT_FILE,AUDIT_FILE)",c("required_files <- c(encounter_file,individual_file,sett_file,spatial_file,V6C_RESULT_FILE)"),"required file list")
 src <- replace_block(src,"audit_obj <- readRDS(AUDIT_FILE)","          \" directional-analysis badgers rather than 1285.\")",character(),"old directional population lookup")
 
+# ---- standardise first-capture age exactly as in the inclusive audit --------
+src <- replace_block(
+  src,
+  "demog <- individuals %>%",
+  "            entry_group=case_when(age_fc %in% c(\"Cub\",\"Yearling\")~1L,age_fc==\"Adult\"~2L,TRUE~NA_integer_))",
+  c(
+    "demog <- individuals %>%",
+    "  transmute(individual_id=as.integer(individual_id),tattoo=as.character(tattoo),age_fc_raw=as.character(age_fc)) %>%",
+    "  mutate(age_fc=toupper(str_squish(age_fc_raw)),",
+    "         entry_group=case_when(age_fc %in% c(\"CUB\",\"YEARLING\")~1L,age_fc==\"ADULT\"~2L,TRUE~NA_integer_))"
+  ),
+  "standardised demography"
+)
+
 # ---- replace old 1,285 selection with maximum movement population -----------
 # Match the inclusive audit using individual_id as the canonical cross-snapshot
 # identifier. Historical tattoo text is not required to match between snapshots.
