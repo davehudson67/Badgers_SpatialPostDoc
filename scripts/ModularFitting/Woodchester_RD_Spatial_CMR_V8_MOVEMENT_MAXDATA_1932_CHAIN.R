@@ -31,6 +31,13 @@ replace_block <- function(x,start_pattern,end_pattern,replacement,label){
   e <- e[1L]
   c(x[seq_len(s-1L)],replacement,x[(e+1L):length(x)])
 }
+replace_section <- function(x,start_header,end_header,replacement,label){
+  s <- grep(start_header,x,fixed=TRUE)
+  e <- grep(end_header,x,fixed=TRUE)
+  if(length(s)!=1L || length(e)!=1L || e<=s)
+    stop("Could not uniquely identify section ",label," in frozen base model.")
+  c(x[seq_len(s-1L)],replacement,x[e:length(x)])
+}
 replace_once <- function(x,old,new,label){
   hit <- grep(old,x,fixed=TRUE)
   if(length(hit)!=1L) stop("Expected exactly one match for ",label,", found ",length(hit),".")
@@ -43,14 +50,13 @@ src <- replace_block(src,"required_files <- c(encounter_file,individual_file,set
 src <- replace_block(src,"audit_obj <- readRDS(AUDIT_FILE)","          \" directional-analysis badgers rather than 1285.\")",character(),"old directional population lookup")
 
 # ---- sett cleaning: use EXACT inclusive-audit rules --------------------------
-# The frozen movement source used regex aliases before whitespace was removed.
-# The inclusive audit first normalises the name fully and then applies exact
-# aliases. Use the audit definition for BOTH encounter and sett-coordinate data.
-src <- replace_block(
+# Replace the complete frozen sett-cleaning section using unique section headers.
+src <- replace_section(
   src,
-  "sett_aliases <- c(",
-  '  str_replace_all("\\s+","")',
+  "# ---- sett cleaning -----------------------------------------------------------",
+  "# ---- spatial inputs ----------------------------------------------------------",
   c(
+    "# ---- sett cleaning -----------------------------------------------------------",
     'sett_aliases <- c("CHESTNUT"="CHESNUT","JACKS"="JACKSMIREY","GRAVEL"="GRAVELPIT",',
     '                  "BUCKHOLE"="BUCKHOLT","TOPSETT"="TOP","FOXCUB"="FOX","GULLEY"="GULLY",',
     '                  "BLACKBERRY"="BRAMBLE","BOC"="BOG","CEDARBANK"="CEDAR","CLAYTRAP"="CLAY",',
@@ -61,7 +67,8 @@ src <- replace_block(
     '    str_remove_all("\\b(SETT|MAIN|OUTLIER)\\b") %>% str_replace_all("\\s+","")',
     '  for(a in names(sett_aliases)) z[z==a] <- sett_aliases[[a]]',
     '  z',
-    '}'
+    '}',
+    ""
   ),
   "sett cleaning"
 )
