@@ -38,6 +38,30 @@ src <- src[!grepl('AUDIT_FILE <- "results/V7_all_badger_all_trajectory_informati
 src <- replace_block(src,"required_files <- c(encounter_file,individual_file,sett_file,spatial_file,","                    V6C_RESULT_FILE,AUDIT_FILE)",c("required_files <- c(encounter_file,individual_file,sett_file,spatial_file,V6C_RESULT_FILE)"),"required file list")
 src <- replace_block(src,"audit_obj <- readRDS(AUDIT_FILE)","          \" directional-analysis badgers rather than 1285.\")",character(),"old directional population lookup")
 
+# ---- sett cleaning: use EXACT inclusive-audit rules --------------------------
+# The frozen movement source used regex aliases before whitespace was removed.
+# The inclusive audit first normalises the name fully and then applies exact
+# aliases. Use the audit definition for BOTH encounter and sett-coordinate data.
+src <- replace_block(
+  src,
+  "sett_aliases <- c(",
+  '  str_replace_all("\\s+","")',
+  c(
+    'sett_aliases <- c("CHESTNUT"="CHESNUT","JACKS"="JACKSMIREY","GRAVEL"="GRAVELPIT",',
+    '                  "BUCKHOLE"="BUCKHOLT","TOPSETT"="TOP","FOXCUB"="FOX","GULLEY"="GULLY",',
+    '                  "BLACKBERRY"="BRAMBLE","BOC"="BOG","CEDARBANK"="CEDAR","CLAYTRAP"="CLAY",',
+    '                  "CLIFF"="CLIFFFACE","DINGLEVALLEY"="DINGLE")',
+    'clean_sett <- function(x){',
+    '  z <- x %>% as.character() %>% toupper() %>%',
+    '    str_replace_all("[[:punct:]]"," ") %>% str_squish() %>%',
+    '    str_remove_all("\\b(SETT|MAIN|OUTLIER)\\b") %>% str_replace_all("\\s+","")',
+    '  for(a in names(sett_aliases)) z[z==a] <- sett_aliases[[a]]',
+    '  z',
+    '}'
+  ),
+  "sett cleaning"
+)
+
 # ---- standardise first-capture age exactly as in the inclusive audit --------
 src <- replace_block(
   src,
