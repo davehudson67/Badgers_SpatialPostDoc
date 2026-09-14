@@ -64,7 +64,7 @@ src <- replace_section(
     'clean_sett <- function(x){',
     '  z <- x %>% as.character() %>% toupper() %>%',
     '    str_replace_all("[[:punct:]]"," ") %>% str_squish() %>%',
-    '    str_remove_all("\\b(SETT|MAIN|OUTLIER)\\b") %>% str_replace_all("\\s+","")',
+    '    str_remove_all("\\\\b(SETT|MAIN|OUTLIER)\\\\b") %>% str_replace_all("\\\\s+","")',
     '  for(a in names(sett_aliases)) z[z==a] <- sett_aliases[[a]]',
     '  z',
     '}',
