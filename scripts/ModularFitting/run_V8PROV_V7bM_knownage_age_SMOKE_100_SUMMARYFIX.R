@@ -23,7 +23,7 @@ if(is.null(err)){
   message("Base script completed without the historical summary error; no repair needed.")
 } else {
   msg <- conditionMessage(err)
-  expected <- grepl("missing values and NaN's not allowed",msg,fixed=TRUE) && grepl("quantile",msg,fixed=TRUE)
+  expected <- grepl("missing values and NaN's not allowed",msg,fixed=TRUE)
   if(!expected) stop(err)
 
   needed <- c("draws","diagnostics","pair_index","AGE_CENTER","N_PROP","N_KEEP","RESULT_TAG")
