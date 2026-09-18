@@ -1,0 +1,15 @@
+# Final V9 wrapper for the current same-group infection-pressure sensitivity.
+BASE <- "scripts/ModularFitting/Woodchester_V8PROV_V7bM_samegroup_pressure_current.R"
+if(!file.exists(BASE)) stop("Missing base pressure script: ",BASE)
+txt <- paste(readLines(BASE,warn=FALSE),collapse="\n")
+txt <- gsub("V8PROV","V9FINAL",txt,fixed=TRUE)
+txt <- gsub("V8 provisional","V9 final",txt,fixed=TRUE)
+txt <- gsub("DEVELOPMENT ONLY.","FINAL DOWNSTREAM SENSITIVITY USING ACCEPTED V9 STATE HISTORIES.",txt,fixed=TRUE)
+txt <- gsub('data/badger_movement_posterior_histories_1932_V9FINAL.rds','data/badger_movement_posterior_histories_1932_V9_FINAL.rds',txt,fixed=TRUE)
+txt <- gsub('data/badger_phase2_paired_latent_inputs_V9FINAL.rds','data/badger_phase2_paired_latent_inputs_V9_FINAL.rds',txt,fixed=TRUE)
+txt <- gsub("development_only=TRUE","development_only=FALSE",txt,fixed=TRUE)
+txt <- gsub("development sensitivity","final sensitivity",txt,fixed=TRUE)
+txt <- gsub("development only","final V9 state-history sensitivity",txt,fixed=TRUE)
+generated <- file.path(tempdir(),"Woodchester_V9FINAL_pressure_generated.R")
+writeLines(strsplit(txt,"\n",fixed=TRUE)[[1]],generated)
+source(generated,local=FALSE)
