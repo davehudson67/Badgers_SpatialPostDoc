@@ -43,8 +43,13 @@
 #   M0_CC_NOPRESSURE : focal movement + sex + quarter + 5-year period
 #   M0_CC_PRESSURE   : M0 + raw same-group infection pressure
 #   M1_TURNOVER      : M0 + pressure + group turnover
+#   M2_INSTABILITY   : M1 + observed group-size decline + current group size
 #
-# Both pressure and turnover are scaled per +10 percentage points.
+# Pressure and turnover are scaled per +10 percentage points. Group-size decline
+# is coded so +1 = one fewer OTHER observed group member in t than t-1; current
+# group size is scaled per five OTHER observed members. This final model mirrors
+# the published distinction between movement/turnover, group-size trend, and
+# group size itself without adding interactions.
 #
 # Inference
 #   Each of the 1,500 paired V9 movement/infection histories is fitted
@@ -161,7 +166,9 @@ trans <- annual_sg %>%
   transmute(tattoo,year,curr_group=annual_socg) %>%
   inner_join(prev_sg,by=c("tattoo","year")) %>%
   left_join(birth %>% select(tattoo,birth_year),by="tattoo") %>%
-  mutate(is_known_cub=!is.na(birth_year) & year==birth_year,
+  mutate(origin_year=year-1L,
+         origin_age=if_else(!is.na(birth_year),origin_year-birth_year,NA_integer_),
+         is_known_cub=!is.na(origin_age) & origin_age==0L,
          moved=as.integer(prev_group!=curr_group)) %>%
   filter(!is_known_cub)
 
@@ -214,7 +221,43 @@ if(any(is.finite(pidx$turnover_other) & (pidx$turnover_other<0 | pidx$turnover_o
   stop("Turnover proportion outside [0,1].")
 
 # =============================================================================
-# D. SAME-GROUP INFECTION PRESSURE
+# D. OBSERVED GROUP-SIZE TREND (FOCAL EXCLUDED)
+# =============================================================================
+# This is an observed-membership analogue of the group-size trend used in older
+# Woodchester analyses. It is deliberately descriptive: annual_socg membership
+# reflects observed annual allocation, not a latent census of true group size.
+group_size <- annual_sg %>%
+  filter(!is.na(annual_socg)) %>%
+  count(year,annual_socg,name="group_n_obs")
+
+group_size_now <- group_size %>%
+  rename(exposure_year=year,annual_socg=annual_socg,group_n_now=group_n_obs)
+
+group_size_prev <- group_size %>%
+  transmute(exposure_year=year+1L,annual_socg,group_n_prev=group_n_obs)
+
+focal_prev <- annual_sg %>%
+  filter(!is.na(annual_socg)) %>%
+  transmute(tattoo,exposure_year=year+1L,focal_prev_group=annual_socg)
+
+pidx <- pidx %>%
+  left_join(group_size_now,by=c("exposure_year","annual_socg")) %>%
+  left_join(group_size_prev,by=c("exposure_year","annual_socg")) %>%
+  left_join(focal_prev,by=c("tattoo","exposure_year")) %>%
+  mutate(
+    group_n_now=replace_na(as.integer(group_n_now),0L),
+    group_n_prev=replace_na(as.integer(group_n_prev),0L),
+    # focal is necessarily in the current group; subtract it now. Subtract it
+    # from the previous same-group count only when it was also resident there.
+    group_n_now_other=pmax(group_n_now-1L,0L),
+    focal_in_same_group_prev=!is.na(focal_prev_group) & focal_prev_group==annual_socg,
+    group_n_prev_other=pmax(group_n_prev-as.integer(focal_in_same_group_prev),0L),
+    group_decline_other=group_n_prev_other-group_n_now_other,
+    group_size5=group_n_now_other/5
+  )
+
+# =============================================================================
+# E. SAME-GROUP INFECTION PRESSURE
 # =============================================================================
 src <- annual_sg %>%
   mutate(inf_row=match(tattoo,INF_IDS)) %>%
@@ -258,7 +301,7 @@ get_pressure <- function(inf_col){
 }
 
 # =============================================================================
-# E. AUDIT THE TURNOVER EXPOSURE BEFORE FITTING
+# F. AUDIT THE TURNOVER + SIZE-TREND EXPOSURES BEFORE FITTING
 # =============================================================================
 turn_audit <- pidx %>%
   filter(has_socg,is.finite(turnover_other),turnover_n_other>=MIN_TURNOVER_N) %>%
@@ -271,7 +314,12 @@ turn_audit <- pidx %>%
     median_turnover=median(turnover_other),
     mean_turnover=mean(turnover_other),
     q975_turnover=quantile(turnover_other,.975),
-    prop_zero=mean(turnover_other==0)
+    prop_zero=mean(turnover_other==0),
+    median_group_n_now_other=median(group_n_now_other),
+    median_group_n_prev_other=median(group_n_prev_other),
+    median_group_decline_other=median(group_decline_other),
+    q025_group_decline_other=quantile(group_decline_other,.025),
+    q975_group_decline_other=quantile(group_decline_other,.975)
   )
 
 cat("\n============================================================\n")
@@ -292,11 +340,12 @@ dir.create("results",showWarnings=FALSE,recursive=TRUE)
 exposure_audit <- pidx %>%
   select(tattoo,from_year,to_year,exposure_year,annual_socg,groupyear,
          turn_n,turn_moved,n_arrivals,n_departures,n_stayers,
-         focal_n,focal_moved,turnover_n_other,turnover_moved_other,turnover_other)
+         focal_n,focal_moved,turnover_n_other,turnover_moved_other,turnover_other,
+         group_n_prev_other,group_n_now_other,group_decline_other,group_size5)
 write_csv(exposure_audit,"results/V9FINAL_group_turnover_interval_exposure_audit.csv")
 
 # =============================================================================
-# F. PAIRED POSTERIOR HISTORIES + QUARTERLY RISK DATA
+# G. PAIRED POSTERIOR HISTORIES + QUARTERLY RISK DATA
 # =============================================================================
 pair_index <- paired$pair_index %>% arrange(pair_draw)
 MAX_PAIRS <- min(MAX_PAIRS,nrow(pair_index))
@@ -327,7 +376,8 @@ make_risk_data <- function(move_draw,inf_col){
 
   support <- pidx$has_socg &
     pr$n>=MIN_PRESSURE_N & is.finite(pr$raw) &
-    pidx$turnover_n_other>=MIN_TURNOVER_N & is.finite(pidx$turnover_other)
+    pidx$turnover_n_other>=MIN_TURNOVER_N & is.finite(pidx$turnover_other) &
+    is.finite(pidx$group_decline_other) & is.finite(pidx$group_size5)
 
   keep_interval <- susceptible & !is.na(llt) & start_q<=llt & support
   rr <- which(keep_interval)
@@ -351,6 +401,8 @@ make_risk_data <- function(move_draw,inf_col){
         pressure_n=pr$n[j],
         turnover=pidx$turnover_other[j],
         turnover_n=pidx$turnover_n_other[j],
+        group_decline=pidx$group_decline_other[j],
+        group_size5=pidx$group_size5[j],
         outcome_quarter=q,
         outcome_year=yr,
         period_start=5L*(yr%/%5L),
@@ -365,7 +417,7 @@ make_risk_data <- function(move_draw,inf_col){
 }
 
 # =============================================================================
-# G. TWO-WAY CLUSTER-ROBUST LOGISTIC ENGINE
+# H. TWO-WAY CLUSTER-ROBUST LOGISTIC ENGINE
 # =============================================================================
 rmvn_psd <- function(n,mu,Sigma){
   mu <- as.numeric(mu)
@@ -406,11 +458,16 @@ build_X <- function(d,model){
     movement_state=as.numeric(d$movement_state)
   )
 
-  if(model %in% c("M0_CC_PRESSURE","M1_TURNOVER"))
+  if(model %in% c("M0_CC_PRESSURE","M1_TURNOVER","M2_INSTABILITY"))
     cols$pressure10 <- 10*as.numeric(d$pressure)
 
-  if(model=="M1_TURNOVER")
+  if(model %in% c("M1_TURNOVER","M2_INSTABILITY"))
     cols$turnover10 <- 10*as.numeric(d$turnover)
+
+  if(model=="M2_INSTABILITY"){
+    cols$group_decline1 <- as.numeric(d$group_decline)
+    cols$group_size5 <- as.numeric(d$group_size5)
+  }
 
   cols$sex <- as.numeric(d$sex)
 
@@ -520,7 +577,7 @@ fit_one <- function(model,d,nkeep){
 }
 
 # =============================================================================
-# H. FIT MODEL LADDER ACROSS ALL PAIRED HISTORIES
+# I. FIT MODEL LADDER ACROSS ALL PAIRED HISTORIES
 # =============================================================================
 draw_list <- list()
 diag_list <- list()
@@ -545,7 +602,9 @@ for(pp in seq_len(nrow(pair_index))){
     n_high_rows=sum(d$movement_state==1L),
     median_pressure_n=median(d$pressure_n),
     median_turnover_n=median(d$turnover_n),
-    median_turnover=median(d$turnover)
+    median_turnover=median(d$turnover),
+    median_group_decline=median(d$group_decline),
+    median_group_size5=median(d$group_size5)
   )
 
   if(pp==1L){
@@ -555,9 +614,13 @@ for(pp in seq_len(nrow(pair_index))){
     print(summary(d$pressure))
     cat("Group turnover summary:\n")
     print(summary(d$turnover))
+    cat("Observed group decline summary (positive = shrinking):\n")
+    print(summary(d$group_decline))
+    cat("Current focal-excluded observed group size summary:\n")
+    print(summary(5*d$group_size5))
   }
 
-  models <- c("M0_CC_NOPRESSURE","M0_CC_PRESSURE","M1_TURNOVER")
+  models <- c("M0_CC_NOPRESSURE","M0_CC_PRESSURE","M1_TURNOVER","M2_INSTABILITY")
   fits <- lapply(models,function(nm) fit_one(nm,d,N_KEEP))
   names(fits) <- models
 
@@ -623,7 +686,9 @@ retention_summary <- retention %>%
     median_high_rows=median(n_high_rows),
     median_pressure_n=median(median_pressure_n),
     median_turnover_n=median(median_turnover_n),
-    median_turnover=median(median_turnover)
+    median_turnover=median(median_turnover),
+    median_group_decline=median(median_group_decline),
+    median_group_size_other=median(5*median_group_size5)
   )
 
 summarise_parameter_safe <- function(df,param,label){
@@ -657,6 +722,8 @@ for(nm in unique(draws$model)){
     c("movement_state","beta_move"),
     c("pressure10","beta_pressure_per_10pp"),
     c("turnover10","beta_turnover_per_10pp"),
+    c("group_decline1","beta_group_decline_per_badger"),
+    c("group_size5","beta_current_group_size_per_5"),
     c("sex","beta_sex")
   )
 
@@ -686,11 +753,13 @@ cat("\nInterpretation guide:\n")
 cat("  beta_turnover_per_10pp = change in subsequent infection odds per +10 percentage points\n")
 cat("  in focal-excluded annual social-group turnover (t-1 -> t), adjusted for focal\n")
 cat("  V9 movement state, Q4(t) same-group infection pressure, sex, quarter and period.\n")
+cat("  M2 additionally estimates observed group-size decline (positive = shrinking)\n")
+cat("  while adjusting for current observed group size.\n")
 cat("  This annual turnover index is a bridge to, not an exact recreation of, the\n")
 cat("  capture-event group movement index used in earlier Woodchester publications.\n")
 
 # =============================================================================
-# I. SAVE
+# J. SAVE
 # =============================================================================
 prefix <- paste0("results/V9FINAL_V7bM_group_turnover_bridge_",RESULT_TAG)
 
@@ -714,8 +783,12 @@ saveRDS(
       pressure_time="Q4(t)",
       outcome_time="Q1-Q4(t+1)",
       pressure="infected other badgers / all other infection-history badgers in focal observed social group",
+      group_decline="focal-excluded observed group size at t-1 minus focal-excluded observed group size at t; positive means shrinking",
+      current_group_size="focal-excluded observed annual group membership at t",
       turnover_scale="10 percentage points",
       pressure_scale="10 percentage points",
+      group_decline_scale="one observed badger",
+      current_group_size_scale="five observed badgers",
       published_bridge="analogous in purpose to Vicente et al. 2007 group movement index, but based on annual observed group changes rather than capture-to-capture movement scores"
     ),
     settings=list(
