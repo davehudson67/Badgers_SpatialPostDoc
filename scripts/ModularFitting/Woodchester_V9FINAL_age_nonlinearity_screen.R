@@ -107,11 +107,12 @@ one_component <- function(st,component){
       model=rep(c("LINEAR","SPLINE"),each=nrow(pred_grid)),
       p=c(predict(lin,newdata=pred_grid,type="response"),
           predict(spl,newdata=pred_grid,type="response"))
-    )
+    ),
+    support=d %>% mutate(component=component)
   )
 }
 
-comp_list <- list(); pred_list <- list(); k <- 0L
+comp_list <- list(); pred_list <- list(); support_list <- list(); k <- 0L
 for(dd in seq_along(draw_ids)){
   st <- as.integer(mov$state_draws[draw_ids[dd],])
   for(component in c("INITIAL","LOCAL_TO_HIGH")){
@@ -120,12 +121,14 @@ for(dd in seq_along(draw_ids)){
     k <- k+1L
     comp_list[[k]] <- z$compare %>% mutate(draw=draw_ids[dd],.before=1)
     pred_list[[k]] <- z$pred %>% mutate(draw=draw_ids[dd],.before=1)
+    support_list[[k]] <- z$support %>% mutate(draw=draw_ids[dd],.before=1)
   }
   if(dd%%100L==0L) cat("Processed movement history",dd,"/",length(draw_ids),"\n")
 }
 
 comparison <- bind_rows(comp_list)
 predictions <- bind_rows(pred_list)
+support <- bind_rows(support_list)
 
 summary <- comparison %>%
   group_by(component) %>%
@@ -142,20 +145,65 @@ pred_summary <- predictions %>%
   group_by(component,model,male,age_years) %>%
   summarise(p_median=median(p),p_q025=quantile(p,.025),p_q975=quantile(p,.975),.groups="drop")
 
+support_summary <- support %>%
+  group_by(component,male,age_years) %>%
+  summarise(draws=n_distinct(draw),
+            n_median=median(n),n_q025=quantile(n,.025),n_q975=quantile(n,.975),
+            high_median=median(y),high_q025=quantile(y,.025),high_q975=quantile(y,.975),
+            .groups="drop")
+
+peak_by_draw <- predictions %>%
+  filter(model=="SPLINE") %>%
+  group_by(draw,component,male) %>%
+  slice_max(order_by=p,n=1,with_ties=FALSE) %>%
+  ungroup()
+
+peak_summary <- peak_by_draw %>%
+  group_by(component,male) %>%
+  summarise(draws=n(),peak_age_median=median(age_years),
+            peak_age_q025=quantile(age_years,.025),peak_age_q975=quantile(age_years,.975),
+            P_peak_at_youngest=mean(age_years==min(ages)),.groups="drop")
+
 cat("\n============================================================\n")
 cat("V9 FINAL NON-LINEAR AGE SCREEN\n")
 cat("============================================================\n")
 print(summary,n=Inf,width=Inf)
 cat("\nSpline predicted probabilities by age/sex:\n")
 print(pred_summary %>% filter(model=="SPLINE"),n=Inf,width=Inf)
+cat("\nAge-specific support (median across movement histories):\n")
+print(support_summary,n=Inf,width=Inf)
+cat("\nSpline peak-age summary:\n")
+print(peak_summary,n=Inf,width=Inf)
 
 dir.create("results",showWarnings=FALSE,recursive=TRUE)
+dir.create("outputs",showWarnings=FALSE,recursive=TRUE)
+
 saveRDS(list(comparison=comparison,predictions=predictions,summary=summary,
-             prediction_summary=pred_summary,
+             prediction_summary=pred_summary,support_summary=support_summary,
+             peak_summary=peak_summary,
              settings=list(method="posterior-history logistic screen; natural spline vs linear age",
                            spline_df=DF_SPLINE,n_state_histories=length(draw_ids),
                            interpretation="screen only; consider integrated NIMBLE spline only if curvature is clear")),
         "results/V9FINAL_age_nonlinearity_screen.rds")
 write_csv(summary,"results/V9FINAL_age_nonlinearity_screen_summary.csv")
 write_csv(pred_summary,"results/V9FINAL_age_nonlinearity_screen_predictions.csv")
-cat("\nSaved age non-linearity screen outputs.\n")
+write_csv(support_summary,"results/V9FINAL_age_nonlinearity_screen_support.csv")
+write_csv(peak_summary,"results/V9FINAL_age_nonlinearity_screen_peak_age.csv")
+
+plot_dat <- pred_summary %>%
+  mutate(sex=if_else(male==1L,"Male","Female"),
+         component=recode(component,INITIAL="Initial high-mobility interval",
+                          LOCAL_TO_HIGH="Later local → high transition"))
+
+p <- ggplot(plot_dat,aes(x=age_years,y=p_median,linetype=model))+
+  geom_ribbon(aes(ymin=p_q025,ymax=p_q975,group=model),alpha=.12,colour=NA)+
+  geom_line(linewidth=.8)+
+  facet_grid(component~sex,scales="free_y")+
+  labs(x="Chronological age (years)",
+       y="Predicted probability of high mobility",
+       title="V9 final: linear versus non-linear age relationship",
+       subtitle="Natural cubic spline (3 df) screened against the current logit-linear age effect")+
+  theme_bw(base_size=11)
+ggsave("outputs/V9FINAL_age_nonlinearity_screen.png",p,width=10,height=6,dpi=180)
+
+cat("\nSaved age non-linearity screen outputs and plot.\n")
