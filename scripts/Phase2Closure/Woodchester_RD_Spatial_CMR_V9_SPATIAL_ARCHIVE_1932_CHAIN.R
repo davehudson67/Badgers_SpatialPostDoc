@@ -119,7 +119,7 @@ patch <- c(
   "    'alignment_error <- max(abs(spatial_samples_full[,ap]-m[spatial_primary_rows,ap]))',",
   "    'if(!is.finite(alignment_error) || alignment_error>1e-10) stop(\"Secondary spatial samples do not align with expected primary draws. Max error=\",alignment_error)',",
   "    '',",
-  "    '# Keep only activity centres inside each badger\'s supported first:K history.',",
+  "    '# Keep only activity centres inside the supported first:K history for each badger.',",
   "    'ac_index <- bind_rows(lapply(seq_len(nind),function(ii){',",
   "    '  kk <- first[ii]:K[ii]',",
   "    '  tibble(model_i=ii,individual_id=individual_ids[ii],tattoo=ids[ii],state_k=kk,year=years[kk],',",
