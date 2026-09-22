@@ -101,15 +101,11 @@ patch <- c(
   ")",
   "",
   "# Make the secondary thinning explicit at runtime as well as configuration.",
-  "src <- replace_once(",
-  "  src,",
-  "  '    thin=THIN,',",
-  "  paste(c(",
-  "    '    thin=THIN,',",
-  "    '    thin2=SPATIAL_THIN,'",
-  "  ),collapse='\\n'),",
-  "  'explicit secondary thinning in runMCMC'",
-  ")",
+  "# Match the exact runMCMC line rather than a substring because thin=THIN also",
+  "# appears later in the settings list.",
+  "ii_run_thin <- which(src == '    thin=THIN,')",
+  "if(length(ii_run_thin)!=1L) stop('Could not uniquely locate runMCMC thin line; found ',length(ii_run_thin),'.')",
+  "src <- append(src,'    thin2=SPATIAL_THIN,',after=ii_run_thin)",
   "",
   "# Extract mvSamples2 after runMCMC and compact the self-contained joint stream.",
   "# S, disp and core global parameters are all recorded in monitors2 at the same",
@@ -205,6 +201,10 @@ archive_wrapper <- file.path(
   "Woodchester_RD_Spatial_CMR_V9_SPATIAL_ARCHIVE_1932_wrapper_generated.R"
 )
 writeLines(w, archive_wrapper)
+
+# Fail immediately on any generated-source syntax problem before the expensive
+# model build/compile begins.
+parse(file = archive_wrapper)
 
 cat("Generated V9 spatial-archive wrapper source:\n", archive_wrapper, "\n", sep = "")
 cat("This rerun preserves the accepted V9 model and adds thinned S monitoring only.\n")
