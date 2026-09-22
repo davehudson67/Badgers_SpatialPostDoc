@@ -45,7 +45,7 @@ first_obj <- readRDS(CHAIN_FILES[1])
 
 required <- c(
   "primary_global_samples", "spatial_samples", "spatial_disp_draws",
-  "spatial_primary_rows", "spatial_thin", "ac_index",
+  "spatial_thin", "ac_index",
   "disp_index", "ids", "individual_ids", "sex_data",
   "first", "K", "years"
 )
@@ -126,16 +126,15 @@ for(cc in seq_along(CHAIN_FILES)) {
   source_list[[cc]] <- tibble(
     archive_draw_in_chain = seq_len(nrow(SP)),
     source_chain = cc,
-    primary_retained_row = as.integer(obj$spatial_primary_rows),
     spatial_thin = as.integer(obj$spatial_thin)
   )
 
   alignment_list[[cc]] <- tibble(
     chain = cc,
-    alignment_parameter = as.character(obj$spatial_alignment_parameter),
-    alignment_max_error = as.numeric(obj$spatial_alignment_max_error),
     n_spatial_draws = nrow(SP),
-    n_supported_activity_centres = nrow(ac_index)
+    n_supported_activity_centres = nrow(ac_index),
+    n_coherent_movement_intervals = ncol(DD),
+    spatial_stream_self_contained = isTRUE(obj$spatial_stream_self_contained)
   )
 
   rm(obj, G, SP, DD)
