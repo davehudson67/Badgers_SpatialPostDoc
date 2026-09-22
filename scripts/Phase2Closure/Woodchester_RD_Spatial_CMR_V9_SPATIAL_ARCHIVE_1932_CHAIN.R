@@ -26,6 +26,15 @@
 BASE_WRAPPER <- "scripts/ModularFitting/Woodchester_RD_Spatial_CMR_V8_MOVEMENT_MAXDATA_1932_CHAIN.R"
 if(!file.exists(BASE_WRAPPER)) stop("Missing V8 maximal-data wrapper: ", BASE_WRAPPER)
 
+ARCHIVE_RUN_TAG <- toupper(trimws(Sys.getenv("ARCHIVE_RUN_TAG", "")))
+if(nzchar(ARCHIVE_RUN_TAG) && !grepl("^[A-Z0-9_]+$", ARCHIVE_RUN_TAG))
+  stop("ARCHIVE_RUN_TAG may contain only A-Z, 0-9 and underscore.")
+ARCHIVE_FILE_STEM <- if(nzchar(ARCHIVE_RUN_TAG)) {
+  paste0("RD_SCR_V9_SPATIAL_ARCHIVE_1932_", ARCHIVE_RUN_TAG, "_CHAIN_")
+} else {
+  "RD_SCR_V9_SPATIAL_ARCHIVE_1932_CHAIN_"
+}
+
 w <- readLines(BASE_WRAPPER, warn = FALSE)
 
 # -----------------------------------------------------------------------------
@@ -168,7 +177,7 @@ if(length(j) != 1L) stop("Could not uniquely locate V8 execute section.")
 
 post <- c(
   "# ---- V9 spatial-archive output identity -------------------------------------",
-  "src <- gsub(\"RD_SCR_V7M_MOVEMENT_ONLY_1932_CHAIN_\",\"RD_SCR_V9_SPATIAL_ARCHIVE_1932_CHAIN_\",src,fixed=TRUE)",
+  paste0("src <- gsub(\"RD_SCR_V7M_MOVEMENT_ONLY_1932_CHAIN_\",\"", ARCHIVE_FILE_STEM, "\",src,fixed=TRUE)"),
   "src <- gsub('model=\"V7M_movement_only_modular_source\"','model=\"V9_spatial_archive_exact_prior_reparam\"',src,fixed=TRUE)",
   ""
 )
@@ -194,4 +203,5 @@ writeLines(w, archive_wrapper)
 
 cat("Generated V9 spatial-archive wrapper source:\n", archive_wrapper, "\n", sep = "")
 cat("This rerun preserves the accepted V9 model and adds thinned S monitoring only.\n")
+cat("Archive output stem: ", ARCHIVE_FILE_STEM, "\n", sep = "")
 source(archive_wrapper, local = FALSE)
