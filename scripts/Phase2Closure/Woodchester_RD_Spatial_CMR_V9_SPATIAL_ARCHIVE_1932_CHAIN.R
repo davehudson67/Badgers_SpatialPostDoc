@@ -184,6 +184,22 @@ post <- c(
 )
 w <- c(w[seq_len(j - 1L)], post, w[j:length(w)])
 
+# Add a cheap validation-only mode so all nested source transformations can be
+# checked before paying the several-minute NIMBLE build/compile cost.
+ii_exec_generated <- which(w == "source(generated_file,local=FALSE)")
+if(length(ii_exec_generated) != 1L)
+  stop("Could not uniquely locate generated-model execution line.")
+w <- c(
+  w[seq_len(ii_exec_generated - 1L)],
+  'parse(file=generated_file)',
+  'if(tolower(Sys.getenv("ARCHIVE_VALIDATE_ONLY","false")) %in% c("true","1","yes")) {',
+  '  cat("ARCHIVE VALIDATION ONLY: generated V9 spatial model parsed successfully.\\n")',
+  '} else {',
+  '  source(generated_file,local=FALSE)',
+  '}',
+  w[(ii_exec_generated + 1L):length(w)]
+)
+
 # Keep generated temporary files clearly separate.
 w <- gsub(
   "Woodchester_RD_Spatial_CMR_V8_MOVEMENT_MAXDATA_1932_CHAIN_generated.R",
