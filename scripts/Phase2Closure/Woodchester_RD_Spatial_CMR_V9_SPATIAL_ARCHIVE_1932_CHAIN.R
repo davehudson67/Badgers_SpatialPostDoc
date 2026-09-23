@@ -112,7 +112,7 @@ patch <- c(
   "# iterations, so no cross-stream row mapping is needed.",
   "src <- replace_once(",
   "  src,",
-  "  'm <- as.matrix(cMCMC_V7$mvSamples)',",
+  "  'm <- as.matrix(samples_V7)',",
   "  paste(c(",
   "    'm <- as.matrix(cMCMC_V7$mvSamples)',",
   "    'if(is.null(colnames(m))) stop(\"Primary compiled monitor stream has no column names.\")',",
@@ -192,15 +192,19 @@ w <- c(w[seq_len(j - 1L)], post, w[j:length(w)])
 ii_exec_generated <- which(w == "source(generated_file,local=FALSE)")
 if(length(ii_exec_generated) != 1L)
   stop("Could not uniquely locate generated-model execution line.")
-w <- c(
-  w[seq_len(ii_exec_generated - 1L)],
-  'parse(file=generated_file)',
+replacement_exec <- c(
+  'invisible(parse(file=generated_file))',
   'if(tolower(Sys.getenv("ARCHIVE_VALIDATE_ONLY","false")) %in% c("true","1","yes")) {',
   '  cat("ARCHIVE VALIDATION ONLY: generated V9 spatial model parsed successfully.\\n")',
   '} else {',
   '  source(generated_file,local=FALSE)',
-  '}',
-  w[(ii_exec_generated + 1L):length(w)]
+  '}'
+)
+tail_after_exec <- if(ii_exec_generated < length(w)) w[(ii_exec_generated + 1L):length(w)] else character()
+w <- c(
+  if(ii_exec_generated > 1L) w[seq_len(ii_exec_generated - 1L)] else character(),
+  replacement_exec,
+  tail_after_exec
 )
 
 # Keep generated temporary files clearly separate.
@@ -223,7 +227,7 @@ writeLines(w, archive_wrapper)
 
 # Fail immediately on any generated-source syntax problem before the expensive
 # model build/compile begins.
-parse(file = archive_wrapper)
+invisible(parse(file = archive_wrapper))
 
 cat("Generated V9 spatial-archive wrapper source:\n", archive_wrapper, "\n", sep = "")
 cat("This rerun preserves the accepted V9 model and adds thinned S monitoring only.\n")
