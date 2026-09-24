@@ -97,16 +97,22 @@ year_tbl <- events %>%
   )
 
 era_tbl <- events %>%
-  group_by(interval_era,change_class) %>%
-  summarise(
-    n_changes=n(),
-    n_badgers=n_distinct(tattoo),
-    pct_within_era=100*n()/sum(n()),
-    median_p_high=median(p_high,na.rm=TRUE),
-    pct_p_high_gt_05=100*mean(p_high>0.5,na.rm=TRUE),
-    median_distance_m=median(median_distance_m,na.rm=TRUE),
-    low_spatial_support_pct=100*mean(group_change_low_spatial_support,na.rm=TRUE),
-    .groups="drop"
+  count(interval_era,change_class,name="n_changes") %>%
+  group_by(interval_era) %>%
+  mutate(pct_within_era=100*n_changes/sum(n_changes)) %>%
+  ungroup() %>%
+  left_join(
+    events %>%
+      group_by(interval_era,change_class) %>%
+      summarise(
+        n_badgers=n_distinct(tattoo),
+        median_p_high=median(p_high,na.rm=TRUE),
+        pct_p_high_gt_05=100*mean(p_high>0.5,na.rm=TRUE),
+        median_distance_m=median(median_distance_m,na.rm=TRUE),
+        low_spatial_support_pct=100*mean(group_change_low_spatial_support,na.rm=TRUE),
+        .groups="drop"
+      ),
+    by=c("interval_era","change_class")
   )
 
 cat("\n============================================================\n")
