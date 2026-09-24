@@ -1,4 +1,12 @@
 # ============================================================
+# LOCAL SECRETS / ENVIRONMENT
+# ============================================================
+
+.Renviron
+.Renviron.*
+!.Renviron.example
+
+# ============================================================
 # R / RStudio
 # ============================================================
 
@@ -32,13 +40,15 @@
 
 # ============================================================
 # MODEL / OUTPUT FILES
-# Keep CSV summaries, but ignore bulky binary outputs
+# Keep small CSV summaries, ignore bulky binary outputs
 # ============================================================
 
 results/**/*.rds
 results/**/*.RDS
 results/**/*.rda
 results/**/*.RData
+outputs/**/*.rds
+outputs/**/*.RDS
 
 # Optional generated figures
 results/**/*.png
@@ -64,5 +74,6 @@ Thumbs.db
 *.7z
 *.tar
 *.gz
+
 # Generated infection trajectory output
 data/trajectories.csv
