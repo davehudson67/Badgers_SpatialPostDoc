@@ -377,7 +377,8 @@ comparison <- ac %>%
   left_join(
     annual_membership %>%
       select(tattoo,year,n_live_records,n_socg_records,n_distinct_socg,
-             annual_socg,annual_socg_share,annual_socg_tied,
+             annual_socg,annual_socg_share,n_tied_current,
+             assignment_criterion,assignment_rule,
              membership_class,candidate_resident_socg),
     by=c("tattoo","year")
   ) %>%
@@ -548,5 +549,5 @@ saveRDS(
 cat("\n============================================================\n")
 cat("P3_01 COMPLETE\n")
 cat("============================================================\n")
-cat("Primary recommendation remains provisional until this audit is reviewed:\n")
-cat("use recorded annual SOCG for epidemiological membership; use posterior S for spatial connectivity.\n")
+cat("Primary recommendation follows published Woodchester practice but remains subject to this audit:\n")
+cat("use annual resident SOCG from the published capture-history hierarchy; retain excursions separately; use posterior S for spatial connectivity.\n")
