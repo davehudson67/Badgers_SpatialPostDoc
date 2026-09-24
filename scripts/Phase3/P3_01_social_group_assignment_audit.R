@@ -76,6 +76,7 @@ cat("============================================================\n")
 
 # =============================================================================
 # A. OBSERVED ANNUAL SOCIAL-GROUP MEMBERSHIP
+#    Published Woodchester rule: Vicente et al. (2007), extending Rogers et al.
 # =============================================================================
 
 live <- enc
@@ -97,12 +98,32 @@ alias_audit <- live %>%
   filter(!is.na(socg_raw),socg_raw!="",norm_key(socg_raw)!=socg_key) %>%
   count(socg_raw,socg_key,sort=TRUE)
 
-cat("\nA. RECORDED ANNUAL MEMBERSHIP\n")
+cat("\nA. RECORDED ANNUAL MEMBERSHIP — PUBLISHED WOODCHESTER RULE\n")
 cat("Live encounter rows:",nrow(live),"\n")
 cat("Badgers:",n_distinct(live$tattoo),"\n")
 cat("Years:",min(live$year,na.rm=TRUE),"-",max(live$year,na.rm=TRUE),"\n")
 cat("Rows affected by known SOCG aliases:",sum(alias_audit$n,na.rm=TRUE),"\n")
 if(nrow(alias_audit)) print(alias_audit,n=Inf,width=Inf)
+
+# Rogers et al. (1998): annual membership/group size used the group in which an
+# animal appeared most often across captures that year; a two-capture/two-group
+# tie was assigned to the first capture group.
+#
+# Vicente et al. (2007) formalised a five-step hierarchy:
+#   1) group most frequently caught in current year;
+#   2) use adjacent-year allocation(s);
+#   3) use capture frequency across current + adjacent years;
+#   4) use nearest last/first capture around the year's boundaries, among the
+#      groups still tied after step 3;
+#   5) first relevant capture if still indeterminate.
+#
+# We implement that hierarchy transparently. Criterion 2 is operationalised
+# using the unique modal capture group in each adjacent year, because those raw
+# capture records are available directly and avoid circular recursive allocation.
+
+live_sg <- live %>%
+  filter(!is.na(socg_key),socg_key!="",!is.na(capture_date)) %>%
+  arrange(tattoo,capture_date)
 
 annual_all <- live %>%
   group_by(tattoo,year) %>%
@@ -113,50 +134,139 @@ annual_all <- live %>%
     .groups="drop"
   )
 
-annual_counts <- live %>%
-  filter(!is.na(socg_key),socg_key!="") %>%
+assign_published_group <- function(tat,y){
+  h <- live_sg %>% filter(tattoo==tat)
+  cur <- h %>% filter(year==y)
+  if(!nrow(cur))
+    return(tibble(
+      annual_socg=NA_character_,assignment_criterion=NA_integer_,
+      assignment_rule="NO_RECORDED_SOCG",annual_socg_n=0L,
+      annual_socg_share=NA_real_,n_tied_current=NA_integer_
+    ))
+
+  cur_counts <- cur %>% count(socg_key,name="n",sort=TRUE)
+  top_n <- max(cur_counts$n)
+  current_candidates <- cur_counts %>% filter(n==top_n) %>% pull(socg_key)
+  current_share <- top_n/sum(cur_counts$n)
+
+  # Criterion 1: unique current-year modal group.
+  if(length(current_candidates)==1L)
+    return(tibble(
+      annual_socg=current_candidates,assignment_criterion=1L,
+      assignment_rule="C1_CURRENT_YEAR_MODE",annual_socg_n=top_n,
+      annual_socg_share=current_share,n_tied_current=1L
+    ))
+
+  candidates <- current_candidates
+
+  # Criterion 2: adjacent-year unique modal allocations as tie-break evidence.
+  adj_unique_mode <- function(yy){
+    z <- h %>% filter(year==yy) %>% count(socg_key,name="n",sort=TRUE)
+    if(!nrow(z)) return(NA_character_)
+    ztop <- z %>% filter(n==max(n))
+    if(nrow(ztop)==1L) ztop$socg_key[1] else NA_character_
+  }
+  adj <- c(adj_unique_mode(y-1L),adj_unique_mode(y+1L))
+  adj <- adj[!is.na(adj) & adj %in% candidates]
+  if(length(adj)){
+    tt <- sort(table(adj),decreasing=TRUE)
+    if(length(tt)==1L || as.numeric(tt[1])>as.numeric(tt[2]))
+      return(tibble(
+        annual_socg=names(tt)[1],assignment_criterion=2L,
+        assignment_rule="C2_ADJACENT_YEAR_ALLOCATION",annual_socg_n=top_n,
+        annual_socg_share=current_share,n_tied_current=length(current_candidates)
+      ))
+  }
+
+  # Criterion 3: combined current + both adjacent-year capture frequency.
+  tri <- h %>%
+    filter(year %in% (y-1L):(y+1L),socg_key %in% candidates) %>%
+    count(socg_key,name="n",sort=TRUE)
+  if(nrow(tri)){
+    tri_top <- tri %>% filter(n==max(n))
+    candidates <- tri_top$socg_key
+    if(length(candidates)==1L)
+      return(tibble(
+        annual_socg=candidates,assignment_criterion=3L,
+        assignment_rule="C3_THREE_YEAR_CAPTURE_MODE",annual_socg_n=top_n,
+        annual_socg_share=current_share,n_tied_current=length(current_candidates)
+      ))
+  }
+
+  # Criterion 4: nearest relevant capture before/after the current year.
+  y_start <- as.Date(sprintf("%d-01-01",y))
+  y_end <- as.Date(sprintf("%d-12-31",y))
+  around <- bind_rows(
+    h %>%
+      filter(capture_date<y_start,socg_key %in% candidates) %>%
+      arrange(desc(capture_date)) %>%
+      slice(1L) %>%
+      transmute(socg_key,gap=as.numeric(y_start-capture_date)),
+    h %>%
+      filter(capture_date>y_end,socg_key %in% candidates) %>%
+      arrange(capture_date) %>%
+      slice(1L) %>%
+      transmute(socg_key,gap=as.numeric(capture_date-y_end))
+  )
+  if(nrow(around)){
+    around_top <- around %>% filter(gap==min(gap))
+    if(n_distinct(around_top$socg_key)==1L)
+      return(tibble(
+        annual_socg=around_top$socg_key[1],assignment_criterion=4L,
+        assignment_rule="C4_NEAREST_BOUNDARY_CAPTURE",annual_socg_n=top_n,
+        annual_socg_share=current_share,n_tied_current=length(current_candidates)
+      ))
+  }
+
+  # Criterion 5: first relevant current-year capture among remaining candidates.
+  first_rel <- cur %>%
+    filter(socg_key %in% candidates) %>%
+    arrange(capture_date) %>%
+    slice(1L)
+  tibble(
+    annual_socg=first_rel$socg_key[1],assignment_criterion=5L,
+    assignment_rule="C5_FIRST_RELEVANT_CAPTURE",annual_socg_n=top_n,
+    annual_socg_share=current_share,n_tied_current=length(current_candidates)
+  )
+}
+
+annual_assignment <- annual_all %>%
+  select(tattoo,year) %>%
+  mutate(.assigned=map2(tattoo,year,assign_published_group)) %>%
+  unnest(.assigned)
+
+annual_membership <- annual_all %>%
+  left_join(annual_assignment,by=c("tattoo","year")) %>%
+  mutate(
+    membership_class=case_when(
+      is.na(annual_socg) ~ "NO_RECORDED_SOCG",
+      assignment_criterion==1L & n_distinct_socg==1L ~ "SINGLE_RECORDED_SOCG",
+      assignment_criterion==1L ~ "MULTIPLE_UNIQUE_MODE",
+      TRUE ~ paste0("TIE_RESOLVED_C",assignment_criterion)
+    ),
+    candidate_resident_socg=annual_socg
+  )
+
+# Keep the raw annual group counts so later analyses can distinguish residency
+# from excursions rather than throwing the non-resident captures away.
+annual_counts <- live_sg %>%
   count(tattoo,year,socg_key,name="n_records") %>%
   group_by(tattoo,year) %>%
-  arrange(desc(n_records),socg_key,.by_group=TRUE) %>%
   mutate(
     total_socg_records=sum(n_records),
-    top_n=max(n_records),
-    n_tied_top=sum(n_records==top_n),
-    rank=row_number()
+    share=n_records/total_socg_records
   ) %>%
   ungroup()
 
-annual_top <- annual_counts %>%
-  filter(rank==1L) %>%
-  transmute(
-    tattoo,year,
-    annual_socg=socg_key,
-    annual_socg_n=n_records,
-    annual_socg_share=n_records/total_socg_records,
-    annual_socg_tied=n_tied_top>1L
-  )
-
-annual_membership <- annual_all %>%
-  left_join(annual_top,by=c("tattoo","year")) %>%
-  mutate(
-    membership_class=case_when(
-      n_socg_records==0 ~ "NO_RECORDED_SOCG",
-      n_distinct_socg==1 ~ "SINGLE_RECORDED_SOCG",
-      annual_socg_tied ~ "MULTIPLE_TIED",
-      annual_socg_share>0.5 ~ "MULTIPLE_MODAL_DOMINANT",
-      TRUE ~ "MULTIPLE_AMBIGUOUS"
-    ),
-    candidate_resident_socg=if_else(
-      membership_class %in% c("SINGLE_RECORDED_SOCG","MULTIPLE_MODAL_DOMINANT"),
-      annual_socg,NA_character_
-    )
-  )
-
 membership_summary <- annual_membership %>%
-  count(membership_class,name="badger_years") %>%
+  count(assignment_criterion,assignment_rule,membership_class,name="badger_years") %>%
   mutate(pct=100*badger_years/sum(badger_years))
 
 print(membership_summary,n=Inf,width=Inf)
+cat("Percent allocated by published criterion 1:",
+    sprintf("%.2f%%",100*mean(annual_membership$assignment_criterion==1L,na.rm=TRUE)),"\n")
+cat("Badger-years requiring criteria 2-5:",
+    sum(annual_membership$assignment_criterion %in% 2:5,na.rm=TRUE),"\n")
 
 # =============================================================================
 # B. RECORDED SOCG VERSUS STATIC SG RASTER IDENTIFIER
@@ -426,8 +536,8 @@ saveRDS(
     transition_summary=trans_summary,
     definition=list(
       primary_membership_source="recorded SOCG on live captures",
-      candidate_resident_rule="single recorded SOCG, or unique modal SOCG with >50% of same-year SOCG records",
-      multiple_or_tied="retained and flagged; not silently reassigned",
+      candidate_resident_rule="published Woodchester hierarchy: Vicente et al. 2007 criteria 1-5, extending Rogers et al. 1998 annual modal-capture rule",
+      multiple_or_tied="raw within-year SOCG counts retained; ties resolved with explicit published-style criterion and recorded in assignment_criterion",
       posterior_S_role="spatial consistency/connectivity only; does not overwrite recorded membership",
       static_SG_warning="V9 already used the static SG resistance surface, so S->SG agreement is not independent validation"
     )
