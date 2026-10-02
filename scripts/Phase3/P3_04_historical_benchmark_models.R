@@ -82,31 +82,40 @@ rog_out <- tibble(
   p=rog_cf[,4]
 )
 
-# AR(1)-correlated sensitivity, close in spirit to the published time-series
-# correction. This is secondary to the ordinary lagged regression.
-rog_ar1_out <- NULL
-if(requireNamespace("nlme",quietly=TRUE) && nrow(rog_dat)>=8){
-  arfit <- try(
-    nlme::gls(next_year_culture_incidence ~ movement_proportion,
-              data=rog_dat,
-              correlation=nlme::corAR1(form=~year),
-              method="ML"),
+# MA(1) time-series sensitivity, matching the published final treatment.
+rog_ma1_out <- NULL
+if(nrow(rog_dat)>=8){
+  mafit <- try(
+    arima(
+      rog_dat$next_year_culture_incidence,
+      order=c(0,0,1),
+      xreg=matrix(
+        rog_dat$movement_proportion,
+        ncol=1,
+        dimnames=list(NULL,"movement_proportion")
+      ),
+      include.mean=TRUE,
+      method="ML"
+    ),
     silent=TRUE
   )
-  if(!inherits(arfit,"try-error")){
-    tt <- summary(arfit)$tTable
-    rog_ar1_out <- tibble(
-      model="Rogers_lag_GLS_AR1",
+  if(!inherits(mafit,"try-error")){
+    nm <- grep("movement_proportion",names(mafit$coef),value=TRUE)[1]
+    est <- unname(mafit$coef[nm])
+    se <- sqrt(unname(mafit$var.coef[nm,nm]))
+    z <- est/se
+    rog_ma1_out <- tibble(
+      model="Rogers_lag_MA1",
       n_years=nrow(rog_dat),
-      term=rownames(tt),
-      estimate=tt[,1],
-      se=tt[,2],
-      statistic=tt[,3],
-      p=tt[,4]
+      term="movement_proportion",
+      estimate=est,
+      se=se,
+      statistic=z,
+      p=2*pnorm(-abs(z))
     )
   }
 }
-rog_out <- bind_rows(rog_out,rog_ar1_out)
+rog_out <- bind_rows(rog_out,rog_ma1_out)
 
 cat("\nROGERS BENCHMARK\n")
 cat("Complete annual lag pairs:",nrow(rog_dat),"\n")
