@@ -1,0 +1,8 @@
+# Copy this file to .Renviron locally and fill in your own values.
+# Never commit the real .Renviron file.
+
+BADGER_DB_HOST=your-database-host
+BADGER_DB_PORT=5432
+BADGER_DB_NAME=postgres
+BADGER_DB_USER=your-database-user
+BADGER_DB_PASSWORD=your-database-password
