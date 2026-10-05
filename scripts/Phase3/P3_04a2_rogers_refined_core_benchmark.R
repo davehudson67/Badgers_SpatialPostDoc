@@ -50,11 +50,15 @@ core21 <- anch$anchor %>%
 if("WYCHELM" %in% core21)
   stop("Unexpected: WYCHELM already present in the 21-group early anchor.")
 
-core_for_year <- function(y)
+core_for_year <- function(y){
+  if(is.na(y)) return(character(0))
   if(y >= 1990L) c(core21,"WYCHELM") else core21
+}
 
-is_core_year <- function(sg,y)
-  !is.na(sg) & sg %in% core_for_year(y)
+is_core_year <- function(sg,y){
+  if(is.na(sg) || is.na(y)) return(FALSE)
+  sg %in% core_for_year(y)
+}
 
 cat("\n============================================================\n")
 cat("P3_04a2 — ROGERS REFINED DYNAMIC-CORE BENCHMARK\n")
