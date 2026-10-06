@@ -54,6 +54,57 @@ diagnostics_db <- tbl(
 
 DBI::dbDisconnect(con)
 
+# ==============================================================================
+# Identifier policy
+#
+# Biological/model identifier:
+#   tattoo
+#
+# Database relational key:
+#   individual_id
+#
+# The migrated database is required to maintain a strict one-to-one mapping
+# between current canonical tattoo and individual_id. All biological grouping
+# below therefore uses tattoo. individual_id is retained on output rows for
+# relational joins, provenance and integrity checking only.
+# ==============================================================================
+
+identifier_map <- captures_db %>%
+  transmute(
+    individual_id = as.integer(individual_id),
+    tattoo = toupper(trimws(as.character(tattoo)))
+  ) %>%
+  distinct()
+
+if (any(is.na(identifier_map$tattoo) | identifier_map$tattoo == "")) {
+  stop("Canonical capture_history contains missing/blank tattoo identifiers.")
+}
+
+id_to_tattoo_conflict <- identifier_map %>%
+  count(individual_id, name = "n_tattoos") %>%
+  filter(n_tattoos != 1L)
+
+tattoo_to_id_conflict <- identifier_map %>%
+  count(tattoo, name = "n_individual_ids") %>%
+  filter(n_individual_ids != 1L)
+
+if (nrow(id_to_tattoo_conflict) || nrow(tattoo_to_id_conflict)) {
+  stop("tattoo <-> individual_id is not one-to-one in capture_history.")
+}
+
+diagnostic_identifier_conflicts <- diagnostics_db %>%
+  transmute(
+    individual_id = as.integer(individual_id),
+    tattoo = toupper(trimws(as.character(tattoo)))
+  ) %>%
+  filter(!is.na(tattoo), tattoo != "") %>%
+  distinct() %>%
+  anti_join(identifier_map, by = c("individual_id", "tattoo"))
+
+if (nrow(diagnostic_identifier_conflicts)) {
+  stop("diagnostic_results contains tattoo/individual_id mappings inconsistent with capture_history.")
+}
+
 cat("\n============================================================\n")
 cat("DATABASE IMPORT\n")
 cat("============================================================\n")
@@ -133,7 +184,7 @@ individuals <- captures_db %>%
     n_historical_names
   ) %>%
   filter(!is.na(tattoo), tattoo != "") %>%
-  distinct(individual_id, .keep_all = TRUE) %>%
+  distinct(tattoo, .keep_all = TRUE) %>%
   mutate(
     sex = case_when(
       sex %in% c("Male", "Female") ~ sex,
@@ -143,7 +194,7 @@ individuals <- captures_db %>%
   )
 
 stopifnot(
-  nrow(individuals) == n_distinct(captures_db$individual_id)
+  nrow(individuals) == n_distinct(identifier_map$tattoo)
 )
 
 
@@ -224,9 +275,10 @@ capture_records <- captures_db %>%
 # ==============================================================================
 
 encounters <- capture_records %>%
-  arrange(individual_id, capture_date, pm_flag) %>%
-  group_by(individual_id, tattoo, capture_date) %>%
+  arrange(tattoo, capture_date, pm_flag, individual_id) %>%
+  group_by(tattoo, capture_date) %>%
   summarise(
+    individual_id = first_nonmissing(individual_id),
     primary_year = first(primary_year),
     trap_season = first(trap_season),
     
@@ -283,7 +335,7 @@ encounters_all <- encounters %>%
   left_join(
     individuals %>%
       select(
-        individual_id,
+        tattoo,
         sex,
         age_fc,
         year_fc,
@@ -291,9 +343,9 @@ encounters_all <- encounters %>%
         historical_names,
         n_historical_names
       ),
-    by = "individual_id"
+    by = "tattoo"
   ) %>%
-  arrange(individual_id, capture_date)
+  arrange(tattoo, capture_date)
 
 
 # ==============================================================================
@@ -330,7 +382,7 @@ cat(
 # ==============================================================================
 
 live_check <- encounters_all %>%
-  group_by(individual_id, tattoo) %>%
+  group_by(tattoo) %>%
   summarise(
     ever_live = any(has_live_capture),
     .groups = "drop"
@@ -338,10 +390,10 @@ live_check <- encounters_all %>%
 
 badgers_to_drop <- live_check %>%
   filter(!ever_live) %>%
-  pull(individual_id)
+  pull(tattoo)
 
 encounters_useful <- encounters_all %>%
-  filter(!(individual_id %in% badgers_to_drop))
+  filter(!(tattoo %in% badgers_to_drop))
 
 cat("\n============================================================\n")
 cat("CMR POPULATION FILTER\n")
@@ -350,7 +402,7 @@ cat("============================================================\n")
 cat("PM-only individuals dropped:", length(badgers_to_drop), "\n")
 cat(
   "Individuals retained:",
-  n_distinct(encounters_useful$individual_id),
+  n_distinct(encounters_useful$tattoo),
   "\n"
 )
 
@@ -363,12 +415,12 @@ cat(
 
 modal_setts <- encounters_useful %>%
   filter(!is.na(sett)) %>%
-  count(individual_id, sett, name = "n") %>%
-  arrange(individual_id, desc(n), sett) %>%
-  group_by(individual_id) %>%
+  count(tattoo, sett, name = "n") %>%
+  arrange(tattoo, desc(n), sett) %>%
+  group_by(tattoo) %>%
   slice(1) %>%
   transmute(
-    individual_id,
+    tattoo,
     modal_sett = sett
   ) %>%
   ungroup()
@@ -382,12 +434,12 @@ modal_setts <- encounters_useful %>%
 
 modal_social_groups <- encounters_useful %>%
   filter(!is.na(socg)) %>%
-  count(individual_id, socg, name = "n") %>%
-  arrange(individual_id, desc(n), socg) %>%
-  group_by(individual_id) %>%
+  count(tattoo, socg, name = "n") %>%
+  arrange(tattoo, desc(n), socg) %>%
+  group_by(tattoo) %>%
   slice(1) %>%
   transmute(
-    individual_id,
+    tattoo,
     modal_socg = socg
   ) %>%
   ungroup()
@@ -398,8 +450,8 @@ modal_social_groups <- encounters_useful %>%
 # ==============================================================================
 
 encounters_useful <- encounters_useful %>%
-  left_join(modal_setts, by = "individual_id") %>%
-  left_join(modal_social_groups, by = "individual_id") %>%
+  left_join(modal_setts, by = "tattoo") %>%
+  left_join(modal_social_groups, by = "tattoo") %>%
   mutate(
     differs_from_modal =
       !is.na(sett) &
@@ -422,12 +474,12 @@ encounters_useful <- encounters_useful %>%
 
 quarter_location_audit <- encounters_useful %>%
   group_by(
-    individual_id,
     tattoo,
     primary_year,
     trap_season
   ) %>%
   summarise(
+    individual_id = first(individual_id),
     n_encounters = n(),
     n_setts = n_distinct(sett[!is.na(sett)]),
     n_socg = n_distinct(socg[!is.na(socg)]),
@@ -456,7 +508,7 @@ quarter_location_audit <- encounters_useful %>%
 
 encounters_cmr_ready <- encounters_useful %>%
   group_by(
-    individual_id,
+    tattoo,
     primary_year,
     trap_season
   ) %>%
@@ -496,9 +548,9 @@ encounters_cmr_ready <- encounters_useful %>%
 dropped_observations <- encounters_useful %>%
   anti_join(
     encounters_cmr_ready,
-    by = c("individual_id", "capture_date")
+    by = c("tattoo", "capture_date")
   ) %>%
-  arrange(individual_id, capture_date)
+  arrange(tattoo, capture_date)
 
 cat("\n============================================================\n")
 cat("QUARTERLY COLLAPSE\n")
@@ -553,7 +605,6 @@ culture_clean <- diagnostics %>%
     )
   ) %>%
   group_by(
-    individual_id,
     tattoo,
     primary_year,
     trap_season
@@ -586,7 +637,6 @@ ifn_clean <- diagnostics %>%
     )
   ) %>%
   group_by(
-    individual_id,
     tattoo,
     primary_year,
     trap_season
@@ -618,7 +668,6 @@ dpp_clean <- diagnostics %>%
       line2 %in% c("P", "PX")
   ) %>%
   group_by(
-    individual_id,
     tattoo,
     primary_year,
     trap_season
@@ -675,7 +724,6 @@ hist_diag_clean <- diagnostics %>%
     )
   ) %>%
   group_by(
-    individual_id,
     tattoo,
     primary_year,
     trap_season
@@ -733,7 +781,6 @@ encounters_final_with_disease <- encounters_cmr_ready %>%
   left_join(
     culture_clean,
     by = c(
-      "individual_id",
       "tattoo",
       "primary_year",
       "trap_season"
@@ -742,7 +789,6 @@ encounters_final_with_disease <- encounters_cmr_ready %>%
   left_join(
     ifn_clean,
     by = c(
-      "individual_id",
       "tattoo",
       "primary_year",
       "trap_season"
@@ -751,7 +797,6 @@ encounters_final_with_disease <- encounters_cmr_ready %>%
   left_join(
     dpp_clean,
     by = c(
-      "individual_id",
       "tattoo",
       "primary_year",
       "trap_season"
@@ -760,7 +805,6 @@ encounters_final_with_disease <- encounters_cmr_ready %>%
   left_join(
     hist_diag_clean,
     by = c(
-      "individual_id",
       "tattoo",
       "primary_year",
       "trap_season"
@@ -875,11 +919,9 @@ print(diagnostic_summary)
 # ==============================================================================
 
 individual_summary <- encounters_final_with_disease %>%
-  group_by(
-    individual_id,
-    tattoo
-  ) %>%
+  group_by(tattoo) %>%
   summarise(
+    individual_id = first(individual_id),
     sex = first(sex),
     age_fc = first(age_fc),
     year_fc = first(year_fc),
@@ -944,7 +986,7 @@ cat(
 
 cat(
   "Database individuals:",
-  n_distinct(captures_db$individual_id),
+  n_distinct(identifier_map$tattoo),
   "\n"
 )
 
@@ -962,7 +1004,7 @@ cat(
 
 cat(
   "Individuals retained for CMR:",
-  n_distinct(encounters_cmr_ready$individual_id),
+  n_distinct(encounters_cmr_ready$tattoo),
   "\n"
 )
 
@@ -976,7 +1018,7 @@ cat(
   "Unique individual-quarter combinations:",
   n_distinct(
     paste(
-      encounters_cmr_ready$individual_id,
+      encounters_cmr_ready$tattoo,
       encounters_cmr_ready$primary_year,
       encounters_cmr_ready$trap_season,
       sep = "_"
@@ -1033,7 +1075,7 @@ cat("============================================================\n")
 
 quarter_duplicates <- encounters_cmr_ready %>%
   count(
-    individual_id,
+    tattoo,
     primary_year,
     trap_season
   ) %>%
@@ -1046,7 +1088,7 @@ stopifnot(
 # Every retained individual must genuinely have had at least one live capture.
 
 retained_live_check <- encounters_cmr_ready %>%
-  group_by(individual_id) %>%
+  group_by(tattoo) %>%
   summarise(
     ever_live = any(has_live_capture),
     .groups = "drop"
@@ -1054,6 +1096,15 @@ retained_live_check <- encounters_cmr_ready %>%
 
 stopifnot(
   all(retained_live_check$ever_live)
+)
+
+# Relational provenance must remain one-to-one after all analytical transforms.
+final_identifier_check <- encounters_final_with_disease %>%
+  distinct(tattoo, individual_id)
+
+stopifnot(
+  nrow(final_identifier_check) == n_distinct(final_identifier_check$tattoo),
+  nrow(final_identifier_check) == n_distinct(final_identifier_check$individual_id)
 )
 
 
