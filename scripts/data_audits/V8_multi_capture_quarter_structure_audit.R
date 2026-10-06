@@ -138,18 +138,34 @@ live <- enc %>%
 
 quarter <- live %>%
   group_by(tattoo, primary_year, trap_season, quarter_index) %>%
-  summarise(
-    n_live_encounters = n(),
-    n_unique_setts = n_distinct(Sett_Clean),
-    first_date = min(capture_date),
-    last_date = max(capture_date),
-    span_days = as.integer(last_date - first_date),
-    first_sett = Sett_Clean[which.min(capture_date)],
-    last_sett = Sett_Clean[which.max(capture_date)],
-    sett_sequence = paste(Sett_Clean[order(capture_date)], collapse = " -> "),
-    date_sequence = paste(as.character(capture_date[order(capture_date)]), collapse = " -> "),
-    .groups = "drop"
-  )
+  group_modify(~ {
+    z <- .x %>% arrange(capture_date)
+
+    if (nrow(z) > 1L) {
+      xy <- as.matrix(z %>% select(x, y))
+      max_pairwise_distance_m <- max(as.numeric(dist(xy)))
+    } else {
+      max_pairwise_distance_m <- 0
+    }
+
+    tibble(
+      n_live_encounters = nrow(z),
+      n_unique_setts = n_distinct(z$Sett_Clean),
+      first_date = min(z$capture_date),
+      last_date = max(z$capture_date),
+      span_days = as.integer(max(z$capture_date) - min(z$capture_date)),
+      first_sett = z$Sett_Clean[1],
+      last_sett = z$Sett_Clean[nrow(z)],
+      first_last_distance_m = sqrt(
+        (z$x[nrow(z)] - z$x[1])^2 +
+        (z$y[nrow(z)] - z$y[1])^2
+      ),
+      max_pairwise_distance_m = max_pairwise_distance_m,
+      sett_sequence = paste(z$Sett_Clean, collapse = " -> "),
+      date_sequence = paste(as.character(z$capture_date), collapse = " -> ")
+    )
+  }) %>%
+  ungroup()
 
 quarter_context <- quarter %>%
   group_by(tattoo) %>%
@@ -238,7 +254,19 @@ span_summary <- multi_sett %>%
     p75_span_days = as.numeric(quantile(span_days, 0.75)),
     p90_span_days = as.numeric(quantile(span_days, 0.90)),
     p95_span_days = as.numeric(quantile(span_days, 0.95)),
-    max_span_days = max(span_days)
+    max_span_days = max(span_days),
+    median_first_last_distance_m = median(first_last_distance_m),
+    p75_first_last_distance_m = as.numeric(quantile(first_last_distance_m, 0.75)),
+    p90_first_last_distance_m = as.numeric(quantile(first_last_distance_m, 0.90)),
+    p95_first_last_distance_m = as.numeric(quantile(first_last_distance_m, 0.95)),
+    max_first_last_distance_m = max(first_last_distance_m),
+    median_max_pairwise_distance_m = median(max_pairwise_distance_m),
+    p90_max_pairwise_distance_m = as.numeric(quantile(max_pairwise_distance_m, 0.90)),
+    p95_max_pairwise_distance_m = as.numeric(quantile(max_pairwise_distance_m, 0.95)),
+    max_pairwise_distance_m = max(max_pairwise_distance_m),
+    n_max_pairwise_gt250m = sum(max_pairwise_distance_m > 250),
+    n_max_pairwise_gt500m = sum(max_pairwise_distance_m > 500),
+    n_max_pairwise_gt1000m = sum(max_pairwise_distance_m > 1000)
   )
 
 write_csv(count_distribution, OUT_COUNT_DIST)
