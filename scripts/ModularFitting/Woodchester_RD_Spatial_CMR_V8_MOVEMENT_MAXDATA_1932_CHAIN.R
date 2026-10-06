@@ -5,6 +5,12 @@
 #   Run the established V7M/V6c movement model on EVERY badger with at least two
 #   spatially usable live years (expected n = 1,932 from the population audit).
 #
+#   Quarterly live-location rule:
+#   use the latest spatially usable live capture in each badger/year/quarter.
+#   The previous off-modal-sett priority is retained only as a documented
+#   sensitivity/legacy rule because audit results showed systematic inflation
+#   of apparent movement under that retrospective selection rule.
+#
 #   This deliberately removes the old restriction to animals that could also
 #   contribute to V7a/V7b. Disease analyses should subset the resulting movement
 #   histories downstream rather than restricting the movement fit itself.
@@ -143,6 +149,14 @@ src <- replace_once(src,
   "  group_by(individual_id,primary,trap_season) %>%",
   "  group_by(tattoo,primary,trap_season) %>%",
   "live-quarter grouping key")
+
+# Replace the frozen V7M off-modal-sett priority with the audited primary rule:
+# latest spatially usable LIVE capture within each quarter.
+src <- replace_once(src,
+  "  arrange(desc(coalesce(differs_from_modal,FALSE)),desc(capture_date),.by_group=TRUE) %>%",
+  "  arrange(desc(capture_date),.by_group=TRUE) %>%",
+  "latest-live quarterly location rule")
+
 src <- replace_once(src,
   "if(nrow(live %>% count(individual_id,primary,trap_season) %>% filter(n>1))) stop(\"Duplicate live quarter rows remain.\")",
   "if(nrow(live %>% count(tattoo,primary,trap_season) %>% filter(n>1))) stop(\"Duplicate live quarter rows remain.\")",
@@ -159,6 +173,9 @@ src <- gsub("1285","1932",src,fixed=TRUE)
 src <- gsub("all 1,932 badgers that can contribute to the directional V7 analyses","all 1,932 badgers with at least two spatially usable live years",src,fixed=TRUE)
 src <- gsub("exact directional-analysis population from the all-badger audit","maximum movement-informative population from the inclusive population audit",src,fixed=TRUE)
 src <- gsub("all_directional_badgers_from_V7_audit","all_badgers_with_at_least_2_usable_spatial_live_years",src,fixed=TRUE)
+src <- gsub('movement_endpoint="last_observed_live_year",',
+            'movement_endpoint="last_observed_live_year", quarterly_location_rule="latest_spatial_live_capture",',
+            src,fixed=TRUE)
 src <- gsub("audit_file=AUDIT_FILE","population_definition=\"results/V7_population_inclusion_audit.rds\"",src,fixed=TRUE)
 src <- append(src,values="",after=0L); src <- append(src,values=paste0("EXPECTED_N <- ",EXPECTED_N,"L"),after=0L)
 
