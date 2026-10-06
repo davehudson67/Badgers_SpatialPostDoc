@@ -745,12 +745,12 @@ dpp_clean <- diagnostics %>%
 #
 # VALIDATED CODES
 #
-# Stat-Pak:
+# Stat-Pak (verified in current database):
 #   N = Negative
 #   P = Positive
 #   C = No Clotted Sample
 #
-# Brock:
+# Brock (verified in current database):
 #   N    = Negative
 #   P    = Positive
 #   NULL = no recorded result
@@ -889,16 +889,30 @@ encounters_final_with_disease <- encounters_cmr_ready %>%
       replace_na(hist_test_record, FALSE),
     
     # ----------------------------------------------------------
-    # Compatibility-style flag:
-    # Was there a disease-test record in this quarter?
+    # Did any diagnostic TEST RECORD exist in this quarter?
+    # This is not the same as having an interpretable result.
     # ----------------------------------------------------------
     
-    tested_this_season =
+    any_test_record =
       culture_tested |
       ifn_tested |
       dpp_tested |
       statpak_tested |
       brock_tested,
+
+    # Legacy alias retained for compatibility with older code.
+    tested_this_season = any_test_record,
+
+    # ----------------------------------------------------------
+    # Did any assay return an interpretable binary result?
+    # ----------------------------------------------------------
+
+    any_result_available =
+      culture_result_available |
+      ifn_result_available |
+      dpp_result_available |
+      statpak_result_available |
+      brock_result_available,
     
     # ----------------------------------------------------------
     # Did any diagnostic assay return a positive result?
@@ -937,7 +951,13 @@ cat(
 
 cat(
   "Records with ANY disease-test record:",
-  sum(encounters_final_with_disease$tested_this_season),
+  sum(encounters_final_with_disease$any_test_record),
+  "\n"
+)
+
+cat(
+  "Records with ANY interpretable diagnostic result:",
+  sum(encounters_final_with_disease$any_result_available),
   "\n"
 )
 
@@ -1022,8 +1042,16 @@ individual_summary <- encounters_final_with_disease %>%
     modal_sett = first(modal_sett),
     modal_socg = first(modal_socg),
     
+    ever_test_record =
+      any(any_test_record),
+
+    ever_interpretable_result =
+      any(any_result_available),
+
+    # Legacy compatibility name: this means a test record existed, not
+    # necessarily that an interpretable diagnostic result was returned.
     ever_disease_tested =
-      any(tested_this_season),
+      any(any_test_record),
     
     ever_positive =
       any(any_positive_test),
