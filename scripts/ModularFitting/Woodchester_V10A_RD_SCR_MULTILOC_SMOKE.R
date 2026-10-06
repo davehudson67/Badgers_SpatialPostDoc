@@ -1327,6 +1327,17 @@ print(compile_mcmc_time)
 # ---- run ---------------------------------------------------------------------
 cat("\nRunning MCMC...\n")
 
+checkpoint_file <- file.path(
+  "results",
+  paste0(
+    "V10A_RD_MULTILOC_",
+    nind,
+    "_CHAIN",
+    CHAIN_ID,
+    "_RAW_CHECKPOINT.rds"
+  )
+)
+
 runtime <- system.time(
   samples <- runMCMC(
     cMCMC,
@@ -1341,6 +1352,34 @@ runtime <- system.time(
 
 cat("\nRuntime:\n")
 print(runtime)
+
+# Save the raw chain immediately. This checkpoint is deliberately written
+# before any summaries/post-processing so a completed MCMC run is not lost if
+# later diagnostics fail.
+saveRDS(
+  list(
+    model = "V10A_RD_SCR_MULTILOC",
+    fit_type = fit_type,
+    chain_id = CHAIN_ID,
+    settings = list(
+      max_year = MAX_YEAR,
+      max_badgers = MAX_BADGERS,
+      niter = NITER,
+      nburn = NBURN,
+      thin = THIN
+    ),
+    ids = ids,
+    individual_ids = individual_ids,
+    years = years,
+    first = first,
+    K = K,
+    samples = samples,
+    runtime = runtime
+  ),
+  checkpoint_file
+)
+
+cat("\nRaw MCMC checkpoint saved:\n", checkpoint_file, "\n", sep = "")
 
 sample_mat <- as.matrix(samples)
 
