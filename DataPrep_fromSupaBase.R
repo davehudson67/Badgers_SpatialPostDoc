@@ -506,9 +506,13 @@ quarter_location_audit <- encounters_useful %>%
 #
 # Priority for representative location/record:
 #
-#   1. PM/death record
-#   2. sett differs from lifetime modal sett
+#   1. live encounter, whenever the quarter contains any live capture
+#   2. among eligible representative rows, sett differs from lifetime modal sett
 #   3. latest capture date
+#
+# PM/death occurrence is preserved separately at the quarter level. This avoids
+# a biologically incoherent row in which has_live_capture=TRUE but the retained
+# location came only from a PM/death encounter.
 #
 # IMPORTANT:
 # has_live_capture and has_pm_record in the final quarterly dataset describe
@@ -526,11 +530,27 @@ encounters_cmr_ready <- encounters_useful %>%
   # Preserve quarter-level biological information BEFORE selecting one row
   mutate(
     quarter_has_live_capture = any(has_live_capture),
-    quarter_has_pm_record = any(has_pm_record)
+    quarter_has_pm_record = any(has_pm_record),
+
+    quarter_first_pm_date = if (
+      any(has_pm_record)
+    ) {
+      min(capture_date[has_pm_record])
+    } else {
+      as.Date(NA)
+    },
+
+    quarter_last_pm_date = if (
+      any(has_pm_record)
+    ) {
+      max(capture_date[has_pm_record])
+    } else {
+      as.Date(NA)
+    }
   ) %>%
   
   arrange(
-    desc(has_pm_record),
+    desc(has_live_capture),
     desc(differs_from_modal),
     desc(capture_date),
     .by_group = TRUE
@@ -604,6 +624,10 @@ cat(
   "Live-capture quarters represented by a PM-only row/location:",
   nrow(pm_location_for_live_quarter),
   "\n"
+)
+
+stopifnot(
+  nrow(pm_location_for_live_quarter) == 0L
 )
 
 
