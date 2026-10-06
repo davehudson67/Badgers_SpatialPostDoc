@@ -998,37 +998,30 @@ print(diagnostic_summary)
 
 # ==============================================================================
 # 22. Additional Individual-Level Summary
+#
+# IMPORTANT:
+# Event-history dates are derived from encounters_useful (the same-day fused,
+# pre-quarter-collapse data), NOT from encounters_cmr_ready. A quarterly
+# representative row may be later than the first event in that quarter or may
+# be PM-derived, so it must not be used to reconstruct exact encounter dates.
 # ==============================================================================
 
-individual_summary <- encounters_final_with_disease %>%
+individual_encounter_summary <- encounters_useful %>%
   group_by(tattoo) %>%
   summarise(
     individual_id = first(individual_id),
     sex = first(sex),
     age_fc = first(age_fc),
     year_fc = first(year_fc),
-    
+
     first_encounter = min(capture_date),
     last_encounter = max(capture_date),
-    
-    first_live_capture = if (
-      any(has_live_capture)
-    ) {
-      min(capture_date[has_live_capture])
-    } else {
-      as.Date(NA)
-    },
-    
-    last_live_capture = if (
-      any(has_live_capture)
-    ) {
-      max(capture_date[has_live_capture])
-    } else {
-      as.Date(NA)
-    },
-    
+
+    first_live_capture = min(capture_date[has_live_capture]),
+    last_live_capture = max(capture_date[has_live_capture]),
+
     has_pm = any(has_pm_record),
-    
+
     first_pm_date = if (
       any(has_pm_record)
     ) {
@@ -1036,27 +1029,42 @@ individual_summary <- encounters_final_with_disease %>%
     } else {
       as.Date(NA)
     },
-    
-    n_primary_occasions = n(),
-    
+
+    n_same_day_encounters = n(),
+    n_observed_primary_occasions =
+      n_distinct(primary_year, trap_season),
+    n_live_primary_occasions =
+      n_distinct(
+        primary_year[has_live_capture],
+        trap_season[has_live_capture]
+      ),
+
     modal_sett = first(modal_sett),
     modal_socg = first(modal_socg),
-    
-    ever_test_record =
-      any(any_test_record),
 
-    ever_interpretable_result =
-      any(any_result_available),
+    .groups = "drop"
+  )
+
+individual_disease_summary <- encounters_final_with_disease %>%
+  group_by(tattoo) %>%
+  summarise(
+    ever_test_record = any(any_test_record),
+    ever_interpretable_result = any(any_result_available),
 
     # Legacy compatibility name: this means a test record existed, not
     # necessarily that an interpretable diagnostic result was returned.
-    ever_disease_tested =
-      any(any_test_record),
-    
-    ever_positive =
-      any(any_positive_test),
-    
+    ever_disease_tested = any(any_test_record),
+
+    ever_positive = any(any_positive_test),
+
     .groups = "drop"
+  )
+
+individual_summary <- individual_encounter_summary %>%
+  left_join(individual_disease_summary, by = "tattoo") %>%
+  mutate(
+    # Legacy alias retained for downstream code that expects this name.
+    n_primary_occasions = n_observed_primary_occasions
   )
 
 
@@ -1188,6 +1196,26 @@ stopifnot(
   all(retained_live_check$ever_live)
 )
 
+# Quarterly diagnostic joins must not duplicate or remove quarterly CMR rows.
+stopifnot(
+  nrow(encounters_final_with_disease) == nrow(encounters_cmr_ready)
+)
+
+final_quarter_duplicates <- encounters_final_with_disease %>%
+  count(tattoo, primary_year, trap_season) %>%
+  filter(n > 1)
+
+stopifnot(
+  nrow(final_quarter_duplicates) == 0
+)
+
+# Calendar occasion fields must be complete and valid.
+stopifnot(
+  !anyNA(encounters_useful$capture_date),
+  !anyNA(encounters_useful$primary_year),
+  all(encounters_useful$trap_season %in% 1:4)
+)
+
 # Relational provenance must remain one-to-one after all analytical transforms.
 final_identifier_check <- encounters_final_with_disease %>%
   distinct(tattoo, individual_id)
@@ -1202,16 +1230,29 @@ stopifnot(
 # 25. Save Reproducible Analysis Snapshots
 #
 # PostgreSQL remains the canonical source.
-# These RDS files are model-input snapshots only.
-# ==============================================================================
-
-saveRDS(
-  encounters_final_with_disease,
-  "data/badger_final_CMRready_wDisease.rds"
-)
-
-# ==============================================================================
-# Save analysis objects
+#
+# badger_encounters_useful.rds
+#   Same-day fused encounter history for animals ever observed alive.
+#   Pre-quarter-collapse; includes live and PM encounters. This is the current
+#   preferred starting point for movement-model-specific observation selection.
+#
+# badger_CMRready.rds
+#   One representative row per observed badger-quarter. Useful for legacy/
+#   descriptive quarterly CMR work; representative-row provenance is retained.
+#
+# badger_final_CMRready_wDisease.rds
+#   The quarterly CMR table plus quarterly diagnostic summaries. This is a
+#   descriptive/compatibility disease table, not the latent infection trajectory
+#   used for directional infection<->movement inference.
+#
+# badger_individuals.rds
+#   One row per canonical tattoo with individual traits and database key.
+#
+# badger_individual_summary.rds
+#   Individual-level summary using exact pre-collapse encounter dates.
+#
+# badger_quarter_location_audit.rds
+#   Pre-collapse counts of encounters/setts/recorded SGs within each quarter.
 # ==============================================================================
 
 dir.create("data", showWarnings = FALSE)
@@ -1234,6 +1275,11 @@ saveRDS(
 saveRDS(
   individuals,
   "data/badger_individuals.rds"
+)
+
+saveRDS(
+  individual_summary,
+  "data/badger_individual_summary.rds"
 )
 
 saveRDS(
