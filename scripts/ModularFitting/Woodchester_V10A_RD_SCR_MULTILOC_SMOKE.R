@@ -1015,7 +1015,6 @@ consts <- list(
   cell_size = cell_size,
   n_rows = n_rows,
   n_cols = n_cols,
-  habitat_mat = habitat_mat,
   MOVE_MEAN_FACTOR = MOVE_MEAN_FACTOR,
   QUARTER_DIFF_MEAN_FACTOR = QUARTER_DIFF_MEAN_FACTOR,
   LOG_MOVE_MIN = LOG_MOVE_MIN,
@@ -1036,7 +1035,8 @@ data_list <- list(
   disp = disp_data,
   annual_state_ok = matrix(1L, nind, n_prim),
   quarter_state_ok = array(1L, c(nind, J, n_prim)),
-  move_support_ok = matrix(1L, nind, n_prim)
+  move_support_ok = matrix(1L, nind, n_prim),
+  habitat_mat = habitat_mat
 )
 
 # ---- initial values ----------------------------------------------------------
