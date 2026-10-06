@@ -1,5 +1,11 @@
 # Woodchester V10 quarterly movement model specification
 
+> **SUPERSEDED FOR PRIMARY IMPLEMENTATION.** This document records the exploratory
+> pure-quarterly state-space formulation. The primary V10a development now keeps
+> **year as the robust-design primary period** and Q1-Q4 as secondary trapping
+> campaigns, while adding quarter-specific spatial-use centres around an annual
+> activity centre. See `docs/V10A_RD_SCR_MULTILOC_SPEC.md`.
+
 ## Why V10 exists
 
 V8/V9 reduce each badger/year/quarter to one representative capture location and then
