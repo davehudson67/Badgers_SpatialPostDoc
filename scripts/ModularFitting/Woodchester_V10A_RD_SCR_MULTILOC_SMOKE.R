@@ -61,6 +61,7 @@ NBURN <- as.integer(Sys.getenv("NBURN", unset = "1000"))
 THIN <- as.integer(Sys.getenv("THIN", unset = "2"))
 
 MOVE_MEAN_FACTOR <- sqrt(pi / 2)
+QUARTER_DIFF_MEAN_FACTOR <- sqrt(pi)
 
 # Annual movement support: retained from V8 as a broad computational guard.
 LOG_MOVE_MIN <- log(5)
@@ -550,6 +551,16 @@ code_V10A <- nimbleCode({
   alpha_logomega ~ dnorm(log(150), sd = 1)
   omega <- exp(alpha_logomega)
 
+  # For an isotropic bivariate Gaussian quarter offset:
+  #   distance from annual AC ~ Rayleigh(scale = omega)
+  #   difference between two independent quarter centres
+  #     ~ Rayleigh(scale = sqrt(2) * omega)
+  mean_quarter_offset_from_annual <-
+    omega * MOVE_MEAN_FACTOR
+
+  mean_between_quarter_centres <-
+    omega * QUARTER_DIFF_MEAN_FACTOR
+
   # ---------------------------------------------------------------------------
   # Annual local/high-mobility movement process
   # ---------------------------------------------------------------------------
@@ -1006,6 +1017,7 @@ consts <- list(
   n_cols = n_cols,
   habitat_mat = habitat_mat,
   MOVE_MEAN_FACTOR = MOVE_MEAN_FACTOR,
+  QUARTER_DIFF_MEAN_FACTOR = QUARTER_DIFF_MEAN_FACTOR,
   LOG_MOVE_MIN = LOG_MOVE_MIN,
   LOG_MOVE_MAX = LOG_MOVE_MAX,
   eps_zero = eps_zero,
@@ -1199,6 +1211,8 @@ core_monitors <- c(
   "beta_sigma_sex",
   "alpha_logomega",
   "omega",
+  "mean_quarter_offset_from_annual",
+  "mean_between_quarter_centres",
   "alpha_logmove",
   "beta_move_sex",
   "beta_move_high",
@@ -1367,6 +1381,8 @@ key_parameters <- c(
   "sigma_female",
   "sigma_male",
   "omega",
+  "mean_quarter_offset_from_annual",
+  "mean_between_quarter_centres",
   "mean_annual_move_female_local",
   "mean_annual_move_male_local",
   "mean_annual_move_female_high",
