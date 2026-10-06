@@ -258,7 +258,14 @@ capture_records <- captures_db %>%
   ) %>%
   mutate(
     sett = make_location_key(sett_name),
-    socg = make_location_key(socg_name)
+
+    # Historical social group recorded for THIS capture.
+    # Do not reconstruct this from a static sett->SG lookup: SG affiliations
+    # and territory boundaries changed through time.
+    recorded_socg = make_location_key(socg_name),
+
+    # Legacy alias retained for existing downstream scripts.
+    socg = recorded_socg
   )
 
 
@@ -291,6 +298,7 @@ encounters <- capture_records %>%
     
     recorded_social_group_id = first_nonmissing(recorded_social_group_id),
     socg_name = first_nonmissing_text(socg_name),
+    recorded_socg = first_nonmissing_text(recorded_socg),
     socg = first_nonmissing_text(socg),
     
     recorded_sett_name = first_nonmissing_text(recorded_sett_name),
@@ -427,9 +435,11 @@ modal_setts <- encounters_useful %>%
 
 
 # ==============================================================================
-# 10. Lifetime Modal Social Group
+# 10. Lifetime Modal Recorded Social Group
 #
-# Based on historical capture-level recorded SG.
+# Descriptive only: the most frequently recorded historical SG across the
+# animal's observed lifetime. This is NOT a fixed true SG identity because
+# social-group affiliations and territory boundaries changed through time.
 # ==============================================================================
 
 modal_social_groups <- encounters_useful %>%
@@ -527,6 +537,14 @@ encounters_cmr_ready <- encounters_useful %>%
   ) %>%
   
   slice(1) %>%
+
+  # Preserve the provenance of the row supplying the representative location.
+  # These are encounter-level flags and differ from the quarter-wide flags below.
+  mutate(
+    representative_has_live_capture = has_live_capture,
+    representative_has_pm_record = has_pm_record,
+    representative_capture_date = capture_date
+  ) %>%
   
   # After collapse these flags now refer to the whole primary occasion
   mutate(
@@ -569,6 +587,22 @@ cat(
 cat(
   "Individual-quarters with >1 recorded social group:",
   sum(quarter_location_audit$multi_socg, na.rm = TRUE),
+  "\n"
+)
+
+# A potentially important edge case: the quarter contains a live capture, but
+# the representative row/location came from a PM-only encounter because PM rows
+# are intentionally prioritised by the historical collapse rule.
+pm_location_for_live_quarter <- encounters_cmr_ready %>%
+  filter(
+    has_live_capture,
+    representative_has_pm_record,
+    !representative_has_live_capture
+  )
+
+cat(
+  "Live-capture quarters represented by a PM-only row/location:",
+  nrow(pm_location_for_live_quarter),
   "\n"
 )
 
