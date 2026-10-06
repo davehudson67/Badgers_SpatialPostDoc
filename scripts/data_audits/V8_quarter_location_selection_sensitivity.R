@@ -482,7 +482,21 @@ move_comparison <- observed_moves %>%
     abs_move_delta_m = abs(move_delta_m),
     crossed_150m =
       (observed_move_m > 150) !=
-      (current_observed_move_m > 150)
+      (current_observed_move_m > 150),
+
+    current_larger =
+      current_observed_move_m > observed_move_m,
+
+    alternative_larger =
+      observed_move_m > current_observed_move_m,
+
+    current_high_alt_low =
+      current_observed_move_m > 150 &
+      observed_move_m <= 150,
+
+    current_low_alt_high =
+      current_observed_move_m <= 150 &
+      observed_move_m > 150
   )
 
 move_summary <- move_comparison %>%
@@ -495,6 +509,16 @@ move_summary <- move_comparison %>%
     n_abs_delta_gt50m = sum(abs_move_delta_m > 50),
     n_abs_delta_gt100m = sum(abs_move_delta_m > 100),
     n_crossed_150m = sum(crossed_150m),
+    n_current_larger = sum(current_larger),
+    n_alternative_larger = sum(alternative_larger),
+    n_current_high_alt_low = sum(current_high_alt_low),
+    n_current_low_alt_high = sum(current_low_alt_high),
+    mean_signed_delta_alt_minus_current_m = mean(move_delta_m),
+    median_signed_delta_changed_m = if_else(
+      any(abs_move_delta_m > 0),
+      median(move_delta_m[abs_move_delta_m > 0]),
+      0
+    ),
     median_abs_delta_m = median(abs_move_delta_m),
     p95_abs_delta_m = q95(abs_move_delta_m),
     max_abs_delta_m = max(abs_move_delta_m),
@@ -638,7 +662,21 @@ target_comparison <- target_steps %>%
 
     crossed_150m =
       (target_step_m > 150) !=
-      (current_target_step_m > 150)
+      (current_target_step_m > 150),
+
+    current_larger =
+      current_target_step_m > target_step_m,
+
+    alternative_larger =
+      target_step_m > current_target_step_m,
+
+    current_high_alt_low =
+      current_target_step_m > 150 &
+      target_step_m <= 150,
+
+    current_low_alt_high =
+      current_target_step_m <= 150 &
+      target_step_m > 150
   )
 
 target_summary <- target_comparison %>%
@@ -651,6 +689,16 @@ target_summary <- target_comparison %>%
     n_abs_delta_gt50m = sum(abs_target_step_delta_m > 50),
     n_abs_delta_gt100m = sum(abs_target_step_delta_m > 100),
     n_crossed_150m = sum(crossed_150m),
+    n_current_larger = sum(current_larger),
+    n_alternative_larger = sum(alternative_larger),
+    n_current_high_alt_low = sum(current_high_alt_low),
+    n_current_low_alt_high = sum(current_low_alt_high),
+    mean_signed_delta_alt_minus_current_m = mean(target_step_delta_m),
+    median_signed_delta_changed_m = if_else(
+      any(abs_target_step_delta_m > 0),
+      median(target_step_delta_m[abs_target_step_delta_m > 0]),
+      0
+    ),
     median_abs_delta_m = median(abs_target_step_delta_m),
     p95_abs_delta_m = q95(abs_target_step_delta_m),
     max_abs_delta_m = max(abs_target_step_delta_m),
