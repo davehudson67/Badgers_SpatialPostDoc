@@ -218,13 +218,14 @@ summary_tbl <- tibble(
     max(quarter_context$n_live_encounters),
     max(quarter_context$n_unique_setts),
     sum(multi_sett$previous_calendar_quarter_empty),
-    sum(multi_sett$immediate_previous_quarter_observed),
-    sum(multi_sett$immediate_next_quarter_observed),
-    sum(multi_sett$first_matches_previous_observed),
-    sum(multi_sett$last_matches_next_observed),
+    sum(multi_sett$immediate_previous_quarter_observed, na.rm = TRUE),
+    sum(multi_sett$immediate_next_quarter_observed, na.rm = TRUE),
+    sum(multi_sett$first_matches_previous_observed, na.rm = TRUE),
+    sum(multi_sett$last_matches_next_observed, na.rm = TRUE),
     sum(
       multi_sett$first_matches_previous_observed &
-      multi_sett$last_matches_next_observed
+      multi_sett$last_matches_next_observed,
+      na.rm = TRUE
     ),
     sum(multi_sett$first_sett != multi_sett$last_sett)
   )
