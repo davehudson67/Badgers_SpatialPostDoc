@@ -665,15 +665,21 @@ culture_clean <- diagnostics %>%
 # 17. IFN-Gamma ELISA
 #
 # The historical 2919 -> 2019 typo is already corrected upstream in PostgreSQL.
+#
+# Historical binary interpretation:
+#   POSITIVE -> positive
+#   NEGATIVE -> negative
+#   missing/other -> no interpretable binary result
+#
+# Keep test-record existence separate from result availability so an all-missing
+# quarter cannot silently become an IFN-negative quarter.
 # ==============================================================================
 
 ifn_clean <- diagnostics %>%
   filter(test_family == "IFN-gamma ELISA") %>%
   mutate(
-    is_pos = str_detect(
-      result_upper,
-      "POSITIVE"
-    )
+    is_pos = result_upper == "POSITIVE",
+    result_available = result_upper %in% c("POSITIVE", "NEGATIVE")
   ) %>%
   group_by(
     tattoo,
@@ -682,6 +688,7 @@ ifn_clean <- diagnostics %>%
   ) %>%
   summarise(
     ifn_tested = TRUE,
+    ifn_result_available = any(result_available, na.rm = TRUE),
     ifn_positive = any(is_pos, na.rm = TRUE),
     .groups = "drop"
   )
@@ -934,6 +941,7 @@ diagnostic_summary <- encounters_final_with_disease %>%
     Culture_Pos = sum(culture_positive),
     
     IFN_Tested = sum(ifn_tested),
+    IFN_Result = sum(ifn_result_available),
     IFN_Pos = sum(ifn_positive),
     
     DPP_Tested = sum(dpp_tested),
