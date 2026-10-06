@@ -625,18 +625,22 @@ diagnostics <- diagnostics_db %>%
 # ==============================================================================
 # 16. Culture
 #
-# Preserve the previous analytical definition:
-# M. BOVIS = culture positive.
+# Historical binary M. bovis culture definition:
+#   M.BOVIS   -> positive
+#   NEGATIVE  -> negative
+#   all other result labels -> no interpretable binary M. bovis result
+#
+# culture_tested means that a Culture source/test record exists in the quarter.
+# culture_result_available means at least one interpretable M.BOVIS/NEGATIVE
+# result exists. These must not be treated as synonymous.
 # ==============================================================================
 
 culture_clean <- diagnostics %>%
   filter(test_family == "Culture") %>%
   mutate(
     sample_type = toupper(trimws(sample_type)),
-    is_pos = str_detect(
-      result_upper,
-      "M\\.BOVIS|M BOVIS"
-    )
+    is_pos = result_upper == "M.BOVIS",
+    result_available = result_upper %in% c("M.BOVIS", "NEGATIVE")
   ) %>%
   group_by(
     tattoo,
@@ -645,6 +649,7 @@ culture_clean <- diagnostics %>%
   ) %>%
   summarise(
     culture_tested = TRUE,
+    culture_result_available = any(result_available, na.rm = TRUE),
     culture_positive = any(is_pos, na.rm = TRUE),
     
     culture_samples = paste(
@@ -925,6 +930,7 @@ cat(
 diagnostic_summary <- encounters_final_with_disease %>%
   summarise(
     Culture_Tested = sum(culture_tested),
+    Culture_Result = sum(culture_result_available),
     Culture_Pos = sum(culture_positive),
     
     IFN_Tested = sum(ifn_tested),
