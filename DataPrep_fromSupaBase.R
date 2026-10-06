@@ -699,8 +699,15 @@ ifn_clean <- diagnostics %>%
 #
 # There is deliberately NO database-derived overall DPP result.
 #
-# Preserve the previous analytical rule:
-# either visual line P or Px => DPP positive.
+# Historical interpretation of each visual line:
+#   N / NX -> negative
+#   P / PX -> positive
+#   missing/other -> uninterpretable
+#
+# A quarter is DPP-positive if either line is P/PX on any DPP record.
+# Keep result availability explicit so future missing/novel codes cannot be
+# silently treated as negative. In the current database line 1 is always one
+# of N/NX/P/PX, so every present DPP record is currently interpretable.
 # ==============================================================================
 
 dpp_clean <- diagnostics %>%
@@ -708,10 +715,15 @@ dpp_clean <- diagnostics %>%
   mutate(
     line1 = toupper(trimws(visual_line_1)),
     line2 = toupper(trimws(visual_line_2)),
+
+    line1_available = line1 %in% c("N", "NX", "P", "PX"),
+    line2_available = line2 %in% c("N", "NX", "P", "PX"),
     
     is_pos =
       line1 %in% c("P", "PX") |
-      line2 %in% c("P", "PX")
+      line2 %in% c("P", "PX"),
+
+    result_available = line1_available | line2_available
   ) %>%
   group_by(
     tattoo,
@@ -720,6 +732,7 @@ dpp_clean <- diagnostics %>%
   ) %>%
   summarise(
     dpp_tested = TRUE,
+    dpp_result_available = any(result_available, na.rm = TRUE),
     dpp_positive = any(is_pos, na.rm = TRUE),
     .groups = "drop"
   )
@@ -945,6 +958,7 @@ diagnostic_summary <- encounters_final_with_disease %>%
     IFN_Pos = sum(ifn_positive),
     
     DPP_Tested = sum(dpp_tested),
+    DPP_Result = sum(dpp_result_available),
     DPP_Pos = sum(dpp_positive),
     
     StatPak_Tested = sum(statpak_tested),
