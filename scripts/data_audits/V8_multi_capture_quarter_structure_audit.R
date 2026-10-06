@@ -263,7 +263,7 @@ span_summary <- multi_sett %>%
     median_max_pairwise_distance_m = median(max_pairwise_distance_m),
     p90_max_pairwise_distance_m = as.numeric(quantile(max_pairwise_distance_m, 0.90)),
     p95_max_pairwise_distance_m = as.numeric(quantile(max_pairwise_distance_m, 0.95)),
-    max_pairwise_distance_m = max(max_pairwise_distance_m),
+    max_pairwise_distance_observed_m = max(max_pairwise_distance_m),
     n_max_pairwise_gt250m = sum(max_pairwise_distance_m > 250),
     n_max_pairwise_gt500m = sum(max_pairwise_distance_m > 500),
     n_max_pairwise_gt1000m = sum(max_pairwise_distance_m > 1000)
