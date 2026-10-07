@@ -394,6 +394,38 @@ if (anyNA(first) || anyNA(K) || any(K <= first)) {
   stop("Invalid first/K annual histories.")
 }
 
+# NIMBLE monitors operate at the VARIABLE level: requesting even one disp[i,k]
+# causes the whole ragged disp array to be saved. Build a compact index of the
+# genuine annual movement intervals and expose those states through a separate
+# deterministic vector, disp_active[], in the model.
+transition_map <- bind_rows(
+  lapply(
+    seq_len(nind),
+    function(i) {
+      ks <- (first[i] + 1L):K[i]
+
+      tibble(
+        active_index = seq_along(ks),
+        model_i = i,
+        individual_id = individual_ids[i],
+        tattoo = ids[i],
+        state_k = ks,
+        from_year = years[ks - 1L],
+        to_year = years[ks]
+      )
+    }
+  )
+) %>%
+  mutate(active_index = row_number())
+
+n_trans <- nrow(transition_map)
+trans_i <- as.integer(transition_map$model_i)
+trans_k <- as.integer(transition_map$state_k)
+
+if (n_trans < 1L) {
+  stop("No active annual movement intervals found.")
+}
+
 # ---- observed annual + quarterly locations for initialization ----------------
 annual_loc <- live %>%
   group_by(tattoo, primary) %>%
@@ -985,6 +1017,13 @@ code_V10A <- nimbleCode({
       }
     }
   }
+
+  # Compact monitorable vector containing only genuine annual movement states.
+  # This avoids monitoring the entire ragged disp[,] array.
+  for (tt in 1:n_trans) {
+    disp_active[tt] <-
+      disp[trans_i[tt], trans_k[tt]]
+  }
 })
 
 # ---- constants/data ----------------------------------------------------------
@@ -1000,6 +1039,9 @@ consts <- list(
   M = M,
   first = as.integer(first),
   K = as.integer(K),
+  n_trans = n_trans,
+  trans_i = trans_i,
+  trans_k = trans_k,
   X = X,
   H = H,
   ncap = ncap,
@@ -1233,37 +1275,18 @@ core_monitors <- c(
   "mean_annual_move_male_high"
 )
 
-disp_index <- bind_rows(
-  lapply(
-    seq_len(nind),
-    function(i) {
-
-      ks <- (first[i] + 1L):K[i]
-
-      tibble(
-        model_i = i,
-        individual_id = individual_ids[i],
-        tattoo = ids[i],
-        state_k = ks,
-        from_year = years[ks - 1L],
-        to_year = years[ks],
-        node = paste0(
-          "disp[",
-          i,
-          ", ",
-          ks,
-          "]"
-        )
-      )
-    }
+disp_index <- transition_map %>%
+  mutate(
+    sample_column = paste0(
+      "disp_active[",
+      active_index,
+      "]"
+    )
   )
-)
-
-disp_nodes <- disp_index$node
 
 config <- configureMCMC(
   model,
-  monitors = unique(c(core_monitors, disp_nodes)),
+  monitors = unique(c(core_monitors, "disp_active")),
   thin = THIN
 )
 
@@ -1372,6 +1395,7 @@ saveRDS(
     years = years,
     first = first,
     K = K,
+    disp_index = disp_index,
     samples = samples,
     runtime = runtime
   ),
@@ -1383,9 +1407,23 @@ cat("\nRaw MCMC checkpoint saved:\n", checkpoint_file, "\n", sep = "")
 sample_mat <- as.matrix(samples)
 
 # ---- compact smoke diagnostics ----------------------------------------------
+state_cols <- grep(
+  "^disp_active\\[",
+  colnames(sample_mat),
+  value = TRUE
+)
+
+if (length(state_cols) != nrow(disp_index)) {
+  stop(
+    "Expected ", nrow(disp_index),
+    " compact movement-state columns, found ",
+    length(state_cols), "."
+  )
+}
+
 global_cols <- setdiff(
   colnames(sample_mat),
-  disp_nodes
+  state_cols
 )
 
 # Diagnose any monitored nodes that contain non-finite draws. This can occur
@@ -1492,15 +1530,32 @@ print(
   width = Inf
 )
 
-if (length(disp_nodes)) {
+if (length(state_cols)) {
+  # Match saved columns back to the biological interval index explicitly.
+  state_pos <- match(
+    disp_index$sample_column,
+    state_cols
+  )
+
+  if (anyNA(state_pos)) {
+    stop("Could not map compact movement-state samples to disp_index.")
+  }
+
   disp_prob <-
     colMeans(
-      sample_mat[, disp_nodes, drop = FALSE]
+      sample_mat[
+        ,
+        state_cols[state_pos],
+        drop = FALSE
+      ],
+      na.rm = TRUE
     )
+
+  disp_index$p_high <- as.numeric(disp_prob)
 
   cat(
     "\nMean posterior high-mobility occupancy:",
-    mean(disp_prob), "\n"
+    mean(disp_prob, na.rm = TRUE), "\n"
   )
 }
 
