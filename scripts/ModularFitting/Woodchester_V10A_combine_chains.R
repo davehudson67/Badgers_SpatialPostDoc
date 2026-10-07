@@ -95,12 +95,55 @@ same_K <- all(vapply(
 ))
 if (!same_first || !same_K) stop("Chains do not contain identical annual histories.")
 
+# Compare the biological movement-interval mapping rather than requiring
+# byte-for-byte identity of the saved tibble. Attributes or auxiliary columns
+# can differ harmlessly between serialized objects, while the key mapping must
+# be identical.
+disp_key_cols <- c(
+  "active_index",
+  "model_i",
+  "individual_id",
+  "tattoo",
+  "state_k",
+  "from_year",
+  "to_year"
+)
+
+if (!all(vapply(
+  fits,
+  function(x) all(disp_key_cols %in% names(x$disp_index)),
+  logical(1)
+))) {
+  stop("At least one chain is missing required disp_index key columns.")
+}
+
+disp_keys <- lapply(
+  fits,
+  function(x) {
+    x$disp_index %>%
+      select(all_of(disp_key_cols)) %>%
+      as.data.frame()
+  }
+)
+
 same_disp_index <- all(vapply(
-  fits[-1],
-  function(x) identical(x$disp_index, fits[[1]]$disp_index),
+  disp_keys[-1],
+  function(x) isTRUE(all.equal(x, disp_keys[[1]], check.attributes = FALSE)),
   logical(1)
 ))
-if (!same_disp_index) stop("Chains do not have the same active movement-state index.")
+
+if (!same_disp_index) {
+  cat("\nActive movement-state index genuinely differs among chains.\n")
+  for (ch in 2:length(disp_keys)) {
+    cat("\nChain 1 versus chain ", ch, ":\n", sep = "")
+    print(all.equal(
+      disp_keys[[1]],
+      disp_keys[[ch]],
+      check.attributes = FALSE
+    ))
+  }
+  stop("Chains do not have the same biological active movement-state index.")
+}
 
 sample_mats <- lapply(fits, function(x) as.matrix(x$samples))
 
