@@ -386,6 +386,10 @@ disp_summary <- tibble(
   max_chain_difference = max(disp_probabilities$max_chain_difference)
 )
 
+discordant_disp <- disp_probabilities %>%
+  filter(max_chain_difference > 0.25) %>%
+  arrange(desc(max_chain_difference), desc(p_high_pooled))
+
 # -----------------------------------------------------------------------------
 # Posterior correlations among key spatial scales
 # -----------------------------------------------------------------------------
@@ -499,6 +503,15 @@ print(
   width = Inf
 )
 
+cat("\n============================================================\n")
+cat("MOVEMENT INTERVALS WITH CHAIN DIFFERENCE > 0.25\n")
+cat("============================================================\n")
+if (nrow(discordant_disp)) {
+  print(discordant_disp, n = Inf, width = Inf)
+} else {
+  cat("NONE\n")
+}
+
 # -----------------------------------------------------------------------------
 # Save outputs
 # -----------------------------------------------------------------------------
@@ -524,6 +537,7 @@ saveRDS(
     convergence = convergence,
     disp_probabilities = disp_probabilities,
     disp_summary = disp_summary,
+    discordant_disp = discordant_disp,
     scale_correlations = scale_correlations
   ),
   combined_file
@@ -552,6 +566,11 @@ write_csv(
 write_csv(
   disp_summary,
   paste0(prefix, "_disp_summary.csv")
+)
+
+write_csv(
+  discordant_disp,
+  paste0(prefix, "_disp_chain_disagreement_gt025.csv")
 )
 
 write_csv(
