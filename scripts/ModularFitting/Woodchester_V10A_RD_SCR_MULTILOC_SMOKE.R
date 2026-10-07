@@ -24,6 +24,11 @@
 #   quarter as one study-wide trapping campaign, consistent with the available
 #   historical design information.
 #
+#   Annual movement is parameterised in centred form:
+#     A_y | A_(y-1), disp_y ~ N(A_(y-1), sigma_move^2 I)
+#   so a change in disp changes the density of the realised displacement rather
+#   than deterministically changing the annual AC trajectory.
+#
 # ENVIRONMENT OPTIONS
 #   CHAIN_ID      1, 2 or 3 (default 1)
 #   MAX_BADGERS   number of audited movement badgers for smoke fit (default 300).
@@ -857,27 +862,25 @@ code_V10A <- nimbleCode({
       move_support_ok[i, k] ~
         dbern(move_support[i, k])
 
-      eps[i, 1:2, k] ~
-        dmnorm(
-          mean = eps_zero[1:2],
-          prec = eps_prec[1:2, 1:2]
+      # Centred annual movement parameterisation. The realised annual AC is
+      # sampled directly. Changing disp therefore changes the density assigned
+      # to the same displacement rather than deterministically relocating A.
+      A[i, 1, k] ~
+        dnorm(
+          mean = A[i, 1, k - 1],
+          sd = sigma_move[i, k]
         )
 
-      A[i, 1, k] <-
-        A[i, 1, k - 1] +
-        sigma_move[i, k] *
-        eps[i, 1, k]
-
-      A[i, 2, k] <-
-        A[i, 2, k - 1] +
-        sigma_move[i, k] *
-        eps[i, 2, k]
+      A[i, 2, k] ~
+        dnorm(
+          mean = A[i, 2, k - 1],
+          sd = sigma_move[i, k]
+        )
 
       moveDist[i, k] <-
-        sigma_move[i, k] *
         sqrt(
-          pow(eps[i, 1, k], 2) +
-          pow(eps[i, 2, k], 2)
+          pow(A[i, 1, k] - A[i, 1, k - 1], 2) +
+          pow(A[i, 2, k] - A[i, 2, k - 1], 2)
         )
 
       col_A_raw[i, k] <-
@@ -1027,8 +1030,6 @@ code_V10A <- nimbleCode({
 })
 
 # ---- constants/data ----------------------------------------------------------
-eps_zero <- c(0, 0)
-eps_prec <- diag(1, 2)
 q_zero <- c(0, 0)
 q_prec <- diag(1, 2)
 
@@ -1061,8 +1062,6 @@ consts <- list(
   QUARTER_DIFF_MEAN_FACTOR = QUARTER_DIFF_MEAN_FACTOR,
   LOG_MOVE_MIN = LOG_MOVE_MIN,
   LOG_MOVE_MAX = LOG_MOVE_MAX,
-  eps_zero = eps_zero,
-  eps_prec = eps_prec,
   q_zero = q_zero,
   q_prec = q_prec
 )
@@ -1092,7 +1091,6 @@ make_inits <- function(chain) {
   alpha_logomega0 <- log(150) + rnorm(1, 0, 0.03)
 
   A0 <- array(NA_real_, c(nind, 2L, n_prim))
-  eps0 <- array(NA_real_, c(nind, 2L, n_prim))
   qeps0 <- array(NA_real_, c(nind, 2L, J, n_prim))
   disp0 <- matrix(NA_integer_, nind, n_prim)
 
@@ -1100,10 +1098,10 @@ make_inits <- function(chain) {
 
   for (i in seq_len(nind)) {
 
-    A0[i, 1, first[i]] <- target_A[i, 1, first[i]]
-    A0[i, 2, first[i]] <- target_A[i, 2, first[i]]
-
     for (k in first[i]:K[i]) {
+
+      A0[i, 1, k] <- target_A[i, 1, k]
+      A0[i, 2, k] <- target_A[i, 2, k]
 
       for (j in seq_len(J)) {
         qeps0[i, 1, j, k] <-
@@ -1138,16 +1136,6 @@ make_inits <- function(chain) {
           )
 
         disp0[i, k] <- d0
-
-        sig0 <-
-          exp(
-            alpha_logmove0 +
-            beta_move_sex0 * sex_data[i] +
-            beta_move_high0 * d0
-          )
-
-        eps0[i, 1, k] <- dx / sig0
-        eps0[i, 2, k] <- dy / sig0
       }
     }
   }
@@ -1178,7 +1166,6 @@ make_inits <- function(chain) {
     beta_period_raw = rnorm(n_periods - 1L, 0, 0.03),
 
     A = A0,
-    eps = eps0,
     qeps = qeps0,
     disp = disp0
   )
@@ -1201,7 +1188,7 @@ build_time <- system.time(
       annual_state_ok = c(nind, n_prim),
       quarter_state_ok = c(nind, J, n_prim),
       move_support_ok = c(nind, n_prim),
-      eps = c(nind, 2L, n_prim),
+      A = c(nind, 2L, n_prim),
       qeps = c(nind, 2L, J, n_prim)
     ),
     check = TRUE,
@@ -1605,6 +1592,8 @@ saveRDS(
       multiple_locations_per_quarter = TRUE,
       within_year_structure =
         "quarter-specific spatial centre around annual activity centre",
+      annual_movement_parameterization =
+        "centered stochastic annual AC transition",
       landscape_resistance = FALSE
     ),
     ids = ids,
