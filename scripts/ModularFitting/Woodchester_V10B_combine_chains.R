@@ -22,7 +22,8 @@
 #
 # Notes:
 #   - Chains remain separate in mcmc_list for convergence diagnostics.
-#   - pooled_samples is supplied only for posterior summaries, never for Rhat.
+#   - full-population combination does not duplicate all latent draws into one
+#     pooled matrix; full draws remain in the three chain files.
 #   - Rhat below is the standard split-chain Gelman-Rubin statistic.
 # =============================================================================
 
@@ -227,6 +228,13 @@ if (!same_quarter_index) {
 
 sample_mats <- lapply(fits, function(x) as.matrix(x$samples))
 
+# Full-population latent draws are large. Once copied to plain matrices, drop
+# the duplicated mcmc objects from the fit containers while retaining metadata.
+for (ch in seq_along(fits)) {
+  fits[[ch]]$samples <- NULL
+}
+invisible(gc())
+
 same_cols <- all(vapply(
   sample_mats[-1],
   function(x) identical(colnames(x), colnames(sample_mats[[1]])),
@@ -353,8 +361,9 @@ split_rhat <- function(chain_values) {
 }
 
 # -----------------------------------------------------------------------------
-# Keep global chains separate for diagnostics; pool all saved draws so latent
-# trajectories remain available in the combined posterior object.
+# Keep chains separate for diagnostics. Avoid constructing a second giant
+# pooled matrix for the full population: each chain file remains the
+# authoritative store of full latent posterior draws.
 # -----------------------------------------------------------------------------
 global_mcmc_list <- mcmc.list(
   lapply(
@@ -363,7 +372,19 @@ global_mcmc_list <- mcmc.list(
   )
 )
 
-pooled_samples <- do.call(rbind, sample_mats)
+pooled_vector <- function(p) {
+  unlist(
+    lapply(sample_mats, function(mm) mm[, p]),
+    use.names = FALSE
+  )
+}
+
+# Retain the convenient pooled matrix only for smaller validation fits.
+pooled_samples <- if (MAX_BADGERS <= 300L) {
+  do.call(rbind, sample_mats)
+} else {
+  NULL
+}
 
 # -----------------------------------------------------------------------------
 # Global posterior summary
@@ -372,7 +393,7 @@ global_summary <- bind_rows(
   lapply(
     global_cols,
     function(p) {
-      ss <- summarise_vector(pooled_samples[, p])
+      ss <- summarise_vector(pooled_vector(p))
       tibble(
         parameter = p,
         mean = ss["mean"],
@@ -475,9 +496,10 @@ disp_probabilities <- bind_cols(
     )
   )
 
-pooled_state_probs <- colMeans(
-  pooled_samples[, ordered_state_cols, drop = FALSE]
-)
+# Chains have identical retained draw counts, so the pooled state probability
+# is exactly the mean of the per-chain probabilities without binding the full
+# latent sample matrices.
+pooled_state_probs <- rowMeans(disp_by_chain)
 
 disp_probabilities$p_high_pooled <- pooled_state_probs
 
@@ -529,8 +551,8 @@ summarise_coordinate_pair <- function(index_tbl, x_cols, y_cols) {
     lapply(
       seq_len(nrow(index_tbl)),
       function(ii) {
-        sx <- summarise_vector(pooled_samples[, x_cols[ii]])
-        sy <- summarise_vector(pooled_samples[, y_cols[ii]])
+        sx <- summarise_vector(pooled_vector(x_cols[ii]))
+        sy <- summarise_vector(pooled_vector(y_cols[ii]))
 
         bind_cols(
           index_tbl[ii, , drop = FALSE],
@@ -600,8 +622,8 @@ scale_correlations <- bind_rows(
         cor_chain2 = per_chain[2],
         cor_chain3 = per_chain[3],
         cor_pooled = cor(
-          pooled_samples[, pp[1]],
-          pooled_samples[, pp[2]]
+          pooled_vector(pp[1]),
+          pooled_vector(pp[2])
         )
       )
     }
