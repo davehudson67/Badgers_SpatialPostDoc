@@ -1316,6 +1316,9 @@ for (b in global_blocks) {
   )
 }
 
+cat("\nFinal sampler configuration after custom replacements:\n")
+config$printSamplers()
+
 build_mcmc_time <- system.time(
   Rmcmc <- buildMCMC(config)
 )
