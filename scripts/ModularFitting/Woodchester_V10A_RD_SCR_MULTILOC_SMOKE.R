@@ -431,6 +431,54 @@ if (n_trans < 1L) {
   stop("No active annual movement intervals found.")
 }
 
+# Compact indices for every genuine latent annual AC and quarterly centre.
+# These avoid monitoring the full ragged A/Q arrays while preserving every
+# biologically active latent location from first through last observed year.
+annual_state_map <- bind_rows(
+  lapply(
+    seq_len(nind),
+    function(i) {
+      ks <- first[i]:K[i]
+
+      tibble(
+        annual_active_index = seq_along(ks),
+        model_i = i,
+        individual_id = individual_ids[i],
+        tattoo = ids[i],
+        state_k = ks,
+        year = years[ks]
+      )
+    }
+  )
+) %>%
+  mutate(annual_active_index = row_number())
+
+n_annual_states <- nrow(annual_state_map)
+annual_i <- as.integer(annual_state_map$model_i)
+annual_k <- as.integer(annual_state_map$state_k)
+
+quarter_state_map <- annual_state_map %>%
+  select(
+    annual_active_index,
+    model_i,
+    individual_id,
+    tattoo,
+    state_k,
+    year
+  ) %>%
+  tidyr::crossing(quarter = seq_len(J)) %>%
+  arrange(annual_active_index, quarter) %>%
+  mutate(quarter_active_index = row_number())
+
+n_quarter_states <- nrow(quarter_state_map)
+quarter_i <- as.integer(quarter_state_map$model_i)
+quarter_j <- as.integer(quarter_state_map$quarter)
+quarter_k <- as.integer(quarter_state_map$state_k)
+
+if (n_annual_states < 1L || n_quarter_states != n_annual_states * J) {
+  stop("Active latent-location index construction failed.")
+}
+
 # ---- observed annual + quarterly locations for initialization ----------------
 annual_loc <- live %>%
   group_by(tattoo, primary) %>%
@@ -1027,6 +1075,24 @@ code_V10A <- nimbleCode({
     disp_active[tt] <-
       disp[trans_i[tt], trans_k[tt]]
   }
+
+  # Compact annual AC coordinates for every active badger-year.
+  for (aa in 1:n_annual_states) {
+    A_x_active[aa] <-
+      A[annual_i[aa], 1, annual_k[aa]]
+
+    A_y_active[aa] <-
+      A[annual_i[aa], 2, annual_k[aa]]
+  }
+
+  # Compact quarterly spatial-use centres for every active badger-year-quarter.
+  for (qq in 1:n_quarter_states) {
+    Q_x_active[qq] <-
+      Qx[quarter_i[qq], quarter_j[qq], quarter_k[qq]]
+
+    Q_y_active[qq] <-
+      Qy[quarter_i[qq], quarter_j[qq], quarter_k[qq]]
+  }
 })
 
 # ---- constants/data ----------------------------------------------------------
@@ -1043,6 +1109,13 @@ consts <- list(
   n_trans = n_trans,
   trans_i = trans_i,
   trans_k = trans_k,
+  n_annual_states = n_annual_states,
+  annual_i = annual_i,
+  annual_k = annual_k,
+  n_quarter_states = n_quarter_states,
+  quarter_i = quarter_i,
+  quarter_j = quarter_j,
+  quarter_k = quarter_k,
   X = X,
   H = H,
   ncap = ncap,
@@ -1271,9 +1344,50 @@ disp_index <- transition_map %>%
     )
   )
 
+annual_state_index <- annual_state_map %>%
+  mutate(
+    sample_column_x = paste0(
+      "A_x_active[",
+      annual_active_index,
+      "]"
+    ),
+    sample_column_y = paste0(
+      "A_y_active[",
+      annual_active_index,
+      "]"
+    )
+  )
+
+quarter_state_index <- quarter_state_map %>%
+  mutate(
+    sample_column_x = paste0(
+      "Q_x_active[",
+      quarter_active_index,
+      "]"
+    ),
+    sample_column_y = paste0(
+      "Q_y_active[",
+      quarter_active_index,
+      "]"
+    )
+  )
+
+latent_monitors <- c(
+  "A_x_active",
+  "A_y_active",
+  "Q_x_active",
+  "Q_y_active"
+)
+
 config <- configureMCMC(
   model,
-  monitors = unique(c(core_monitors, "disp_active")),
+  monitors = unique(
+    c(
+      core_monitors,
+      "disp_active",
+      latent_monitors
+    )
+  ),
   thin = THIN
 )
 
@@ -1387,6 +1501,8 @@ saveRDS(
     first = first,
     K = K,
     disp_index = disp_index,
+    annual_state_index = annual_state_index,
+    quarter_state_index = quarter_state_index,
     samples = samples,
     runtime = runtime
   ),
@@ -1404,6 +1520,27 @@ state_cols <- grep(
   value = TRUE
 )
 
+annual_x_cols <- grep(
+  "^A_x_active\\[",
+  colnames(sample_mat),
+  value = TRUE
+)
+annual_y_cols <- grep(
+  "^A_y_active\\[",
+  colnames(sample_mat),
+  value = TRUE
+)
+quarter_x_cols <- grep(
+  "^Q_x_active\\[",
+  colnames(sample_mat),
+  value = TRUE
+)
+quarter_y_cols <- grep(
+  "^Q_y_active\\[",
+  colnames(sample_mat),
+  value = TRUE
+)
+
 if (length(state_cols) != nrow(disp_index)) {
   stop(
     "Expected ", nrow(disp_index),
@@ -1412,9 +1549,36 @@ if (length(state_cols) != nrow(disp_index)) {
   )
 }
 
+if (
+  length(annual_x_cols) != nrow(annual_state_index) ||
+  length(annual_y_cols) != nrow(annual_state_index)
+) {
+  stop("Annual latent-location monitor count does not match annual_state_index.")
+}
+
+if (
+  length(quarter_x_cols) != nrow(quarter_state_index) ||
+  length(quarter_y_cols) != nrow(quarter_state_index)
+) {
+  stop("Quarterly latent-location monitor count does not match quarter_state_index.")
+}
+
+latent_cols <- c(
+  annual_x_cols,
+  annual_y_cols,
+  quarter_x_cols,
+  quarter_y_cols
+)
+
 global_cols <- setdiff(
   colnames(sample_mat),
-  state_cols
+  c(state_cols, latent_cols)
+)
+
+cat(
+  "\nSaved latent locations:",
+  nrow(annual_state_index), "annual ACs and",
+  nrow(quarter_state_index), "quarterly centres per posterior draw.\n"
 )
 
 # Diagnose any monitored nodes that contain non-finite draws. This can occur
@@ -1611,7 +1775,10 @@ saveRDS(
     H = H,
     campaign_active = campaign_active,
     core_monitors = core_monitors,
+    latent_monitors = latent_monitors,
     disp_index = disp_index,
+    annual_state_index = annual_state_index,
+    quarter_state_index = quarter_state_index,
     samples = samples,
     global_summary = global_summary,
     nonfinite_by_parameter = nonfinite_by_parameter,
