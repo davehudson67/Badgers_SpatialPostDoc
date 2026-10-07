@@ -17,6 +17,8 @@
 #   results/V10A_RD_MULTILOC_<N>_disp_probabilities.csv
 #   results/V10A_RD_MULTILOC_<N>_disp_summary.csv
 #   results/V10A_RD_MULTILOC_<N>_scale_correlations.csv
+#   results/V10A_RD_MULTILOC_<N>_annual_location_summary.csv
+#   results/V10A_RD_MULTILOC_<N>_quarter_location_summary.csv
 #
 # Notes:
 #   - Chains remain separate in mcmc_list for convergence diagnostics.
@@ -145,6 +147,84 @@ if (!same_disp_index) {
   stop("Chains do not have the same biological active movement-state index.")
 }
 
+annual_key_cols <- c(
+  "annual_active_index",
+  "model_i",
+  "individual_id",
+  "tattoo",
+  "state_k",
+  "year"
+)
+
+quarter_key_cols <- c(
+  "quarter_active_index",
+  "annual_active_index",
+  "model_i",
+  "individual_id",
+  "tattoo",
+  "state_k",
+  "year",
+  "quarter"
+)
+
+if (!all(vapply(
+  fits,
+  function(x) {
+    !is.null(x$annual_state_index) &&
+      all(annual_key_cols %in% names(x$annual_state_index))
+  },
+  logical(1)
+))) {
+  stop("At least one chain is missing the annual latent-location index.")
+}
+
+if (!all(vapply(
+  fits,
+  function(x) {
+    !is.null(x$quarter_state_index) &&
+      all(quarter_key_cols %in% names(x$quarter_state_index))
+  },
+  logical(1)
+))) {
+  stop("At least one chain is missing the quarterly latent-location index.")
+}
+
+annual_keys <- lapply(
+  fits,
+  function(x) {
+    x$annual_state_index %>%
+      select(all_of(annual_key_cols)) %>%
+      as.data.frame()
+  }
+)
+
+quarter_keys <- lapply(
+  fits,
+  function(x) {
+    x$quarter_state_index %>%
+      select(all_of(quarter_key_cols)) %>%
+      as.data.frame()
+  }
+)
+
+same_annual_index <- all(vapply(
+  annual_keys[-1],
+  function(x) isTRUE(all.equal(x, annual_keys[[1]], check.attributes = FALSE)),
+  logical(1)
+))
+if (!same_annual_index) {
+  stop("Chains do not have the same biological annual latent-location index.")
+}
+
+same_quarter_index <- all(vapply(
+  quarter_keys[-1],
+  function(x) isTRUE(all.equal(x, quarter_keys[[1]], check.attributes = FALSE)),
+  logical(1)
+))
+if (!same_quarter_index) {
+  stop("Chains do not have the same biological quarterly latent-location index.")
+}
+
 sample_mats <- lapply(fits, function(x) as.matrix(x$samples))
 
 same_cols <- all(vapply(
@@ -177,20 +257,52 @@ cat("Retained draws per chain:", draw_counts[1], "\n")
 cat("Total retained draws:", sum(draw_counts), "\n")
 
 # -----------------------------------------------------------------------------
-# Identify global and active movement-state columns
+# Identify global, movement-state and compact latent-location columns
 # -----------------------------------------------------------------------------
 all_cols <- colnames(sample_mats[[1]])
+
 state_cols <- grep("^disp_active\\[", all_cols, value = TRUE)
-global_cols <- setdiff(all_cols, state_cols)
+annual_x_cols <- grep("^A_x_active\\[", all_cols, value = TRUE)
+annual_y_cols <- grep("^A_y_active\\[", all_cols, value = TRUE)
+quarter_x_cols <- grep("^Q_x_active\\[", all_cols, value = TRUE)
+quarter_y_cols <- grep("^Q_y_active\\[", all_cols, value = TRUE)
+
+latent_cols <- c(
+  annual_x_cols,
+  annual_y_cols,
+  quarter_x_cols,
+  quarter_y_cols
+)
+
+global_cols <- setdiff(
+  all_cols,
+  c(state_cols, latent_cols)
+)
 
 cat("Global monitored columns:", length(global_cols), "\n")
 cat("Active movement-state columns:", length(state_cols), "\n")
+cat("Annual latent ACs:", length(annual_x_cols), "\n")
+cat("Quarterly latent centres:", length(quarter_x_cols), "\n")
 
 if (length(state_cols) != nrow(fits[[1]]$disp_index)) {
   stop(
     "Movement-state column count (", length(state_cols),
     ") does not match disp_index rows (", nrow(fits[[1]]$disp_index), ")."
   )
+}
+
+if (
+  length(annual_x_cols) != nrow(fits[[1]]$annual_state_index) ||
+  length(annual_y_cols) != nrow(fits[[1]]$annual_state_index)
+) {
+  stop("Annual latent-coordinate columns do not match annual_state_index.")
+}
+
+if (
+  length(quarter_x_cols) != nrow(fits[[1]]$quarter_state_index) ||
+  length(quarter_y_cols) != nrow(fits[[1]]$quarter_state_index)
+) {
+  stop("Quarterly latent-coordinate columns do not match quarter_state_index.")
 }
 
 # -----------------------------------------------------------------------------
@@ -241,10 +353,14 @@ split_rhat <- function(chain_values) {
 }
 
 # -----------------------------------------------------------------------------
-# Keep chains separate for diagnostics; pool only for posterior summaries
+# Keep global chains separate for diagnostics; pool all saved draws so latent
+# trajectories remain available in the combined posterior object.
 # -----------------------------------------------------------------------------
-mcmc_list <- mcmc.list(
-  lapply(sample_mats, mcmc)
+global_mcmc_list <- mcmc.list(
+  lapply(
+    sample_mats,
+    function(mm) mcmc(mm[, global_cols, drop = FALSE])
+  )
 )
 
 pooled_samples <- do.call(rbind, sample_mats)
@@ -313,14 +429,7 @@ rhat_vals <- vapply(
 )
 
 # coda effectiveSize on mcmc.list gives the effective sample size across chains.
-ess_vals <- effectiveSize(
-  mcmc.list(
-    lapply(
-      sample_mats,
-      function(mm) mcmc(mm[, global_cols, drop = FALSE])
-    )
-  )
-)
+ess_vals <- effectiveSize(global_mcmc_list)
 
 convergence <- tibble(
   parameter = global_cols,
@@ -389,6 +498,71 @@ disp_summary <- tibble(
 discordant_disp <- disp_probabilities %>%
   filter(max_chain_difference > 0.25) %>%
   arrange(desc(max_chain_difference), desc(p_high_pooled))
+
+# -----------------------------------------------------------------------------
+# Posterior summaries for every active latent annual AC and quarterly centre
+# -----------------------------------------------------------------------------
+annual_state_index <- fits[[1]]$annual_state_index
+quarter_state_index <- fits[[1]]$quarter_state_index
+
+ordered_annual_x <- annual_state_index$sample_column_x
+ordered_annual_y <- annual_state_index$sample_column_y
+ordered_quarter_x <- quarter_state_index$sample_column_x
+ordered_quarter_y <- quarter_state_index$sample_column_y
+
+if (
+  anyNA(match(ordered_annual_x, annual_x_cols)) ||
+  anyNA(match(ordered_annual_y, annual_y_cols))
+) {
+  stop("Could not map annual latent-location columns to annual_state_index.")
+}
+
+if (
+  anyNA(match(ordered_quarter_x, quarter_x_cols)) ||
+  anyNA(match(ordered_quarter_y, quarter_y_cols))
+) {
+  stop("Could not map quarterly latent-location columns to quarter_state_index.")
+}
+
+summarise_coordinate_pair <- function(index_tbl, x_cols, y_cols) {
+  bind_rows(
+    lapply(
+      seq_len(nrow(index_tbl)),
+      function(ii) {
+        sx <- summarise_vector(pooled_samples[, x_cols[ii]])
+        sy <- summarise_vector(pooled_samples[, y_cols[ii]])
+
+        bind_cols(
+          index_tbl[ii, , drop = FALSE],
+          tibble(
+            x_mean = sx["mean"],
+            x_sd = sx["sd"],
+            x_q025 = sx["q025"],
+            x_median = sx["median"],
+            x_q975 = sx["q975"],
+            y_mean = sy["mean"],
+            y_sd = sy["sd"],
+            y_q025 = sy["q025"],
+            y_median = sy["median"],
+            y_q975 = sy["q975"]
+          )
+        )
+      }
+    )
+  )
+}
+
+annual_location_summary <- summarise_coordinate_pair(
+  annual_state_index,
+  ordered_annual_x,
+  ordered_annual_y
+)
+
+quarter_location_summary <- summarise_coordinate_pair(
+  quarter_state_index,
+  ordered_quarter_x,
+  ordered_quarter_y
+)
 
 # -----------------------------------------------------------------------------
 # Posterior correlations among key spatial scales
@@ -530,7 +704,8 @@ saveRDS(
     first = fits[[1]]$first,
     K = fits[[1]]$K,
     disp_index = disp_index,
-    mcmc_list = mcmc_list,
+    annual_state_index = annual_state_index,
+    quarter_state_index = quarter_state_index,
     pooled_samples = pooled_samples,
     global_summary = global_summary,
     chain_summary = chain_summary,
@@ -538,7 +713,9 @@ saveRDS(
     disp_probabilities = disp_probabilities,
     disp_summary = disp_summary,
     discordant_disp = discordant_disp,
-    scale_correlations = scale_correlations
+    scale_correlations = scale_correlations,
+    annual_location_summary = annual_location_summary,
+    quarter_location_summary = quarter_location_summary
   ),
   combined_file
 )
@@ -576,6 +753,16 @@ write_csv(
 write_csv(
   scale_correlations,
   paste0(prefix, "_scale_correlations.csv")
+)
+
+write_csv(
+  annual_location_summary,
+  paste0(prefix, "_annual_location_summary.csv")
+)
+
+write_csv(
+  quarter_location_summary,
+  paste0(prefix, "_quarter_location_summary.csv")
 )
 
 cat("\nSaved combined object:\n", combined_file, "\n", sep = "")
