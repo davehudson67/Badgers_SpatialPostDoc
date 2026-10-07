@@ -1388,30 +1388,80 @@ global_cols <- setdiff(
   disp_nodes
 )
 
+# Diagnose any monitored nodes that contain non-finite draws. This can occur
+# when a monitored derived node is structurally undefined outside an
+# individual's active history. It should never be allowed to crash saving of a
+# completed chain.
+nonfinite_by_parameter <- tibble(
+  parameter = global_cols,
+  n_na = vapply(
+    global_cols,
+    function(z) sum(is.na(sample_mat[, z])),
+    integer(1)
+  ),
+  n_nan = vapply(
+    global_cols,
+    function(z) sum(is.nan(sample_mat[, z])),
+    integer(1)
+  ),
+  n_inf = vapply(
+    global_cols,
+    function(z) sum(is.infinite(sample_mat[, z])),
+    integer(1)
+  )
+) %>%
+  mutate(n_nonfinite = n_na + n_inf) %>%
+  filter(n_nonfinite > 0L)
+
+if (nrow(nonfinite_by_parameter)) {
+  cat("\nMonitored global parameters containing non-finite draws:\n")
+  print(nonfinite_by_parameter, n = Inf, width = Inf)
+}
+
+safe_mean <- function(z) {
+  z <- z[is.finite(z)]
+  if (!length(z)) return(NA_real_)
+  mean(z)
+}
+
+safe_sd <- function(z) {
+  z <- z[is.finite(z)]
+  if (length(z) < 2L) return(NA_real_)
+  sd(z)
+}
+
+safe_quantile <- function(z, p) {
+  z <- z[is.finite(z)]
+  if (!length(z)) return(NA_real_)
+  unname(quantile(z, probs = p, names = FALSE))
+}
+
 global_summary <- tibble(
   parameter = global_cols,
-  mean = colMeans(sample_mat[, global_cols, drop = FALSE]),
-  sd = apply(
-    sample_mat[, global_cols, drop = FALSE],
-    2,
-    sd
+  mean = vapply(
+    global_cols,
+    function(z) safe_mean(sample_mat[, z]),
+    numeric(1)
   ),
-  q025 = apply(
-    sample_mat[, global_cols, drop = FALSE],
-    2,
-    quantile,
-    probs = 0.025
+  sd = vapply(
+    global_cols,
+    function(z) safe_sd(sample_mat[, z]),
+    numeric(1)
   ),
-  median = apply(
-    sample_mat[, global_cols, drop = FALSE],
-    2,
-    median
+  q025 = vapply(
+    global_cols,
+    function(z) safe_quantile(sample_mat[, z], 0.025),
+    numeric(1)
   ),
-  q975 = apply(
-    sample_mat[, global_cols, drop = FALSE],
-    2,
-    quantile,
-    probs = 0.975
+  median = vapply(
+    global_cols,
+    function(z) safe_quantile(sample_mat[, z], 0.5),
+    numeric(1)
+  ),
+  q975 = vapply(
+    global_cols,
+    function(z) safe_quantile(sample_mat[, z], 0.975),
+    numeric(1)
   )
 )
 
@@ -1516,6 +1566,7 @@ saveRDS(
     disp_index = disp_index,
     samples = samples,
     global_summary = global_summary,
+    nonfinite_by_parameter = nonfinite_by_parameter,
     runtime = runtime
   ),
   out_file
