@@ -1481,8 +1481,38 @@ for (b in global_blocks) {
   )
 }
 
-cat("\nFinal sampler configuration after custom replacements:\n")
-config$printSamplers()
+# Earlier centred AC experiments mixed better when each annual position was
+# updated jointly in x/y rather than by two independent scalar RW samplers.
+# This changes only the MCMC parameterisation/sampler, not the posterior model.
+for (aa in seq_len(nrow(annual_state_map))) {
+  i_aa <- annual_state_map$model_i[aa]
+  k_aa <- annual_state_map$state_k[aa]
+
+  A_block <- c(
+    paste0("A[", i_aa, ", 1, ", k_aa, "]"),
+    paste0("A[", i_aa, ", 2, ", k_aa, "]")
+  )
+
+  config$removeSamplers(A_block, print = FALSE)
+  config$addSampler(
+    target = A_block,
+    type = "AF_slice"
+  )
+}
+
+cat(
+  "\nFinal sampler configuration:\n",
+  "  Global AF_slice blocks: ", length(global_blocks), "\n",
+  "  Joint annual-AC (x/y) AF_slice blocks: ", nrow(annual_state_map), "\n",
+  "  Quarterly qeps blocks retain NIMBLE RW_block samplers.\n",
+  sep = ""
+)
+
+# Printing every sampler is useful for small validation fits but produces tens
+# of thousands of log lines for the full 1,932-badger production model.
+if (MAX_BADGERS <= 300L) {
+  config$printSamplers()
+}
 
 build_mcmc_time <- system.time(
   Rmcmc <- buildMCMC(config)
@@ -1814,6 +1844,10 @@ saveRDS(
       quarter_persistence_parameter = "rho in (0,1)",
       annual_movement_parameterization =
         "centered stochastic annual AC transition",
+      annual_AC_sampler =
+        "joint x/y AF_slice per active badger-year",
+      quarter_deviation_sampler =
+        "bivariate RW_block on qeps",
       landscape_resistance = FALSE
     ),
     ids = ids,
