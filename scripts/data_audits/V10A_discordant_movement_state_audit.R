@@ -523,18 +523,28 @@ cat("\n============================================================\n")
 cat("DISCORDANCE CLUSTERING BY BADGER\n")
 cat("============================================================\n")
 
+safe_median <- function(z) {
+  z <- z[is.finite(z)]
+  if (!length(z)) return(NA_real_)
+  median(z)
+}
+
+safe_max <- function(z) {
+  z <- z[is.finite(z)]
+  if (!length(z)) return(NA_real_)
+  max(z)
+}
+
 animal_summary <- interval_audit %>%
   group_by(tattoo, sex_class, age_entry_class) %>%
   summarise(
     n_discordant_intervals = n(),
     max_chain_difference = max(max_chain_difference),
-    median_observed_annual_jump_m = median(
-      observed_annual_centroid_jump_m,
-      na.rm = TRUE
+    median_observed_annual_jump_m = safe_median(
+      observed_annual_centroid_jump_m
     ),
-    max_observed_annual_jump_m = max(
-      observed_annual_centroid_jump_m,
-      na.rm = TRUE
+    max_observed_annual_jump_m = safe_max(
+      observed_annual_centroid_jump_m
     ),
     .groups = "drop"
   ) %>%
