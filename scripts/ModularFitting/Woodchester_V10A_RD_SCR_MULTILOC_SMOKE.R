@@ -1294,8 +1294,7 @@ global_blocks <- list(
   c(
     "alpha_logsigma",
     "beta_sigma_sex"
-  ),
-  c("alpha_logomega")
+  )
 )
 
 for (b in global_blocks) {
