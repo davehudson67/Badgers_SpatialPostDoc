@@ -1994,7 +1994,7 @@ saveRDS(
       annual_movement_parameterization =
         "centered annual AC with two-state Gaussian HMM analytically collapsed",
       movement_support =
-        "component-specific 0.5--2500 m coordinate-SD guard matching explicit-state V10B",
+        "component-specific support semantics matching explicit-state V10B; lower numerical guard relaxed to 0.5 m",
       movement_state_inference =
         "posthoc forward-backward smoothing and FFBS from annual AC draws",
       annual_AC_sampler =
