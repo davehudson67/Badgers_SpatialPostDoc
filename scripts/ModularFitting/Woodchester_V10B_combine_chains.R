@@ -702,11 +702,33 @@ print(
   width = Inf
 )
 
+state_disagreement_summary <- tibble(
+  n_intervals = nrow(disp_probabilities),
+  n_gt_025 = sum(disp_probabilities$max_chain_difference > 0.25),
+  n_gt_050 = sum(disp_probabilities$max_chain_difference > 0.50),
+  n_gt_080 = sum(disp_probabilities$max_chain_difference > 0.80),
+  n_gt_095 = sum(disp_probabilities$max_chain_difference > 0.95),
+  n_eq_100 = sum(disp_probabilities$max_chain_difference >= 0.999999),
+  prop_gt_025 = mean(disp_probabilities$max_chain_difference > 0.25),
+  median_chain_difference = median(disp_probabilities$max_chain_difference),
+  p95_chain_difference = unname(
+    quantile(disp_probabilities$max_chain_difference, 0.95)
+  ),
+  max_chain_difference = max(disp_probabilities$max_chain_difference)
+)
+
 cat("\n============================================================\n")
-cat("MOVEMENT INTERVALS WITH CHAIN DIFFERENCE > 0.25\n")
+cat("MOVEMENT-STATE CHAIN DISAGREEMENT\n")
 cat("============================================================\n")
+print(state_disagreement_summary, n = Inf, width = Inf)
+
+cat("\nWorst 30 movement intervals by chain disagreement:\n")
 if (nrow(discordant_disp)) {
-  print(discordant_disp, n = Inf, width = Inf)
+  print(
+    discordant_disp %>% slice_head(n = 30),
+    n = Inf,
+    width = Inf
+  )
 } else {
   cat("NONE\n")
 }
@@ -737,6 +759,7 @@ saveRDS(
     convergence = convergence,
     disp_probabilities = disp_probabilities,
     disp_summary = disp_summary,
+    state_disagreement_summary = state_disagreement_summary,
     discordant_disp = discordant_disp,
     scale_correlations = scale_correlations,
     annual_location_summary = annual_location_summary,
@@ -773,6 +796,11 @@ write_csv(
 write_csv(
   discordant_disp,
   paste0(prefix, "_disp_chain_disagreement_gt025.csv")
+)
+
+write_csv(
+  state_disagreement_summary,
+  paste0(prefix, "_state_disagreement_summary.csv")
 )
 
 write_csv(
