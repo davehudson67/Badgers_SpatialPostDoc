@@ -70,8 +70,12 @@ MOVE_MEAN_FACTOR <- sqrt(pi / 2)
 QUARTER_DIFF_MEAN_FACTOR <- sqrt(pi)
 LOG_TWO_PI <- log(2 * pi)
 
-# Annual movement support: retained from V8 as a broad computational guard.
-LOG_MOVE_MIN <- log(5)
+# Annual movement support is a numerical guard, not a biological prior.
+# The old 5 m lower bound became visibly influential in the 300-badger fit
+# (male local movement approached it), so production V10B relaxes the floor to
+# 0.5 m. For a bivariate Gaussian this still guarantees the peak density is
+# below 1, which keeps the Poisson zeros-trick rate non-negative.
+LOG_MOVE_MIN <- log(0.5)
 LOG_MOVE_MAX <- log(2500)
 
 encounter_file <- "data/badger_encounters_useful.rds"
@@ -953,7 +957,7 @@ code_V10B_collapsed <- nimbleCode({
 
       # Component-specific version of the broad V8 computational support.
       # In the original explicit-state HMM, only the ACTIVE state's movement
-      # scale was required to lie within 5--2500 m. After marginalising z, the
+      # scale was required to lie within 0.5--2500 m. After marginalising z, the
       # mathematically equivalent rule is therefore to give an out-of-support
       # component zero mixture weight, not to reject the other valid component.
       move_support_local[i, k] <-
@@ -1988,7 +1992,7 @@ saveRDS(
       annual_movement_parameterization =
         "centered annual AC with two-state Gaussian HMM analytically collapsed",
       movement_support =
-        "component-specific 5--2500 m coordinate-SD guard matching explicit-state V10B",
+        "component-specific 0.0.5--2500 m coordinate-SD guard matching explicit-state V10B",
       movement_state_inference =
         "posthoc forward-backward smoothing and FFBS from annual AC draws",
       annual_AC_sampler =
