@@ -244,6 +244,77 @@ forward_one_badger <- function(
   )
 }
 
+# ---- forward/backward algebra self-check ------------------------------------
+# Compare smoothed probabilities from forward_one_badger() with exact
+# brute-force enumeration of all 2^4 state sequences.
+test_mm <- matrix(
+  0,
+  nrow = 1,
+  ncol = length(required_global),
+  dimnames = list(NULL, required_global)
+)
+test_mm[1, "alpha_logmove"] <- log(20)
+test_mm[1, "beta_move_sex"] <- 0
+test_mm[1, "beta_move_high"] <- log(500 / 20)
+test_mm[1, "alpha_disp_init"] <- qlogis(0.07)
+test_mm[1, "beta_disp_adult"] <- 0
+test_mm[1, "beta_disp_init_sex"] <- 0
+test_mm[1, "alpha_RD"] <- qlogis(0.05)
+test_mm[1, "beta_RD_sex"] <- 0
+test_mm[1, "alpha_DD"] <- qlogis(0.30)
+test_mm[1, "beta_DD_sex"] <- 0
+
+test_d2 <- matrix(c(20^2, 350^2, 40^2, 700^2), nrow = 1)
+test_rr <- forward_one_badger(test_d2, 0L, 0L, test_mm)
+
+test_states <- expand.grid(rep(list(0:1), 4))
+test_logw <- numeric(nrow(test_states))
+
+for (rr in seq_len(nrow(test_states))) {
+  z <- as.integer(test_states[rr, ])
+  lp <- if (z[1] == 1L) log(0.07) else log(0.93)
+
+  for (tt in 1:4) {
+    sig <- if (z[tt] == 1L) 500 else 20
+    lp <-
+      lp -
+      log(2 * pi) -
+      2 * log(sig) -
+      test_d2[1, tt] / (2 * sig^2)
+
+    if (tt < 4) {
+      p1 <- if (z[tt] == 1L) 0.30 else 0.05
+      lp <- lp +
+        if (z[tt + 1L] == 1L) log(p1) else log1p(-p1)
+    }
+  }
+
+  test_logw[rr] <- lp
+}
+
+test_w <- exp(test_logw - max(test_logw))
+test_w <- test_w / sum(test_w)
+
+test_exact <- vapply(
+  1:4,
+  function(tt) sum(test_w * as.integer(test_states[[tt]])),
+  numeric(1)
+)
+
+if (!isTRUE(
+  all.equal(
+    as.numeric(test_rr$smooth1[1, ]),
+    test_exact,
+    tolerance = 1e-10
+  )
+)) {
+  stop(
+    "Forward-backward state recovery failed brute-force identity check."
+  )
+}
+
+cat("Forward-backward smoothing self-check: PASS\n")
+
 set.seed(73000L + CHAIN_ID)
 
 state_draws <- matrix(
