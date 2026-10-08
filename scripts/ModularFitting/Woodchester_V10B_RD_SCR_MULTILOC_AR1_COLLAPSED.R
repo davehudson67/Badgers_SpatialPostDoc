@@ -1583,7 +1583,9 @@ global_blocks <- list(
   c(
     "alpha_logsigma",
     "beta_sigma_sex",
-    "alpha_logomega",
+    "alpha_logomega"
+  ),
+  c(
     "alpha_rho"
   )
 )
@@ -1620,6 +1622,7 @@ cat(
   "  Global AF_slice blocks: ", length(global_blocks), "\n",
   "  Joint annual-AC (x/y) AF_slice blocks: ", nrow(annual_state_map), "\n",
   "  Quarterly qeps blocks retain NIMBLE RW_block samplers.\n",
+  "  alpha_rho uses its own AF_slice sampler.\n",
   "  Annual movement states: analytically collapsed (no binary samplers).\n",
   sep = ""
 )
@@ -1926,6 +1929,8 @@ saveRDS(
         "joint x/y AF_slice per active badger-year",
       quarter_deviation_sampler =
         "bivariate RW_block on qeps",
+      rho_sampler =
+        "separate scalar AF_slice on alpha_rho",
       landscape_resistance = FALSE
     ),
     ids = ids,
