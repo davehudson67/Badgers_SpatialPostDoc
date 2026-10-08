@@ -957,9 +957,11 @@ code_V10B_collapsed <- nimbleCode({
 
       # Component-specific version of the broad V8 computational support.
       # In the original explicit-state HMM, only the ACTIVE state's movement
-      # scale was required to lie within 0.5--2500 m. After marginalising z, the
-      # mathematically equivalent rule is therefore to give an out-of-support
-      # component zero mixture weight, not to reject the other valid component.
+      # scale was subject to the computational support. After marginalising z,
+      # the equivalent rule is to give an out-of-support component zero mixture
+      # weight, not to reject the other valid component. Production V10B also
+      # relaxes the old 5 m lower guard to 0.5 m because the 300-badger posterior
+      # approached the old artificial boundary.
       move_support_local[i, k] <-
         step(
           log_sigma_move_local[i, k] -
@@ -1992,7 +1994,7 @@ saveRDS(
       annual_movement_parameterization =
         "centered annual AC with two-state Gaussian HMM analytically collapsed",
       movement_support =
-        "component-specific 0.0.5--2500 m coordinate-SD guard matching explicit-state V10B",
+        "component-specific 0.5--2500 m coordinate-SD guard matching explicit-state V10B",
       movement_state_inference =
         "posthoc forward-backward smoothing and FFBS from annual AC draws",
       annual_AC_sampler =
