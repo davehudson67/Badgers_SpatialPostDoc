@@ -894,8 +894,9 @@ code_V10B_collapsed <- nimbleCode({
     # The explicit binary disp path is integrated out. At each annual
     # displacement we use the forward-filtered predictive probability of the
     # high-mobility state and attach the exact two-component Gaussian mixture
-    # density via a zeros trick. Because sigma >= 5 m, the bivariate Gaussian
-    # density is always < 1 and -log(density) is a valid Poisson mean.
+    # density via a zeros trick. Because sigma >= 0.5 m, the maximum
+    # bivariate Gaussian density is 1/(2*pi*0.5^2) < 1, so -log(density)
+    # remains a valid non-negative Poisson mean.
     #
     # A itself receives a uniform reference density over the rectangular state
     # space. That density is constant over all valid habitat cells, so the
