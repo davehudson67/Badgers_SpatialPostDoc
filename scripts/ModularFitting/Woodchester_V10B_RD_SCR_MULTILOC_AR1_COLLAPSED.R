@@ -401,10 +401,9 @@ if (anyNA(first) || anyNA(K) || any(K <= first)) {
   stop("Invalid first/K annual histories.")
 }
 
-# NIMBLE monitors operate at the VARIABLE level: requesting even one disp[i,k]
-# causes the whole ragged disp array to be saved. Build a compact index of the
-# genuine annual movement intervals and expose those states through a separate
-# deterministic vector, disp_active[], in the model.
+# Build the biological index of genuine annual movement intervals. The binary
+# states themselves are not MCMC nodes in the collapsed implementation; this
+# index is used later for forward-backward smoothing and FFBS recovery.
 transition_map <- bind_rows(
   lapply(
     seq_len(nind),
@@ -426,8 +425,6 @@ transition_map <- bind_rows(
   mutate(active_index = row_number())
 
 n_trans <- nrow(transition_map)
-trans_i <- as.integer(transition_map$model_i)
-trans_k <- as.integer(transition_map$state_k)
 
 if (n_trans < 1L) {
   stop("No active annual movement intervals found.")
