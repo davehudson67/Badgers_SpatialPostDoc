@@ -24,6 +24,9 @@ library(tidyverse)
 MAX_BADGERS <- as.integer(Sys.getenv("MAX_BADGERS", unset = "100"))
 CHAIN_ID <- as.integer(Sys.getenv("CHAIN_ID", unset = "1"))
 
+MOVE_MIN <- 5
+MOVE_MAX <- 2500
+
 if (!CHAIN_ID %in% 1:3) stop("CHAIN_ID must be 1, 2 or 3.")
 
 prefix <- file.path(
@@ -120,18 +123,41 @@ forward_one_badger <- function(
     log_sig0 +
     mm[, "beta_move_high"]
 
-  sig0 <- exp(log_sig0)
-  sig1 <- exp(log_sig1)
+  sig0_raw <- exp(log_sig0)
+  sig1_raw <- exp(log_sig1)
+
+  support0 <-
+    sig0_raw >= MOVE_MIN &
+    sig0_raw <= MOVE_MAX
+
+  support1 <-
+    sig1_raw >= MOVE_MIN &
+    sig1_raw <= MOVE_MAX
+
+  if (any(!support0 & !support1)) {
+    stop(
+      "A posterior draw has neither movement component within the ",
+      "5--2500 m computational support."
+    )
+  }
+
+  # Clamp only for safe density evaluation; unsupported components are then
+  # assigned -Inf emission log density, exactly matching the collapsed fitter.
+  sig0 <- pmin(MOVE_MAX, pmax(MOVE_MIN, sig0_raw))
+  sig1 <- pmin(MOVE_MAX, pmax(MOVE_MIN, sig1_raw))
 
   loge0 <-
     -log(2 * pi) -
-    2 * log_sig0 -
+    2 * log(sig0) -
     d2 / (2 * sig0^2)
 
   loge1 <-
     -log(2 * pi) -
-    2 * log_sig1 -
+    2 * log(sig1) -
     d2 / (2 * sig1^2)
+
+  loge0[!support0, ] <- -Inf
+  loge1[!support1, ] <- -Inf
 
   p_init <- plogis(
     mm[, "alpha_disp_init"] +
