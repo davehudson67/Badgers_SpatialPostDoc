@@ -1584,9 +1584,6 @@ global_blocks <- list(
     "alpha_logsigma",
     "beta_sigma_sex",
     "alpha_logomega"
-  ),
-  c(
-    "alpha_rho"
   )
 )
 
@@ -1597,6 +1594,14 @@ for (b in global_blocks) {
     type = "AF_slice"
   )
 }
+
+# AF_slice is a multivariate sampler and requires at least two target nodes.
+# rho is a scalar parameter, so use NIMBLE's scalar slice sampler instead.
+config$removeSamplers("alpha_rho", print = FALSE)
+config$addSampler(
+  target = "alpha_rho",
+  type = "slice"
+)
 
 # Earlier centred AC experiments mixed better when each annual position was
 # updated jointly in x/y rather than by two independent scalar RW samplers.
@@ -1622,7 +1627,7 @@ cat(
   "  Global AF_slice blocks: ", length(global_blocks), "\n",
   "  Joint annual-AC (x/y) AF_slice blocks: ", nrow(annual_state_map), "\n",
   "  Quarterly qeps blocks retain NIMBLE RW_block samplers.\n",
-  "  alpha_rho uses its own AF_slice sampler.\n",
+  "  alpha_rho uses NIMBLE's scalar slice sampler.\n",
   "  Annual movement states: analytically collapsed (no binary samplers).\n",
   sep = ""
 )
@@ -1930,7 +1935,7 @@ saveRDS(
       quarter_deviation_sampler =
         "bivariate RW_block on qeps",
       rho_sampler =
-        "separate scalar AF_slice on alpha_rho",
+        "separate NIMBLE scalar slice sampler on alpha_rho",
       landscape_resistance = FALSE
     ),
     ids = ids,
