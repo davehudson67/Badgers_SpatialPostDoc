@@ -139,6 +139,36 @@ source_grid <- grid_source %>%
 source_cent <- st_coordinates(st_centroid(source_grid))
 source_half_cell <- cell_size / 2
 
+if (is.na(st_crs(grid_source))) {
+  stop("Source GPKG has no CRS.")
+}
+if (isTRUE(st_is_longlat(grid_source))) {
+  stop("Source GPKG is longitude/latitude; model requires a projected metric CRS.")
+}
+
+ux <- sort(unique(source_cent[, 1]))
+uy <- sort(unique(source_cent[, 2]))
+
+if (length(ux) != n_cols || length(uy) != n_rows) {
+  stop(
+    "Source centroid lattice dimensions differ from saved n_cols/n_rows: ",
+    length(ux), " x ", length(uy)
+  )
+}
+if (
+  any(abs(diff(ux) - cell_size) > 1e-8) ||
+  any(abs(diff(uy) - cell_size) > 1e-8)
+) {
+  stop("Source grid centroids are not on a regular 50 m lattice.")
+}
+
+if (
+  !identical(sort(unique(source_grid$row_R)), seq_len(n_rows)) ||
+  !identical(sort(unique(source_grid$col_R)), seq_len(n_cols))
+) {
+  stop("Source QGIS zero-based row/column indices do not convert to complete R indices.")
+}
+
 source_edges <- c(
   xmin = min(source_cent[, 1]) - source_half_cell,
   xmax = max(source_cent[, 1]) + source_half_cell,
@@ -526,34 +556,36 @@ sett_xy <- sett_xy %>%
       row_R >= 1L & row_R <= n_rows
   )
 
-sett_xy <- sett_xy %>%
-  mutate(
-    habitat = if_else(
-      in_bounds,
-      as.integer(sp$habitat_mat[cbind(row_R, col_R)]),
-      NA_integer_
-    ),
-    zone = if_else(
-      in_bounds,
-      as.integer(sp$zone_mat[cbind(row_R, col_R)]),
-      NA_integer_
-    ),
-    SG_id = if_else(
-      in_bounds,
-      as.integer(sp$SG_mat[cbind(row_R, col_R)]),
-      NA_integer_
-    ),
-    distance_to_outer_boundary_m = if_else(
-      in_bounds,
-      pmin(
-        x - xmin,
-        xmax - x,
-        y - ymin,
-        ymax - y
-      ),
-      NA_real_
-    )
+sett_xy$habitat <- NA_integer_
+sett_xy$zone <- NA_integer_
+sett_xy$SG_id <- NA_integer_
+sett_xy$distance_to_outer_boundary_m <- NA_real_
+
+ok_sett <- which(sett_xy$in_bounds)
+
+if (length(ok_sett)) {
+  rc <- cbind(
+    sett_xy$row_R[ok_sett],
+    sett_xy$col_R[ok_sett]
   )
+
+  sett_xy$habitat[ok_sett] <-
+    as.integer(sp$habitat_mat[rc])
+
+  sett_xy$zone[ok_sett] <-
+    as.integer(sp$zone_mat[rc])
+
+  sett_xy$SG_id[ok_sett] <-
+    as.integer(sp$SG_mat[rc])
+
+  sett_xy$distance_to_outer_boundary_m[ok_sett] <-
+    pmin(
+      sett_xy$x[ok_sett] - xmin,
+      xmax - sett_xy$x[ok_sett],
+      sett_xy$y[ok_sett] - ymin,
+      ymax - sett_xy$y[ok_sett]
+    )
+}
 
 # Regression test for the previously fixed centroid/edge indexing bug.
 oldpond <- sett_xy %>% filter(Sett_Clean == "OLDPONDDRAIN")
@@ -650,6 +682,7 @@ peripheral_cells <- sum(sp$zone_mat == 2L)
 
 summary_tbl <- tibble(
   metric = c(
+    "crs_epsg",
     "cell_size_m",
     "n_rows",
     "n_cols",
@@ -673,6 +706,7 @@ summary_tbl <- tibble(
     "max_peripheral_cell_distance_to_core_m"
   ),
   value = c(
+    ifelse(is.na(st_crs(grid_source)$epsg), NA_real_, st_crs(grid_source)$epsg),
     cell_size,
     n_rows,
     n_cols,
@@ -751,6 +785,8 @@ audit_object <- list(
   unmapped_live = unmapped_live,
   checks = list(
     source_GPKG_reproduces_saved_RDS = TRUE,
+    projected_metric_CRS = TRUE,
+    regular_50m_centroid_lattice = TRUE,
     dimensions_124x165 = TRUE,
     cell_size_50m = TRUE,
     centroid_edges_correct = TRUE,
