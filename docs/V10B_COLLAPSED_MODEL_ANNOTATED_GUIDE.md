@@ -1103,9 +1103,9 @@ Sex can shift baseline detection.
 The capture-location scale is
 
 $$
-log\sigma_i
+\log \sigma_i
 =
-\alpha_{log\sigma}
+\alpha_{\log \sigma}
 +
 \beta_{\sigma,sex}sex_i.
 $$
@@ -1117,7 +1117,7 @@ Sigma is not annual movement. It is the scale of observed capture locations arou
 ### Within-year quarter scale
 
 $$
-\omega=\exp(\alpha_{log\omega}).
+\omega=\exp(\alpha_{\log\omega}).
 $$
 
 Quarter deviations have unit marginal coordinate variance before multiplication by omega.
@@ -1145,7 +1145,7 @@ $$
 and
 
 $$
-\epsilon_q|\epsilon_{q-1}
+\epsilon_q\mid\epsilon_{q-1}
 \sim
 N_2(\rho\epsilon_{q-1},(1-\rho^2)I).
 $$
@@ -1447,7 +1447,7 @@ $$
 For q = 2 to 4,
 
 $$
-\epsilon_q|\epsilon_{q-1}
+\epsilon_q\mid\epsilon_{q-1}
 \sim
 N_2(\rho\epsilon_{q-1},(1-\rho^2)I).
 $$
@@ -1766,7 +1766,7 @@ This is just the law of total probability.
 For females in the local state,
 
 $$
-log\sigma_L=\alpha_{\log move}.
+\log \sigma_L=\alpha_{\log\mathrm{move}}.
 $$
 
 For males, beta_move_sex is added.
@@ -1804,7 +1804,7 @@ $$
 Under state s,
 
 $$
-\Delta A_t|Z_t=s
+\Delta A_t\mid Z_t=s
 \sim
 N_2(0,\sigma_s^2I).
 $$
@@ -1822,7 +1822,7 @@ The log density is therefore
 
 $$
 -\log(2\pi)
--2log\sigma_s
+-2\log \sigma_s
 -\frac{d_t^2}{2\sigma_s^2}.
 $$
 
@@ -3290,12 +3290,12 @@ $$
 Conditional on the hidden movement state:
 
 $$
-\Delta A_{i,t}|Z_{i,t}=L
+\Delta A_{i,t}\mid Z_{i,t}=L
 \sim N_2(0,\sigma_{L,i}^2I),
 $$
 
 $$
-\Delta A_{i,t}|Z_{i,t}=H
+\Delta A_{i,t}\mid Z_{i,t}=H
 \sim N_2(0,\sigma_{H,i}^2I).
 $$
 
@@ -3312,7 +3312,7 @@ $$
 $$
 
 $$
-\epsilon_q|\epsilon_{q-1}
+\epsilon_q\mid\epsilon_{q-1}
 \sim
 N_2(\rho\epsilon_{q-1},(1-\rho^2)I).
 $$
@@ -3323,7 +3323,7 @@ $$
 g_r
 =
 \exp\left[
--\frac{|Q-X_r|^2}{2\sigma_i^2}
+-\frac{\lVert Q-X_r\rVert^2}{2\sigma_i^2}
 \right].
 $$
 
