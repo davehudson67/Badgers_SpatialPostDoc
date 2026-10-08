@@ -1321,11 +1321,19 @@ make_inits <- function(chain) {
 
   set.seed(9000 + chain)
 
-  alpha_logmove0 <- log(20) + rnorm(1, 0, 0.05)
-  beta_move_sex0 <- rnorm(1, 0, 0.03)
-  beta_move_high0 <- 4.0 + rnorm(1, 0, 0.08)
-  alpha_logomega0 <- log(150) + rnorm(1, 0, 0.03)
-  alpha_rho0 <- qlogis(0.50) + rnorm(1, 0, 0.05)
+  # Deliberately over-dispersed but plausible chain starts for the parameters
+  # that have shown the strongest posterior geometry. These alter only MCMC
+  # initialisation, not priors or likelihood.
+  local_sigma_start <- c(8, 20, 40)[chain]
+  high_sigma_start <- c(500, 800, 1200)[chain]
+  omega_start <- c(5, 25, 100)[chain]
+  rho_start <- c(0.15, 0.50, 0.80)[chain]
+
+  alpha_logmove0 <- log(local_sigma_start)
+  beta_move_sex0 <- c(-0.15, 0, 0.15)[chain]
+  beta_move_high0 <- log(high_sigma_start / local_sigma_start)
+  alpha_logomega0 <- log(omega_start)
+  alpha_rho0 <- qlogis(rho_start)
 
   A0 <- array(NA_real_, c(nind, 2L, n_prim))
   qeps0 <- array(NA_real_, c(nind, 2L, J, n_prim))
@@ -1357,10 +1365,10 @@ make_inits <- function(chain) {
   }
 
   list(
-    alpha_p = qlogis(0.17) + rnorm(1, 0, 0.05),
-    beta_p_sex = rnorm(1, 0, 0.03),
-    alpha_logsigma = log(150) + rnorm(1, 0, 0.03),
-    beta_sigma_sex = rnorm(1, 0, 0.02),
+    alpha_p = qlogis(c(0.12, 0.17, 0.24)[chain]),
+    beta_p_sex = c(-0.10, 0, 0.10)[chain],
+    alpha_logsigma = log(c(125, 150, 190)[chain]),
+    beta_sigma_sex = c(-0.10, 0, 0.10)[chain],
 
     alpha_logomega = alpha_logomega0,
     alpha_rho = alpha_rho0,
@@ -1369,15 +1377,15 @@ make_inits <- function(chain) {
     beta_move_sex = beta_move_sex0,
     beta_move_high = beta_move_high0,
 
-    alpha_disp_init = qlogis(0.06) + rnorm(1, 0, 0.08),
-    beta_disp_adult = rnorm(1, 0, 0.05),
-    beta_disp_init_sex = rnorm(1, 0, 0.05),
+    alpha_disp_init = qlogis(c(0.03, 0.06, 0.12)[chain]),
+    beta_disp_adult = c(-0.30, 0, 0.30)[chain],
+    beta_disp_init_sex = c(-0.30, 0, 0.30)[chain],
 
-    alpha_RD = qlogis(0.05) + rnorm(1, 0, 0.08),
-    beta_RD_sex = rnorm(1, 0, 0.05),
+    alpha_RD = qlogis(c(0.025, 0.05, 0.10)[chain]),
+    beta_RD_sex = c(-0.30, 0, 0.30)[chain],
 
-    alpha_DD = qlogis(0.30) + rnorm(1, 0, 0.08),
-    beta_DD_sex = rnorm(1, 0, 0.05),
+    alpha_DD = qlogis(c(0.15, 0.30, 0.55)[chain]),
+    beta_DD_sex = c(-0.30, 0, 0.30)[chain],
 
     beta_season_raw = rnorm(3, 0, 0.03),
     beta_period_raw = rnorm(n_periods - 1L, 0, 0.03),
@@ -1989,6 +1997,8 @@ saveRDS(
         "bivariate RW_block on qeps",
       rho_sampler =
         "separate NIMBLE scalar slice sampler on alpha_rho",
+      chain_initialisation =
+        "deliberately over-dispersed plausible starts across chains 1--3",
       landscape_resistance = FALSE
     ),
     ids = ids,
