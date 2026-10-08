@@ -24,7 +24,7 @@ library(tidyverse)
 MAX_BADGERS <- as.integer(Sys.getenv("MAX_BADGERS", unset = "100"))
 CHAIN_ID <- as.integer(Sys.getenv("CHAIN_ID", unset = "1"))
 
-MOVE_MIN <- 5
+MOVE_MIN <- 0.5
 MOVE_MAX <- 2500
 
 if (!CHAIN_ID %in% 1:3) stop("CHAIN_ID must be 1, 2 or 3.")
@@ -137,7 +137,7 @@ forward_one_badger <- function(
   if (any(!support0 & !support1)) {
     stop(
       "A posterior draw has neither movement component within the ",
-      "5--2500 m computational support."
+      "0.5--2500 m computational support."
     )
   }
 
