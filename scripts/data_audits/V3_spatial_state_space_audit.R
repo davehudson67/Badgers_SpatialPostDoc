@@ -33,11 +33,18 @@ library(tidyverse)
 library(sf)
 
 SPATIAL_FILE <- "data/spatial/V3_spatial_inputs_50m_2km.rds"
+GRID_SOURCE_FILE <- "data/spatial/V3_Grid_50mFinal.gpkg"
 SETT_FILE <- "data/WoodchesterSettLocations.csv"
 ENCOUNTER_FILE <- "data/badger_encounters_useful.rds"
 POPULATION_FILE <- "results/V7_population_inclusion_audit.rds"
 
-required <- c(SPATIAL_FILE, SETT_FILE, ENCOUNTER_FILE, POPULATION_FILE)
+required <- c(
+  SPATIAL_FILE,
+  GRID_SOURCE_FILE,
+  SETT_FILE,
+  ENCOUNTER_FILE,
+  POPULATION_FILE
+)
 missing_files <- required[!file.exists(required)]
 if (length(missing_files)) {
   stop("Missing required file(s):\n", paste(missing_files, collapse = "\n"))
@@ -50,6 +57,7 @@ cat("WOODCHESTER V3 SPATIAL STATE-SPACE AUDIT\n")
 cat("============================================================\n")
 
 sp <- readRDS(SPATIAL_FILE)
+grid_source <- st_read(GRID_SOURCE_FILE, quiet = TRUE)
 sett_raw <- read_csv(SETT_FILE, show_col_types = FALSE)
 enc <- readRDS(ENCOUNTER_FILE)
 pop_obj <- readRDS(POPULATION_FILE)
@@ -109,7 +117,155 @@ if (!all(sp$zone_mat %in% c(1, 2))) {
 }
 
 # -----------------------------------------------------------------------------
-# 2. Grid centroid geometry and outer-edge convention
+# 2. Reproduce the saved RDS from the original QGIS grid source
+# -----------------------------------------------------------------------------
+source_required <- c(
+  "row_index", "col_index", "SG_id", "habitat", "zone"
+)
+source_missing <- setdiff(source_required, names(grid_source))
+if (length(source_missing)) {
+  stop(
+    "Source GPKG missing required fields: ",
+    paste(source_missing, collapse = ", ")
+  )
+}
+
+source_grid <- grid_source %>%
+  mutate(
+    row_R = as.integer(row_index) + 1L,
+    col_R = as.integer(col_index) + 1L
+  )
+
+source_cent <- st_coordinates(st_centroid(source_grid))
+source_half_cell <- cell_size / 2
+
+source_edges <- c(
+  xmin = min(source_cent[, 1]) - source_half_cell,
+  xmax = max(source_cent[, 1]) + source_half_cell,
+  ymin = min(source_cent[, 2]) - source_half_cell,
+  ymax = max(source_cent[, 2]) + source_half_cell
+)
+
+source_n_rows <- max(source_grid$row_R)
+source_n_cols <- max(source_grid$col_R)
+
+if (
+  source_n_rows != n_rows ||
+  source_n_cols != n_cols
+) {
+  stop(
+    "GPKG dimensions ", source_n_rows, " x ", source_n_cols,
+    " do not match saved RDS ", n_rows, " x ", n_cols
+  )
+}
+
+if (nrow(source_grid) != source_n_rows * source_n_cols) {
+  stop("Source GPKG does not contain a complete rectangular cell lattice.")
+}
+
+source_df <- st_drop_geometry(source_grid)
+
+build_source_matrix <- function(value) {
+  out <- matrix(
+    NA_integer_,
+    nrow = source_n_rows,
+    ncol = source_n_cols
+  )
+  out[cbind(source_df$row_R, source_df$col_R)] <- as.integer(value)
+  out
+}
+
+source_SG_mat <- build_source_matrix(source_df$SG_id)
+source_habitat_mat <- build_source_matrix(source_df$habitat)
+source_zone_mat <- build_source_matrix(source_df$zone)
+
+if (anyNA(source_SG_mat) ||
+    anyNA(source_habitat_mat) ||
+    anyNA(source_zone_mat)) {
+  stop("Rebuilding matrices from source GPKG produced NA cells.")
+}
+
+if (!identical(source_SG_mat, sp$SG_mat)) {
+  stop("Saved SG_mat does not exactly match source GPKG.")
+}
+if (!identical(source_habitat_mat, sp$habitat_mat)) {
+  stop("Saved habitat_mat does not exactly match source GPKG.")
+}
+if (!identical(source_zone_mat, sp$zone_mat)) {
+  stop("Saved zone_mat does not exactly match source GPKG.")
+}
+
+stored_edges_source_delta <- stored_edges - source_edges
+if (any(abs(stored_edges_source_delta) > 1e-8)) {
+  print(tibble(
+    edge = names(stored_edges),
+    stored = as.numeric(stored_edges),
+    rebuilt_from_GPKG = as.numeric(source_edges),
+    delta_m = as.numeric(stored_edges_source_delta)
+  ))
+  stop(
+    "Saved RDS edges do not match GPKG centroid extrema +/- 25 m."
+  )
+}
+
+if (!isTRUE(st_crs(sp$grid) == st_crs(grid_source))) {
+  stop("Saved RDS grid CRS differs from source GPKG CRS.")
+}
+
+cat("\nSource GPKG -> saved RDS reproduction: PASS\n")
+
+# Approximate 2-km buffer check from cell centroids. Because both core and
+# peripheral locations are represented by 50-m cell centroids, allow one cell
+# diagonal beyond 2 km as discretisation tolerance.
+source_points <- st_as_sf(
+  tibble(
+    zone = as.integer(source_df$zone),
+    x = source_cent[, 1],
+    y = source_cent[, 2]
+  ),
+  coords = c("x", "y"),
+  crs = st_crs(grid_source)
+)
+
+core_pts <- source_points %>% filter(zone == 1L)
+peripheral_pts <- source_points %>% filter(zone == 2L)
+
+if (!nrow(core_pts) || !nrow(peripheral_pts)) {
+  stop("Source grid lacks core or peripheral cells.")
+}
+
+nearest_core <- st_nearest_feature(peripheral_pts, core_pts)
+peripheral_to_core_m <- as.numeric(
+  st_distance(
+    peripheral_pts,
+    core_pts[nearest_core, ],
+    by_element = TRUE
+  )
+)
+
+buffer_tolerance_m <- sqrt(2) * cell_size
+
+if (
+  max(peripheral_to_core_m, na.rm = TRUE) >
+    2000 + buffer_tolerance_m
+) {
+  warning(
+    "At least one peripheral-cell centroid is > 2 km + one-cell-diagonal ",
+    "from the nearest core-cell centroid. Max = ",
+    round(max(peripheral_to_core_m, na.rm = TRUE), 1), " m."
+  )
+}
+
+cat(
+  "Approximate peripheral-to-core distance (cell centroids):\n",
+  "  median = ", round(median(peripheral_to_core_m), 1), " m\n",
+  "  p95    = ", round(quantile(peripheral_to_core_m, 0.95), 1), " m\n",
+  "  max    = ", round(max(peripheral_to_core_m), 1), " m\n",
+  sep = ""
+)
+
+# -----------------------------------------------------------------------------
+# 3. Grid centroid geometry and outer-edge convention
 # -----------------------------------------------------------------------------
 if (!inherits(sp$grid, "sf")) {
   stop("sp$grid is not an sf object.")
@@ -175,7 +331,7 @@ if (!isTRUE(all.equal(ymax - ymin, expected_height))) {
 }
 
 # -----------------------------------------------------------------------------
-# 3. One-based row/column indexing and matrix reconstruction
+# 4. One-based row/column indexing and matrix reconstruction
 # -----------------------------------------------------------------------------
 if (anyNA(grid_df$row_R) || anyNA(grid_df$col_R)) {
   stop("Grid has missing row_R/col_R.")
@@ -244,7 +400,7 @@ if (!is.na(sg_col)) {
 }
 
 # -----------------------------------------------------------------------------
-# 4. Habitat / zone / SG coding
+# 5. Habitat / zone / SG coding
 # -----------------------------------------------------------------------------
 cell_table <- tibble(
   row_R = grid_df$row_R,
@@ -286,7 +442,7 @@ cat("\nState-space cell cross-tabulation:\n")
 print(state_space_cross_tab, n = Inf)
 
 # -----------------------------------------------------------------------------
-# 5. Exact sett coordinates and model-compatible cleaning
+# 6. Exact sett coordinates and model-compatible cleaning
 # -----------------------------------------------------------------------------
 clean_sett <- function(x) {
   x %>%
@@ -416,7 +572,7 @@ if (
 }
 
 # -----------------------------------------------------------------------------
-# 6. Every spatial live encounter in the audited movement population
+# 7. Every spatial live encounter in the audited movement population
 # -----------------------------------------------------------------------------
 if (is.null(pop_obj$population)) {
   stop("Population audit RDS lacks $population.")
@@ -485,7 +641,7 @@ used_setts <- spatial_live %>%
   arrange(distance_to_outer_boundary_m)
 
 # -----------------------------------------------------------------------------
-# 7. Summary and boundary diagnostics
+# 8. Summary and boundary diagnostics
 # -----------------------------------------------------------------------------
 valid_habitat_cells <- sum(sp$habitat_mat == 1L)
 water_cells <- sum(sp$habitat_mat == 0L)
@@ -511,7 +667,10 @@ summary_tbl <- tibble(
     "n_unmapped_movement_live_encounters",
     "min_used_sett_distance_to_outer_boundary_m",
     "p05_used_sett_distance_to_outer_boundary_m",
-    "median_used_sett_distance_to_outer_boundary_m"
+    "median_used_sett_distance_to_outer_boundary_m",
+    "median_peripheral_cell_distance_to_core_m",
+    "p95_peripheral_cell_distance_to_core_m",
+    "max_peripheral_cell_distance_to_core_m"
   ),
   value = c(
     cell_size,
@@ -538,7 +697,10 @@ summary_tbl <- tibble(
     median(
       used_setts$distance_to_outer_boundary_m,
       na.rm = TRUE
-    )
+    ),
+    median(peripheral_to_core_m, na.rm = TRUE),
+    unname(quantile(peripheral_to_core_m, 0.95, na.rm = TRUE)),
+    max(peripheral_to_core_m, na.rm = TRUE)
   )
 )
 
@@ -576,6 +738,7 @@ cat("  <500 m from outer rectangular edge:", n_within_500_edge, "\n")
 
 audit_object <- list(
   spatial_file = SPATIAL_FILE,
+  grid_source_file = GRID_SOURCE_FILE,
   object_names = names(sp),
   crs = st_crs(sp$grid),
   stored_edges = stored_edges,
@@ -587,6 +750,7 @@ audit_object <- list(
   used_sett_audit = used_setts,
   unmapped_live = unmapped_live,
   checks = list(
+    source_GPKG_reproduces_saved_RDS = TRUE,
     dimensions_124x165 = TRUE,
     cell_size_50m = TRUE,
     centroid_edges_correct = TRUE,
