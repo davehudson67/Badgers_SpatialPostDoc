@@ -951,8 +951,12 @@ code_V10B_collapsed <- nimbleCode({
       sigma_move_high[i, k] <-
         exp(log_sigma_move_high[i, k])
 
-      # Both HMM components must remain inside the broad computational support.
-      move_support[i, k] <-
+      # Component-specific version of the broad V8 computational support.
+      # In the original explicit-state HMM, only the ACTIVE state's movement
+      # scale was required to lie within 5--2500 m. After marginalising z, the
+      # mathematically equivalent rule is therefore to give an out-of-support
+      # component zero mixture weight, not to reject the other valid component.
+      move_support_local[i, k] <-
         step(
           log_sigma_move_local[i, k] -
           LOG_MOVE_MIN
@@ -960,7 +964,9 @@ code_V10B_collapsed <- nimbleCode({
         step(
           LOG_MOVE_MAX -
           log_sigma_move_local[i, k]
-        ) *
+        )
+
+      move_support_high[i, k] <-
         step(
           log_sigma_move_high[i, k] -
           LOG_MOVE_MIN
@@ -970,8 +976,41 @@ code_V10B_collapsed <- nimbleCode({
           log_sigma_move_high[i, k]
         )
 
+      move_any_support[i, k] <-
+        max(
+          move_support_local[i, k],
+          move_support_high[i, k]
+        )
+
       move_support_ok[i, k] ~
-        dbern(move_support[i, k])
+        dbern(move_any_support[i, k])
+
+      # Clamp only for safe evaluation of the Gaussian log density. The
+      # component-support indicator below still makes an invalid component's
+      # contribution effectively zero.
+      log_sigma_move_local_eval[i, k] <-
+        max(
+          LOG_MOVE_MIN,
+          min(
+            LOG_MOVE_MAX,
+            log_sigma_move_local[i, k]
+          )
+        )
+
+      log_sigma_move_high_eval[i, k] <-
+        max(
+          LOG_MOVE_MIN,
+          min(
+            LOG_MOVE_MAX,
+            log_sigma_move_high[i, k]
+          )
+        )
+
+      sigma_move_local_eval[i, k] <-
+        exp(log_sigma_move_local_eval[i, k])
+
+      sigma_move_high_eval[i, k] <-
+        exp(log_sigma_move_high_eval[i, k])
 
       # Reference density for the annual position. The actual annual movement
       # density is supplied by move_zero below.
@@ -990,23 +1029,35 @@ code_V10B_collapsed <- nimbleCode({
 
       move_logdens_local[i, k] <-
         -LOG_TWO_PI -
-        2 * log_sigma_move_local[i, k] -
+        2 * log_sigma_move_local_eval[i, k] -
         moveD2[i, k] /
-          (2 * pow(sigma_move_local[i, k], 2))
+          (2 * pow(sigma_move_local_eval[i, k], 2))
 
       move_logdens_high[i, k] <-
         -LOG_TWO_PI -
-        2 * log_sigma_move_high[i, k] -
+        2 * log_sigma_move_high_eval[i, k] -
         moveD2[i, k] /
-          (2 * pow(sigma_move_high[i, k], 2))
+          (2 * pow(sigma_move_high_eval[i, k], 2))
 
       move_logcomp_local[i, k] <-
         log(1 - p_high_safe[i, k]) +
-        move_logdens_local[i, k]
+        move_logdens_local[i, k] +
+        log(
+          max(
+            1e-300,
+            move_support_local[i, k]
+          )
+        )
 
       move_logcomp_high[i, k] <-
         log(p_high_safe[i, k]) +
-        move_logdens_high[i, k]
+        move_logdens_high[i, k] +
+        log(
+          max(
+            1e-300,
+            move_support_high[i, k]
+          )
+        )
 
       move_logmax[i, k] <-
         max(
@@ -1928,6 +1979,8 @@ saveRDS(
       quarter_persistence_parameter = "rho in (0,1)",
       annual_movement_parameterization =
         "centered annual AC with two-state Gaussian HMM analytically collapsed",
+      movement_support =
+        "component-specific 5--2500 m coordinate-SD guard matching explicit-state V10B",
       movement_state_inference =
         "posthoc forward-backward smoothing and FFBS from annual AC draws",
       annual_AC_sampler =
