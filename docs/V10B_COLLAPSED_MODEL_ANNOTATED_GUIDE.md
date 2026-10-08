@@ -19,15 +19,15 @@ Only items 1 and 2 define what biological information enters the posterior. Star
 
 The biological hierarchy is:
 
-[
-	ext{annual movement state}
-ightarrow
+$$
+\text{annual movement state}
+\rightarrow
 A_{i,t}
-ightarrow
+\rightarrow
 Q_{i,t,q}
-ightarrow
-	ext{quarterly capture and capture locations}.
-]
+\rightarrow
+\text{quarterly capture and capture locations}.
+$$
 
 A is the annual activity centre.  
 Q is the quarter-specific centre.  
@@ -177,17 +177,17 @@ CHAIN_ID chooses chain 1, 2 or 3. MAX_BADGERS allows exactly the same code to ru
 
 MOVE_MEAN_FACTOR equals
 
-[
-sqrt{pi/2}.
-]
+$$
+\sqrt{\pi/2}.
+$$
 
 If x and y movement increments are independent Gaussian variables with the same coordinate standard deviation sigma, the radial distance is Rayleigh distributed and has mean sigma times this factor.
 
 QUARTER_DIFF_MEAN_FACTOR equals
 
-[
-sqrt{pi}
-]
+$$
+\sqrt{\pi}
+$$
 
 and is used later to report the expected distance between adjacent quarter centres under the AR(1).
 
@@ -195,17 +195,17 @@ LOG_TWO_PI is cached because it occurs repeatedly in the bivariate Gaussian move
 
 The annual movement support is only a numerical guard:
 
-[
-0.5 < sigma_{m move} < 2500 {m m}.
-]
+$$
+0.5 < \sigma_{\rm move} < 2500 {\rm m}.
+$$
 
 The lower guard used to be 5 m. The 300-badger diagnostic showed that the male local posterior was hitting that value, so it was influencing inference. It was therefore relaxed to 0.5 m.
 
 At sigma = 0.5 m the peak bivariate Gaussian density is still
 
-[
-1/(2pi 0.5^2) approx 0.637 < 1,
-]
+$$
+1/(2\pi 0.5^2) \approx 0.637 < 1,
+$$
 
 which is important for the Poisson zeros trick later.
 
@@ -540,9 +540,9 @@ The detector network is built from the full audited 1932 population, not from a 
 
 For detector r:
 
-[
+$$
 X_r=(x_r,y_r).
-]
+$$
 
 All detector coordinates are collected in the matrix X.
 
@@ -691,9 +691,9 @@ H stores detector identities for every observed within-quarter capture.
 
 Conceptually:
 
-[
+$$
 H_{i,q,m,t}=r
-]
+$$
 
 means that the m-th capture of badger i in quarter q of year t occurred at detector r.
 
@@ -707,9 +707,9 @@ For each animal, first is the first observed spatial live year and K is the last
 
 The model therefore conditions on the time window
 
-[
-first_i,ldots,K_i.
-]
+$$
+first_i,\ldots,K_i.
+$$
 
 It does not yet answer what happened after the last observation. Death and permanent emigration are not part of V10B.
 
@@ -892,42 +892,42 @@ This function defines the complete observation likelihood for one animal-quarter
 
 For quarter centre
 
-[
+$$
 Q=(S_x,S_y)
-]
+$$
 
 and detector r,
 
-[
+$$
 d_r^2=(S_x-X_{r,x})^2+(S_y-X_{r,y})^2.
-]
+$$
 
 The spatial weight is
 
-[
+$$
 g_r=
-expleft[-rac{d_r^2}{2sigma_i^2}ight].
-]
+\exp\left[-\frac{d_r^2}{2\sigma_i^2}\right].
+$$
 
 G_sum is
 
-[
-G=sum_r g_r.
-]
+$$
+G=\sum_r g_r.
+$$
 
 This is the total spatial accessibility of the detector network to that quarter centre.
 
 The total quarterly encounter hazard is
 
-[
-lambda_0 G.
-]
+$$
+\lambda_0 G.
+$$
 
 Therefore the probability of at least one capture is
 
-[
-P_{m cap}=1-exp(-lambda_0 G).
-]
+$$
+P_{\rm cap}=1-\exp(-\lambda_0 G).
+$$
 
 This follows from a Poisson encounter process: the probability of zero encounters is exp(-lambda0 G).
 
@@ -935,38 +935,38 @@ This follows from a Poisson encounter process: the probability of zero encounter
 
 If ncap = 0, the quarter likelihood is
 
-[
-L_q=1-P_{m cap}
-=exp(-lambda_0G).
-]
+$$
+L_q=1-P_{\rm cap}
+=\exp(-\lambda_0G).
+$$
 
 ## One or more captures
 
 Conditional on a capture, detector r has probability
 
-[
-pi_r=rac{g_r}{G}.
-]
+$$
+\pi_r=\frac{g_r}{G}.
+$$
 
 If the observed detectors are h1 through hn,
 
-[
+$$
 L_q
 =
-P_{m cap}
-prod_{m=1}^{n}
-pi_{h_m}.
-]
+P_{\rm cap}
+\prod_{m=1}^{n}
+\pi_{h_m}.
+$$
 
 Therefore
 
-[
+$$
 L_q
 =
-left[1-exp(-lambda_0G)ight]
-prod_{m=1}^{n}
-rac{g_{h_m}}{G}.
-]
+\left[1-\exp(-\lambda_0G)\right]
+\prod_{m=1}^{n}
+\frac{g_{h_m}}{G}.
+$$
 
 This is exactly what the loop calculates.
 
@@ -976,9 +976,9 @@ The number n of within-quarter captures is conditioned upon once the animal was 
 
 There is no term
 
-[
+$$
 P(N=n).
-]
+$$
 
 So V10B models:
 
@@ -1102,13 +1102,13 @@ Sex can shift baseline detection.
 
 The capture-location scale is
 
-[
-logsigma_i
+$$
+log\sigma_i
 =
-alpha_{logsigma}
+\alpha_{log\sigma}
 +
-eta_{sigma,sex}sex_i.
-]
+\beta_{\sigma,sex}sex_i.
+$$
 
 Thus sigma_female and sigma_male are derived directly.
 
@@ -1116,61 +1116,61 @@ Sigma is not annual movement. It is the scale of observed capture locations arou
 
 ### Within-year quarter scale
 
-[
-omega=exp(alpha_{logomega}).
-]
+$$
+\omega=\exp(\alpha_{log\omega}).
+$$
 
 Quarter deviations have unit marginal coordinate variance before multiplication by omega.
 
 The persistence parameter is
 
-[
-ho=operatorname{logit}^{-1}(alpha_ho),
-]
+$$
+\rho=\operatorname{logit}^{-1}(\alpha_\rho),
+$$
 
 so rho is restricted to 0 to 1.
 
 The AR(1) precision is
 
-[
-1/(1-ho^2).
-]
+$$
+1/(1-\rho^2).
+$$
 
 That means
 
-[
-epsilon_1sim N_2(0,I)
-]
+$$
+\epsilon_1\sim N_2(0,I)
+$$
 
 and
 
-[
-epsilon_q|epsilon_{q-1}
-sim
-N_2(hoepsilon_{q-1},(1-ho^2)I).
-]
+$$
+\epsilon_q|\epsilon_{q-1}
+\sim
+N_2(\rho\epsilon_{q-1},(1-\rho^2)I).
+$$
 
 If Var(epsilon_{q-1}) = 1, then
 
-[
-Var(epsilon_q)
+$$
+Var(\epsilon_q)
 =
-ho^2+(1-ho^2)=1.
-]
+\rho^2+(1-\rho^2)=1.
+$$
 
 So rho changes persistence without changing the marginal scale omega.
 
 The expected radial distance of Q from A is
 
-[
-omegasqrt{pi/2}.
-]
+$$
+\omega\sqrt{\pi/2}.
+$$
 
 The expected distance between adjacent quarter centres is
 
-[
-omegasqrt{pi}sqrt{1-ho}.
-]
+$$
+\omega\sqrt{\pi}\sqrt{1-\rho}.
+$$
 
 ### Annual movement
 
@@ -1289,12 +1289,12 @@ habitat_A then reads whether the corresponding cell is terrestrial habitat.
 
 Thus
 
-[
+$$
 valid_A
 =
-I(	ext{inside rectangle})
-I(	ext{habitat}=1).
-]
+I(\text{inside rectangle})
+I(\text{habitat}=1).
+$$
 
 annual_state_ok is observed as 1 with a Bernoulli probability equal to valid_A.
 
@@ -1440,51 +1440,51 @@ An important modelling approximation is that the movement transition is not expl
 
 The first quarterly standardised deviation has distribution
 
-[
-epsilon_1sim N_2(0,I).
-]
+$$
+\epsilon_1\sim N_2(0,I).
+$$
 
 For q = 2 to 4,
 
-[
-epsilon_q|epsilon_{q-1}
-sim
-N_2(hoepsilon_{q-1},(1-ho^2)I).
-]
+$$
+\epsilon_q|\epsilon_{q-1}
+\sim
+N_2(\rho\epsilon_{q-1},(1-\rho^2)I).
+$$
 
 The actual quarter centre is
 
-[
-Q=A+omegaepsilon.
-]
+$$
+Q=A+\omega\epsilon.
+$$
 
 Each Q is converted to a habitat cell and required to be valid terrestrial space using the same ones-style validity device as A.
 
 The baseline detection linear predictor is
 
-[
+$$
 lp0
 =
-alpha_p
+\alpha_p
 +
-eta_{p,sex}sex
+\beta_{p,sex}sex
 +
-eta_{season,q}
+\beta_{season,q}
 +
-eta_{period,t}.
-]
+\beta_{period,t}.
+$$
 
 The inverse-logit result is converted to a hazard:
 
-[
-lambda_0=-log(1-p_0).
-]
+$$
+\lambda_0=-\log(1-p_0).
+$$
 
 This transformation has a convenient interpretation. If there were one effective detector with g = 1,
 
-[
-1-exp[-(-log(1-p_0))]=p_0.
-]
+$$
+1-\exp[-(-\log(1-p_0))]=p_0.
+$$
 
 So the regression remains interpretable on an ordinary capture-probability scale while the detector network is handled through a cumulative hazard.
 
@@ -1492,9 +1492,9 @@ quarterProb is then the custom likelihood from Section 7.
 
 The observed pseudo-datum Ones = 1 has
 
-[
-Onessim Bernoulli(quarterProb).
-]
+$$
+Ones\sim \operatorname{Bernoulli}(quarterProb).
+$$
 
 Because the observed value is one, its likelihood contribution is exactly quarterProb. This is the Bernoulli ones trick.
 
@@ -1725,15 +1725,15 @@ This is the key movement section.
 
 There is still a conceptual binary state
 
-[
-Z_t=0quad	ext{local}
-]
+$$
+Z_t=0\quad\text{local}
+$$
 
 or
 
-[
-Z_t=1quad	ext{high mobility}.
-]
+$$
+Z_t=1\quad\text{high mobility}.
+$$
 
 But Z is not an MCMC node.
 
@@ -1743,19 +1743,19 @@ Instead, the likelihood sums over both states exactly.
 
 For the first transition,
 
-[
-p_t=p_{m disp,init}.
-]
+$$
+p_t=p_{\rm disp,init}.
+$$
 
 For later transitions,
 
-[
+$$
 p_t
 =
 (1-f_{t-1})p_{RD}
 +
 f_{t-1}p_{DD},
-]
+$$
 
 where f_{t-1} is the previous forward-filtered probability of the high state.
 
@@ -1765,9 +1765,9 @@ This is just the law of total probability.
 
 For females in the local state,
 
-[
-logsigma_L=alpha_{log move}.
-]
+$$
+log\sigma_L=\alpha_{\log move}.
+$$
 
 For males, beta_move_sex is added.
 
@@ -1789,42 +1789,42 @@ The evaluation sigmas are clamped only to keep numerical calculations safe. Inva
 
 The annual displacement vector is
 
-[
-Delta A_t=A_t-A_{t-1}.
-]
+$$
+\Delta A_t=A_t-A_{t-1}.
+$$
 
 Its squared radial distance is
 
-[
+$$
 d_t^2
 =
-(Delta x)^2+(Delta y)^2.
-]
+(\Delta x)^2+(\Delta y)^2.
+$$
 
 Under state s,
 
-[
-Delta A_t|Z_t=s
-sim
-N_2(0,sigma_s^2I).
-]
+$$
+\Delta A_t|Z_t=s
+\sim
+N_2(0,\sigma_s^2I).
+$$
 
 The density is
 
-[
-f_s(Delta A_t)
+$$
+f_s(\Delta A_t)
 =
-rac{1}{2pisigma_s^2}
-expleft[-rac{d_t^2}{2sigma_s^2}ight].
-]
+\frac{1}{2\pi\sigma_s^2}
+\exp\left[-\frac{d_t^2}{2\sigma_s^2}\right].
+$$
 
 The log density is therefore
 
-[
--log(2pi)
--2logsigma_s
--rac{d_t^2}{2sigma_s^2}.
-]
+$$
+-\log(2\pi)
+-2log\sigma_s
+-\frac{d_t^2}{2\sigma_s^2}.
+$$
 
 Those are the move_logdens expressions.
 
@@ -1832,21 +1832,21 @@ Those are the move_logdens expressions.
 
 The local weighted contribution is
 
-[
+$$
 c_L=(1-p_t)f_L.
-]
+$$
 
 The high weighted contribution is
 
-[
+$$
 c_H=p_tf_H.
-]
+$$
 
 The movement likelihood for the interval is
 
-[
+$$
 m_t=c_L+c_H.
-]
+$$
 
 The code evaluates log(m_t) using the log-sum-exp identity to avoid numerical underflow.
 
@@ -1858,25 +1858,25 @@ The actual movement density m_t is inserted via an observed Poisson zero.
 
 Let
 
-[
-lambda_t=-log m_t.
-]
+$$
+\lambda_t=-\log m_t.
+$$
 
 Then
 
-[
-P(Y=0|lambda_t)
+$$
+P(Y=0|\lambda_t)
 =
-exp(-lambda_t)
+\exp(-\lambda_t)
 =
 m_t.
-]
+$$
 
 Therefore
 
-[
+$$
 move_zero=0
-]
+$$
 
 with a Poisson mean of minus log movement likelihood multiplies the model by exactly the desired movement density, subject only to the tiny numerical floor.
 
@@ -1886,13 +1886,13 @@ Because the minimum allowed sigma is 0.5 m, the peak bivariate Gaussian density 
 
 After seeing the current displacement,
 
-[
+$$
 f_t
 =
-P(Z_t=1|Delta A_{1:t},	heta)
+P(Z_t=1|\Delta A_{1:t},\theta)
 =
-rac{p_tf_H}{(1-p_t)f_L+p_tf_H}.
-]
+\frac{p_tf_H}{(1-p_t)f_L+p_tf_H}.
+$$
 
 The code calculates this from the high log component minus the log mixture.
 
@@ -2086,44 +2086,44 @@ This is only monitoring/bookkeeping. It avoids saving huge ragged arrays while p
 
 Ignoring fixed constants and bookkeeping nodes, the posterior can be written schematically as
 
-[
-p(	heta,mathbf A,mathbf Q|mathbf y)
-propto
-p(	heta)
-L_{m movement}
-L_{m quarter process}
-L_{m observation}
-L_{m habitat/support}.
-]
+$$
+p(\theta,\mathbf A,\mathbf Q|\mathbf y)
+\propto
+p(\theta)
+L_{\rm movement}
+L_{\rm quarter process}
+L_{\rm observation}
+L_{\rm habitat/support}.
+$$
 
 For each animal, annual movement contributes
 
-[
-prod_{t=first_i+1}^{K_i}
-left[
-(1-p_{i,t})f_L(Delta A_{i,t})
+$$
+\prod_{t=first_i+1}^{K_i}
+\left[
+(1-p_{i,t})f_L(\Delta A_{i,t})
 +
-p_{i,t}f_H(Delta A_{i,t})
-ight].
-]
+p_{i,t}f_H(\Delta A_{i,t})
+\right].
+$$
 
 The quarter AR(1) contributes its Gaussian densities for the standardised deviations.
 
 For every active quarter with no capture,
 
-[
-L_q=e^{-lambda_0G}.
-]
+$$
+L_q=e^{-\lambda_0G}.
+$$
 
 For every captured quarter,
 
-[
+$$
 L_q
 =
-left(1-e^{-lambda_0G}ight)
-prod_m
-rac{g_{h_m}}{G}.
-]
+\left(1-e^{-\lambda_0G}\right)
+\prod_m
+\frac{g_{h_m}}{G}.
+$$
 
 Annual and quarterly habitat-validity terms force latent centres onto valid terrestrial cells.
 
@@ -2306,15 +2306,15 @@ The initial annual positions come from the Section 6 targets.
 
 The starting standardised quarter deviations are calculated by rearranging
 
-[
-Q=A+omegaepsilon
-]
+$$
+Q=A+\omega\epsilon
+$$
 
 to give
 
-[
-epsilon=(Q-A)/omega.
-]
+$$
+\epsilon=(Q-A)/\omega.
+$$
 
 ---
 
@@ -3114,15 +3114,15 @@ The PPCs should therefore be performed after the full three-chain run and before
 
 For every active badger-quarter define
 
-[
+$$
 C^{obs}=I(ncap>0).
-]
+$$
 
 For each selected posterior draw, reconstruct Pcap and simulate
 
-[
-C^{rep}sim Bernoulli(Pcap).
-]
+$$
+C^{rep}\sim \operatorname{Bernoulli}(Pcap).
+$$
 
 Compare observed and replicated:
 
@@ -3139,9 +3139,9 @@ This checks the first part of the observation likelihood.
 
 For every observed captured quarter, calculate
 
-[
-pi_r=g_r/G.
-]
+$$
+\pi_r=g_r/G.
+$$
 
 Condition on the observed ncap and simulate the same number of detector locations from the categorical distribution pi.
 
@@ -3251,11 +3251,11 @@ Once all 1932 chains finish:
 
 Posterior predictive probabilities can be reported for selected discrepancy statistics:
 
-[
+$$
 p_B
 =
-P[T(y^{rep},	heta)ge T(y^{obs},	heta)|y].
-]
+P[T(y^{rep},\theta)\ge T(y^{obs},\theta)|y].
+$$
 
 Values near zero or one flag mismatch, but graphical observed-versus-replicated distributions are usually easier to interpret than treating p_B as a classical p-value.
 
@@ -3283,89 +3283,89 @@ For individual i, year t and quarter q:
 
 ## Annual movement
 
-[
-Delta A_{i,t}=A_{i,t}-A_{i,t-1}.
-]
+$$
+\Delta A_{i,t}=A_{i,t}-A_{i,t-1}.
+$$
 
 Conditional on the hidden movement state:
 
-[
-Delta A_{i,t}|Z_{i,t}=L
-sim N_2(0,sigma_{L,i}^2I),
-]
+$$
+\Delta A_{i,t}|Z_{i,t}=L
+\sim N_2(0,\sigma_{L,i}^2I),
+$$
 
-[
-Delta A_{i,t}|Z_{i,t}=H
-sim N_2(0,sigma_{H,i}^2I).
-]
+$$
+\Delta A_{i,t}|Z_{i,t}=H
+\sim N_2(0,\sigma_{H,i}^2I).
+$$
 
 Z follows a two-state Markov process and is integrated out analytically.
 
 ## Within-year spatial use
 
-[
-Q_{i,t,q}=A_{i,t}+omegaepsilon_{i,t,q}.
-]
+$$
+Q_{i,t,q}=A_{i,t}+\omega\epsilon_{i,t,q}.
+$$
 
-[
-epsilon_1sim N_2(0,I).
-]
+$$
+\epsilon_1\sim N_2(0,I).
+$$
 
-[
-epsilon_q|epsilon_{q-1}
-sim
-N_2(hoepsilon_{q-1},(1-ho^2)I).
-]
+$$
+\epsilon_q|\epsilon_{q-1}
+\sim
+N_2(\rho\epsilon_{q-1},(1-\rho^2)I).
+$$
 
 ## Capture-location kernel
 
-[
+$$
 g_r
 =
-expleft[
--rac{|Q-X_r|^2}{2sigma_i^2}
-ight].
-]
+\exp\left[
+-\frac{|Q-X_r|^2}{2\sigma_i^2}
+\right].
+$$
 
 ## Quarterly capture probability
 
-[
-P_{m cap}
+$$
+P_{\rm cap}
 =
-1-expleft(-lambda_0sum_rg_right).
-]
+1-\exp\left(-\lambda_0\sum_r g_r\right).
+$$
 
 ## Conditional detector probability
 
-[
+$$
 P(H=r|captured)
 =
-g_r/sum_sg_s.
-]
+g_r/\sum_s g_s.
+$$
 
 ## Quarter likelihood
 
 If uncaptured:
 
-[
-L_q=1-P_{m cap}.
-]
+$$
+L_q=1-P_{\rm cap}.
+$$
 
 If captured n times at detectors h1 through hn:
 
-[
+$$
 L_q
 =
-P_{m cap}
-prod_{m=1}^{n}
-rac{g_{h_m}}{sum_rg_r}.
-]
+P_{\rm cap}
+\prod_{m=1}^{n}
+\frac{g_{h_m}}{\sum_r g_r}.
+$$
 
 The final scientific outputs are annual spatial position and
 
-[
-P(	ext{high mobility}_{i,t}|	ext{all movement data}).
-]
+$$
+P(\text{high mobility}_{i,t}|\text{all movement data}).
+$$
 
 These then feed the disease, survival and persistence programme.
 
