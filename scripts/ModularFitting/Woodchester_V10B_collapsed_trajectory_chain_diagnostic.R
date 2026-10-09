@@ -42,6 +42,10 @@
 library(tidyverse)
 
 MAX_BADGERS <- as.integer(Sys.getenv("MAX_BADGERS", unset = "1932"))
+FILE_STEM <- Sys.getenv(
+  "FILE_STEM",
+  unset = "V10B_RD_MULTILOC_AR1_COLLAPSED"
+)
 TOP_N <- as.integer(Sys.getenv("TOP_N", unset = "100"))
 STATE_DIFF <- as.numeric(Sys.getenv("STATE_DIFF", unset = "0.50"))
 AC_SEP_M <- as.numeric(Sys.getenv("AC_SEP_M", unset = "100"))
@@ -57,7 +61,7 @@ if (!is.finite(TOP_N) || TOP_N < 1L) {
 
 prefix <- file.path(
   "results",
-  paste0("V10B_RD_MULTILOC_AR1_COLLAPSED_", MAX_BADGERS)
+  paste0(FILE_STEM, "_", MAX_BADGERS)
 )
 
 chain_files <- paste0(prefix, "_CHAIN", CHAIN_IDS, ".rds")
