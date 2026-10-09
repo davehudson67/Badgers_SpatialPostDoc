@@ -7,6 +7,7 @@
 #   results/V10B_RD_MULTILOC_AR1_COLLAPSED_<N>_CHAIN3.rds
 #
 # Environment:
+#   FILE_STEM     result filename stem; default "V10B_RD_MULTILOC_AR1_COLLAPSED"
 #   MAX_BADGERS   fitted population size in filenames (default 100)
 #
 # Writes:
@@ -34,11 +35,15 @@ library(tidyverse)
 library(coda)
 
 MAX_BADGERS <- as.integer(Sys.getenv("MAX_BADGERS", unset = "100"))
+FILE_STEM <- Sys.getenv(
+  "FILE_STEM",
+  unset = "V10B_RD_MULTILOC_AR1_COLLAPSED"
+)
 CHAIN_IDS <- 1:3
 
 prefix <- file.path(
   "results",
-  paste0("V10B_RD_MULTILOC_AR1_COLLAPSED_", MAX_BADGERS)
+  paste0(FILE_STEM, "_", MAX_BADGERS)
 )
 
 chain_files <- paste0(
