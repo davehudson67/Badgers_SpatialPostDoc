@@ -354,17 +354,11 @@ for (ch in CHAIN_IDS) {
       )
     )
 
-  rename_map <- setNames(
-    paste0(
-      setdiff(names(chain_tbl), "active_index"),
-      "_chain",
-      ch
-    ),
-    setdiff(names(chain_tbl), "active_index")
-  )
-
   chain_tbl <- chain_tbl %>%
-    rename(!!!rename_map)
+    rename_with(
+      ~ paste0(.x, "_chain", ch),
+      -active_index
+    )
 
   chain_results[[ch]] <- chain_tbl
 
