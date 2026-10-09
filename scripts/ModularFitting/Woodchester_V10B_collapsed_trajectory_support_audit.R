@@ -27,11 +27,15 @@
 library(tidyverse)
 
 MAX_BADGERS <- as.integer(Sys.getenv("MAX_BADGERS", unset = "1932"))
+FILE_STEM <- Sys.getenv(
+  "FILE_STEM",
+  unset = "V10B_RD_MULTILOC_AR1_COLLAPSED"
+)
 STATE_DIFF <- as.numeric(Sys.getenv("STATE_DIFF", unset = "0.50"))
 
 prefix <- file.path(
   "results",
-  paste0("V10B_RD_MULTILOC_AR1_COLLAPSED_", MAX_BADGERS)
+  paste0(FILE_STEM, "_", MAX_BADGERS)
 )
 
 chain_file <- paste0(prefix, "_CHAIN1.rds")
