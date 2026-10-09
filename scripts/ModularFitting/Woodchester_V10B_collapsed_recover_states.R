@@ -11,6 +11,7 @@
 # states were integrated out during MCMC only to improve mixing.
 #
 # Environment:
+#   FILE_STEM     result filename stem; default "V10B_RD_MULTILOC_AR1_COLLAPSED"
 #   MAX_BADGERS  default 100
 #   CHAIN_ID     1, 2 or 3
 #
@@ -22,6 +23,10 @@
 library(tidyverse)
 
 MAX_BADGERS <- as.integer(Sys.getenv("MAX_BADGERS", unset = "100"))
+FILE_STEM <- Sys.getenv(
+  "FILE_STEM",
+  unset = "V10B_RD_MULTILOC_AR1_COLLAPSED"
+)
 CHAIN_ID <- as.integer(Sys.getenv("CHAIN_ID", unset = "1"))
 
 MOVE_MIN <- 0.5
@@ -31,7 +36,7 @@ if (!CHAIN_ID %in% 1:3) stop("CHAIN_ID must be 1, 2 or 3.")
 
 prefix <- file.path(
   "results",
-  paste0("V10B_RD_MULTILOC_AR1_COLLAPSED_", MAX_BADGERS)
+  paste0(FILE_STEM, "_", MAX_BADGERS)
 )
 
 chain_file <- paste0(prefix, "_CHAIN", CHAIN_ID, ".rds")
