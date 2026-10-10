@@ -191,10 +191,32 @@ rhat <- gelman.diag(
 
 ess <- effectiveSize(mcmc_list)
 
+param_names <- names(rhat)
+
+if (is.null(param_names) || !length(param_names)) {
+  param_names <- colnames(as.matrix(derived_chains[[1]]))
+}
+
+if (length(ess) != length(param_names)) {
+  stop(
+    "ESS length (", length(ess),
+    ") does not match derived-parameter count (",
+    length(param_names), ")."
+  )
+}
+
+# coda::effectiveSize() can return an unnamed numeric vector for mcmc.list
+# objects. When that happens, its order follows the monitored column order.
+if (is.null(names(ess)) || !all(param_names %in% names(ess))) {
+  ess_values <- as.numeric(ess)
+} else {
+  ess_values <- as.numeric(ess[param_names])
+}
+
 derived_diag <- tibble(
-  parameter = names(rhat),
+  parameter = param_names,
   rhat = as.numeric(rhat),
-  ess = as.numeric(ess[names(rhat)])
+  ess = ess_values
 ) %>%
   arrange(desc(rhat))
 
