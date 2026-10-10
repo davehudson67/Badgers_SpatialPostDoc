@@ -2307,6 +2307,9 @@ saveRDS(
     settings = list(
       max_year = MAX_YEAR,
       max_badgers = MAX_BADGERS,
+      init_from_stem =
+        if (nzchar(INIT_FROM_STEM)) INIT_FROM_STEM else NA_character_,
+      output_stem = OUTPUT_STEM,
       niter = NITER,
       nburn = NBURN,
       thin = THIN,
