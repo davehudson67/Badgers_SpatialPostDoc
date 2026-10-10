@@ -54,9 +54,13 @@
 #   NITER         default 2000
 #   NBURN         default 1000
 #   THIN          default 2
+#   INIT_FROM_STEM optional prior result stem. When non-empty, initialise the
+#                 chain from the final retained draw of that chain, including
+#                 exact reconstruction of qinnov from saved A/Q/rho/omega.
+#   OUTPUT_STEM    output stem (default V10B_RD_MULTILOC_AR1_COLLAPSED_REPARAM)
 #
 # OUTPUT
-#   results/V10B_RD_MULTILOC_AR1_COLLAPSED_<N>_CHAIN<chain>.rds
+#   results/<OUTPUT_STEM>_<N>_CHAIN<chain>.rds
 # =============================================================================
 
 library(tidyverse)
@@ -82,6 +86,12 @@ if (!is.finite(MAX_BADGERS) || MAX_BADGERS < 2L) {
 NITER <- as.integer(Sys.getenv("NITER", unset = "2000"))
 NBURN <- as.integer(Sys.getenv("NBURN", unset = "1000"))
 THIN <- as.integer(Sys.getenv("THIN", unset = "2"))
+
+INIT_FROM_STEM <- Sys.getenv("INIT_FROM_STEM", unset = "")
+OUTPUT_STEM <- Sys.getenv(
+  "OUTPUT_STEM",
+  unset = "V10B_RD_MULTILOC_AR1_COLLAPSED_REPARAM"
+)
 
 MOVE_MEAN_FACTOR <- sqrt(pi / 2)
 QUARTER_DIFF_MEAN_FACTOR <- sqrt(pi)
@@ -126,6 +136,10 @@ cat(
   "| burn:", NBURN,
   "| thin:", THIN, "\n"
 )
+cat("Output stem:", OUTPUT_STEM, "\n")
+if (nzchar(INIT_FROM_STEM)) {
+  cat("Continuation initialisation from:", INIT_FROM_STEM, "\n")
+}
 
 # ---- helpers ----------------------------------------------------------------
 clean_sett <- function(x) {
@@ -1467,6 +1481,227 @@ make_inits <- function(chain) {
 
 inits <- make_inits(CHAIN_ID)
 
+# ---- optional exact continuation initialisation ------------------------------
+# Continue from the final retained posterior draw of an existing fit. The saved
+# chain contains every active annual AC (A) and quarterly centre (Q), so the
+# non-centred innovations can be reconstructed exactly:
+#
+#   qeps_j = (Q_j - A) / omega
+#   qinnov_1 = qeps_1
+#   qinnov_j = (qeps_j - rho*qeps_(j-1)) / sqrt(1-rho^2)
+#
+# This is preferable to restarting from summary means because it resumes from a
+# coherent point in the full latent posterior.
+if (nzchar(INIT_FROM_STEM)) {
+
+  init_file <- file.path(
+    "results",
+    paste0(
+      INIT_FROM_STEM,
+      "_",
+      nind,
+      "_CHAIN",
+      CHAIN_ID,
+      ".rds"
+    )
+  )
+
+  if (!file.exists(init_file)) {
+    stop("Continuation source file not found: ", init_file)
+  }
+
+  previous_fit <- readRDS(init_file)
+  previous_samples <- as.matrix(previous_fit$samples)
+
+  if (!nrow(previous_samples)) {
+    stop("Continuation source contains no posterior draws: ", init_file)
+  }
+
+  last_draw <- previous_samples[nrow(previous_samples), , drop = TRUE]
+
+  required_global_init <- c(
+    "alpha_p",
+    "beta_p_sex",
+    "alpha_logsigma",
+    "beta_sigma_sex",
+    "alpha_logomega",
+    "alpha_rho",
+    "alpha_logmove_high",
+    "beta_move_sex",
+    "beta_move_high",
+    "alpha_disp_init",
+    "beta_disp_adult",
+    "beta_disp_init_sex",
+    "alpha_RD",
+    "beta_RD_sex",
+    "alpha_DD",
+    "beta_DD_sex"
+  )
+
+  missing_global_init <-
+    setdiff(required_global_init, names(last_draw))
+
+  if (length(missing_global_init)) {
+    stop(
+      "Continuation source is missing monitored stochastic globals: ",
+      paste(missing_global_init, collapse = ", ")
+    )
+  }
+
+  for (nm in required_global_init) {
+    inits[[nm]] <- unname(last_draw[[nm]])
+  }
+
+  season_cols <- paste0("beta_season_raw[", seq_len(3L), "]")
+  period_cols <- paste0(
+    "beta_period_raw[",
+    seq_len(n_periods - 1L),
+    "]"
+  )
+
+  if (!all(season_cols %in% names(last_draw))) {
+    stop("Continuation source is missing beta_season_raw monitors.")
+  }
+  if (!all(period_cols %in% names(last_draw))) {
+    stop("Continuation source is missing beta_period_raw monitors.")
+  }
+
+  inits$beta_season_raw <-
+    unname(last_draw[season_cols])
+  inits$beta_period_raw <-
+    unname(last_draw[period_cols])
+
+  A0_continue <- inits$A
+
+  for (rr in seq_len(nrow(annual_state_map))) {
+    aa <- annual_state_map$annual_active_index[rr]
+    ii <- annual_state_map$model_i[rr]
+    kk <- annual_state_map$state_k[rr]
+
+    xcol <- paste0("A_x_active[", aa, "]")
+    ycol <- paste0("A_y_active[", aa, "]")
+
+    if (!xcol %in% names(last_draw) || !ycol %in% names(last_draw)) {
+      stop(
+        "Continuation source is missing annual latent monitor(s): ",
+        xcol, " / ", ycol
+      )
+    }
+
+    A0_continue[ii, 1, kk] <- unname(last_draw[[xcol]])
+    A0_continue[ii, 2, kk] <- unname(last_draw[[ycol]])
+  }
+
+  omega_continue <- exp(inits$alpha_logomega)
+  rho_continue <- plogis(inits$alpha_rho)
+  innov_scale_continue <-
+    sqrt(1 - rho_continue * rho_continue)
+
+  qeps_continue <-
+    array(NA_real_, c(nind, 2L, J, n_prim))
+  qinnov_continue <-
+    array(NA_real_, c(nind, 2L, J, n_prim))
+
+  for (rr in seq_len(nrow(quarter_state_map))) {
+    qq <- quarter_state_map$quarter_active_index[rr]
+    ii <- quarter_state_map$model_i[rr]
+    jj <- quarter_state_map$quarter[rr]
+    kk <- quarter_state_map$state_k[rr]
+
+    xcol <- paste0("Q_x_active[", qq, "]")
+    ycol <- paste0("Q_y_active[", qq, "]")
+
+    if (!xcol %in% names(last_draw) || !ycol %in% names(last_draw)) {
+      stop(
+        "Continuation source is missing quarterly latent monitor(s): ",
+        xcol, " / ", ycol
+      )
+    }
+
+    qeps_continue[ii, 1, jj, kk] <-
+      (
+        unname(last_draw[[xcol]]) -
+        A0_continue[ii, 1, kk]
+      ) / omega_continue
+
+    qeps_continue[ii, 2, jj, kk] <-
+      (
+        unname(last_draw[[ycol]]) -
+        A0_continue[ii, 2, kk]
+      ) / omega_continue
+  }
+
+  for (ii in seq_len(nind)) {
+    for (kk in first[ii]:K[ii]) {
+
+      qinnov_continue[ii, 1, 1, kk] <-
+        qeps_continue[ii, 1, 1, kk]
+      qinnov_continue[ii, 2, 1, kk] <-
+        qeps_continue[ii, 2, 1, kk]
+
+      if (J >= 2L) {
+        for (jj in 2:J) {
+          qinnov_continue[ii, 1, jj, kk] <-
+            (
+              qeps_continue[ii, 1, jj, kk] -
+              rho_continue *
+                qeps_continue[ii, 1, jj - 1L, kk]
+            ) / innov_scale_continue
+
+          qinnov_continue[ii, 2, jj, kk] <-
+            (
+              qeps_continue[ii, 2, jj, kk] -
+              rho_continue *
+                qeps_continue[ii, 2, jj - 1L, kk]
+            ) / innov_scale_continue
+        }
+      }
+    }
+  }
+
+  active_qinnov <- unlist(
+    lapply(
+      seq_len(nind),
+      function(ii) {
+        qinnov_continue[
+          ii,
+          ,
+          ,
+          first[ii]:K[ii],
+          drop = FALSE
+        ]
+      }
+    )
+  )
+
+  if (any(!is.finite(active_qinnov))) {
+    stop(
+      "Continuation qinnov reconstruction produced non-finite active values."
+    )
+  }
+
+  inits$A <- A0_continue
+  inits$qinnov <- qinnov_continue
+
+  cat(
+    "Continuation initialisation reconstructed from final retained draw: ",
+    init_file,
+    "\n",
+    sep = ""
+  )
+
+  rm(
+    previous_fit,
+    previous_samples,
+    last_draw,
+    A0_continue,
+    qeps_continue,
+    qinnov_continue,
+    active_qinnov
+  )
+  invisible(gc())
+}
+
 # ---- collapsed-HMM algebra self-check ---------------------------------------
 # Verify the sequential forward factorisation against brute-force summation for
 # a short synthetic state sequence. This is a code-level identity check, not a
@@ -1813,7 +2048,8 @@ cat("\nRunning MCMC...\n")
 checkpoint_file <- file.path(
   "results",
   paste0(
-    "V10B_RD_MULTILOC_AR1_COLLAPSED_REPARAM_",
+    OUTPUT_STEM,
+    "_",
     nind,
     "_CHAIN",
     CHAIN_ID,
@@ -1847,6 +2083,8 @@ saveRDS(
     settings = list(
       max_year = MAX_YEAR,
       max_badgers = MAX_BADGERS,
+      init_from_stem = if (nzchar(INIT_FROM_STEM)) INIT_FROM_STEM else NA_character_,
+      output_stem = OUTPUT_STEM,
       niter = NITER,
       nburn = NBURN,
       thin = THIN
@@ -2052,7 +2290,8 @@ print(quarter_counts, n = Inf)
 out_file <- file.path(
   "results",
   paste0(
-    "V10B_RD_MULTILOC_AR1_COLLAPSED_REPARAM_",
+    OUTPUT_STEM,
+    "_",
     nind,
     "_CHAIN",
     CHAIN_ID,
@@ -2094,7 +2333,14 @@ saveRDS(
       annual_movement_scale_parameterization =
         "direct stochastic high log-scale plus positive contrast; local log-scale deterministic; exact prior transform",
       chain_initialisation =
-        "deliberately over-dispersed plausible starts across chains 1--3",
+        if (nzchar(INIT_FROM_STEM)) {
+          paste0(
+            "continued from final retained draw of ",
+            INIT_FROM_STEM
+          )
+        } else {
+          "deliberately over-dispersed plausible starts across chains 1--3"
+        },
       sampler_validation =
         "whole-trajectory A blocking + non-centred AR1 + direct high-mobility scale; biology and priors unchanged",
       landscape_resistance = FALSE
