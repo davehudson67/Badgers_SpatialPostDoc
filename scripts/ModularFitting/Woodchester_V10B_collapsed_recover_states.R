@@ -14,6 +14,8 @@
 #   FILE_STEM     result filename stem; default "V10B_RD_MULTILOC_AR1_COLLAPSED"
 #   MAX_BADGERS  default 100
 #   CHAIN_ID     1, 2 or 3
+#   MIN_RAW_ITER minimum underlying raw MCMC iteration to retain (default 0)
+#   STATE_SUFFIX optional suffix for sidecar filenames, e.g. "_TAIL"
 #
 # Writes:
 #   results/V10B_RD_MULTILOC_AR1_COLLAPSED_<N>_CHAIN<C>_STATES.rds
@@ -28,6 +30,12 @@ FILE_STEM <- Sys.getenv(
   unset = "V10B_RD_MULTILOC_AR1_COLLAPSED"
 )
 CHAIN_ID <- as.integer(Sys.getenv("CHAIN_ID", unset = "1"))
+MIN_RAW_ITER <- as.integer(Sys.getenv("MIN_RAW_ITER", unset = "0"))
+STATE_SUFFIX <- Sys.getenv("STATE_SUFFIX", unset = "")
+
+if (!is.finite(MIN_RAW_ITER) || MIN_RAW_ITER < 0L) {
+  stop("MIN_RAW_ITER must be >= 0.")
+}
 
 MOVE_MIN <- 0.5
 MOVE_MAX <- 2500
@@ -40,8 +48,12 @@ prefix <- file.path(
 )
 
 chain_file <- paste0(prefix, "_CHAIN", CHAIN_ID, ".rds")
-state_file <- paste0(prefix, "_CHAIN", CHAIN_ID, "_STATES.rds")
-csv_file <- paste0(prefix, "_CHAIN", CHAIN_ID, "_state_probabilities.csv")
+state_file <- paste0(
+  prefix, "_CHAIN", CHAIN_ID, "_STATES", STATE_SUFFIX, ".rds"
+)
+csv_file <- paste0(
+  prefix, "_CHAIN", CHAIN_ID, "_state_probabilities", STATE_SUFFIX, ".csv"
+)
 
 if (!file.exists(chain_file)) {
   stop("Missing collapsed-HMM chain file: ", chain_file)
@@ -61,6 +73,39 @@ if (is.null(fit$sex_data) || is.null(fit$adult_entry)) {
 }
 
 mm <- as.matrix(fit$samples)
+
+# Optional late-chain filter expressed in the underlying raw MCMC iteration.
+# For these fits, retained draw r corresponds to approximately
+#   nburn + thin * r.
+# Using ">" makes the cutoff conservative and keeps only draws strictly after
+# the requested raw iteration.
+if (MIN_RAW_ITER > 0L) {
+  nburn_fit <- as.integer(fit$settings$nburn)
+  thin_fit <- as.integer(fit$settings$thin)
+
+  if (!is.finite(nburn_fit) || !is.finite(thin_fit) || thin_fit < 1L) {
+    stop("Fit metadata is missing valid nburn/thin values.")
+  }
+
+  raw_iteration <- nburn_fit + thin_fit * seq_len(nrow(mm))
+  keep_draw <- raw_iteration > MIN_RAW_ITER
+
+  if (sum(keep_draw) < 100L) {
+    stop(
+      "Too few posterior draws remain after MIN_RAW_ITER=", MIN_RAW_ITER,
+      ": ", sum(keep_draw)
+    )
+  }
+
+  mm <- mm[keep_draw, , drop = FALSE]
+
+  cat(
+    "Using late-chain subset: raw iteration > ", MIN_RAW_ITER,
+    " (", nrow(mm), " retained draws)\n",
+    sep = ""
+  )
+}
+
 disp_index <- fit$disp_index
 annual_index <- fit$annual_state_index
 
@@ -108,6 +153,8 @@ cat("============================================================\n")
 cat("Population:", MAX_BADGERS, "\n")
 cat("Chain:", CHAIN_ID, "\n")
 cat("Posterior draws:", nd, "\n")
+cat("Minimum raw iteration:", MIN_RAW_ITER, "\n")
+cat("State suffix:", ifelse(nzchar(STATE_SUFFIX), STATE_SUFFIX, "<none>"), "\n")
 cat("Movement intervals:", ntotal, "\n")
 
 # Stable two-component log mixture and filter update, vectorised over draws.
@@ -448,7 +495,12 @@ saveRDS(
     state_draws = state_draws,
     p_high_smoothed_chain = smooth_mean,
     p_high_ffbs_chain = ffbs_mean,
-    state_summary = state_summary
+    state_summary = state_summary,
+    draw_filter = list(
+      min_raw_iter = MIN_RAW_ITER,
+      state_suffix = STATE_SUFFIX,
+      n_draws_used = nd
+    )
   ),
   state_file
 )
