@@ -56,7 +56,7 @@
 #   INIT_FROM_STEM optional prior result stem. When non-empty, initialise the
 #                 chain from the final retained draw of that chain, including
 #                 exact reconstruction of qinnov from saved A/Q/rho/omega.
-#   OUTPUT_STEM    output stem (default V10B_RD_MULTILOC_AR1_COLLAPSED_ANNUALNC)
+#   OUTPUT_STEM    output stem (default V10B_RD_MULTILOC_AR1_COLLAPSED_ANNUALNC_OVERLAP)
 #   AF_ADAPT_MAX   AF_slice factor-adaptation iterations (default 5000)
 #
 # OUTPUT
