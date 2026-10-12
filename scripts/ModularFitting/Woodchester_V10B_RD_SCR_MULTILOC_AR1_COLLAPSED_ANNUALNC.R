@@ -1912,6 +1912,93 @@ if (!isTRUE(all.equal(self_forward, self_brute, tolerance = 1e-10))) {
 }
 cat("Collapsed HMM forward recursion self-check: PASS\n")
 
+# Verify the annual non-centred change of variables and Gaussian-reference
+# correction against the original centred displacement density.
+nc_sigma0 <- 12
+nc_sigma1 <- 780
+nc_p <- 0.08
+nc_d <- c(250, -110)
+nc_d2 <- sum(nc_d^2)
+
+nc_l0_A <-
+  log1p(-nc_p) -
+  log(2 * pi) -
+  2 * log(nc_sigma0) -
+  nc_d2 / (2 * nc_sigma0^2)
+
+nc_l1_A <-
+  log(nc_p) -
+  log(2 * pi) -
+  2 * log(nc_sigma1) -
+  nc_d2 / (2 * nc_sigma1^2)
+
+nc_mm_A <- max(nc_l0_A, nc_l1_A)
+nc_log_A <-
+  nc_mm_A +
+  log(
+    exp(nc_l0_A - nc_mm_A) +
+    exp(nc_l1_A - nc_mm_A)
+  )
+
+nc_u <- nc_d / nc_sigma0
+nc_u2 <- sum(nc_u^2)
+nc_ratio <- nc_sigma1 / nc_sigma0
+
+nc_l0_u <-
+  log1p(-nc_p) -
+  log(2 * pi) -
+  nc_u2 / 2
+
+nc_l1_u <-
+  log(nc_p) -
+  log(2 * pi) -
+  2 * log(nc_ratio) -
+  nc_u2 / (2 * nc_ratio^2)
+
+nc_mm_u <- max(nc_l0_u, nc_l1_u)
+nc_log_u <-
+  nc_mm_u +
+  log(
+    exp(nc_l0_u - nc_mm_u) +
+    exp(nc_l1_u - nc_mm_u)
+  )
+
+nc_log_ref <-
+  -log(2 * pi) -
+  2 * LOG_U_REF_SD -
+  nc_u2 / (2 * U_REF_SD^2)
+
+nc_lambda <-
+  MOVE_NC_CORR_CONST -
+  (nc_log_u - nc_log_ref)
+
+nc_combined <-
+  nc_log_ref -
+  nc_lambda
+
+nc_target_up_to_constant <-
+  nc_log_A +
+  2 * log(nc_sigma0) -
+  MOVE_NC_CORR_CONST
+
+if (
+  !is.finite(nc_lambda) ||
+  nc_lambda < -1e-10 ||
+  !isTRUE(
+    all.equal(
+      nc_combined,
+      nc_target_up_to_constant,
+      tolerance = 1e-10
+    )
+  )
+) {
+  stop(
+    "Annual non-centred density/Jacobian self-check failed."
+  )
+}
+
+cat("Annual non-centred density/Jacobian self-check: PASS\n")
+
 # ---- build -------------------------------------------------------------------
 cat("\nBuilding NIMBLE model...\n")
 
@@ -2528,7 +2615,7 @@ saveRDS(
       annual_movement_scale_parameterization =
         "direct stochastic high log-scale plus positive contrast; local log-scale deterministic; exact prior transform",
       annual_movement_scale_sampler =
-        "interwoven twice-per-iteration updates: 2-D AF_slice on alpha_logmove_high + beta_move_sex and scalar slice on beta_move_high, before and after annual-A sweep",
+        "interwoven twice-per-iteration updates: 2-D AF_slice on alpha_logmove_high + beta_move_sex and scalar slice on beta_move_high, before and after annual-NC sweep",
       chain_initialisation =
         if (nzchar(INIT_FROM_STEM)) {
           paste0(
