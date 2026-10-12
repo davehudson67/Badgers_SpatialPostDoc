@@ -22,6 +22,9 @@
 #                 (default 100)
 #   DISP_DIFF_M   annual displacement-median chain-difference threshold in m
 #                 (default 100)
+#   MIN_RAW_ITER minimum underlying raw MCMC iteration retained (default 0)
+#   STATE_SUFFIX optional suffix on recovered-state sidecars, e.g. "_TAIL"
+#   OUTPUT_SUFFIX optional suffix on diagnostic CSVs, e.g. "_TAIL"
 #
 # Writes:
 #   results/V10B_RD_MULTILOC_AR1_COLLAPSED_<N>_trajectory_chain_diagnostic.csv
@@ -50,6 +53,9 @@ TOP_N <- as.integer(Sys.getenv("TOP_N", unset = "100"))
 STATE_DIFF <- as.numeric(Sys.getenv("STATE_DIFF", unset = "0.50"))
 AC_SEP_M <- as.numeric(Sys.getenv("AC_SEP_M", unset = "100"))
 DISP_DIFF_M <- as.numeric(Sys.getenv("DISP_DIFF_M", unset = "100"))
+MIN_RAW_ITER <- as.integer(Sys.getenv("MIN_RAW_ITER", unset = "0"))
+STATE_SUFFIX <- Sys.getenv("STATE_SUFFIX", unset = "")
+OUTPUT_SUFFIX <- Sys.getenv("OUTPUT_SUFFIX", unset = "")
 CHAIN_IDS <- 1:3
 
 if (!is.finite(MAX_BADGERS) || MAX_BADGERS < 2L) {
@@ -58,6 +64,9 @@ if (!is.finite(MAX_BADGERS) || MAX_BADGERS < 2L) {
 if (!is.finite(TOP_N) || TOP_N < 1L) {
   stop("TOP_N must be >= 1.")
 }
+if (!is.finite(MIN_RAW_ITER) || MIN_RAW_ITER < 0L) {
+  stop("MIN_RAW_ITER must be >= 0.")
+}
 
 prefix <- file.path(
   "results",
@@ -65,7 +74,9 @@ prefix <- file.path(
 )
 
 chain_files <- paste0(prefix, "_CHAIN", CHAIN_IDS, ".rds")
-state_files <- paste0(prefix, "_CHAIN", CHAIN_IDS, "_STATES.rds")
+state_files <- paste0(
+  prefix, "_CHAIN", CHAIN_IDS, "_STATES", STATE_SUFFIX, ".rds"
+)
 
 missing_files <- c(chain_files, state_files)[
   !file.exists(c(chain_files, state_files))
@@ -83,7 +94,10 @@ cat("============================================================\n")
 cat("Population:", MAX_BADGERS, "\n")
 cat("State-difference flag:", STATE_DIFF, "\n")
 cat("AC endpoint separation flag:", AC_SEP_M, "m\n")
-cat("Displacement-median difference flag:", DISP_DIFF_M, "m\n\n")
+cat("Displacement-median difference flag:", DISP_DIFF_M, "m\n")
+cat("Minimum raw iteration:", MIN_RAW_ITER, "\n")
+cat("State suffix:", ifelse(nzchar(STATE_SUFFIX), STATE_SUFFIX, "<none>"), "\n")
+cat("Output suffix:", ifelse(nzchar(OUTPUT_SUFFIX), OUTPUT_SUFFIX, "<none>"), "\n\n")
 
 # -----------------------------------------------------------------------------
 # Canonical biological indices from chain 1
@@ -323,6 +337,40 @@ for (ch in CHAIN_IDS) {
   mm <- as.matrix(
     fit$samples[, annual_cols, drop = FALSE]
   )
+
+  if (MIN_RAW_ITER > 0L) {
+    nburn_fit <- as.integer(fit$settings$nburn)
+    thin_fit <- as.integer(fit$settings$thin)
+
+    if (!is.finite(nburn_fit) || !is.finite(thin_fit) || thin_fit < 1L) {
+      stop("Chain ", ch, " is missing valid nburn/thin metadata.")
+    }
+
+    raw_iteration <- nburn_fit + thin_fit * seq_len(nrow(mm))
+    keep_draw <- raw_iteration > MIN_RAW_ITER
+
+    if (sum(keep_draw) < 100L) {
+      stop(
+        "Too few annual-trajectory draws remain in chain ", ch,
+        " after MIN_RAW_ITER=", MIN_RAW_ITER
+      )
+    }
+
+    mm <- mm[keep_draw, , drop = FALSE]
+  }
+
+  if (!is.null(states$draw_filter)) {
+    if (!identical(as.integer(states$draw_filter$min_raw_iter), MIN_RAW_ITER)) {
+      stop(
+        "State sidecar draw filter does not match MIN_RAW_ITER in chain ", ch
+      )
+    }
+    if (nrow(mm) != as.integer(states$draw_filter$n_draws_used)) {
+      stop(
+        "State sidecar and annual trajectory draw counts differ in chain ", ch
+      )
+    }
+  }
 
   x_mean <- colMeans(
     mm[, annual_index$sample_column_x, drop = FALSE]
@@ -637,17 +685,22 @@ print(
 # -----------------------------------------------------------------------------
 full_csv <- paste0(
   prefix,
-  "_trajectory_chain_diagnostic.csv"
+  "_trajectory_chain_diagnostic",
+  OUTPUT_SUFFIX,
+  ".csv"
 )
 top_csv <- paste0(
   prefix,
   "_trajectory_chain_top",
   top_n,
+  OUTPUT_SUFFIX,
   ".csv"
 )
 summary_csv <- paste0(
   prefix,
-  "_trajectory_chain_summary.csv"
+  "_trajectory_chain_summary",
+  OUTPUT_SUFFIX,
+  ".csv"
 )
 
 write_csv(diagnostic, full_csv)
