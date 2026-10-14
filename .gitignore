@@ -77,3 +77,13 @@ Thumbs.db
 *.gz
 # Generated infection trajectory output
 data/trajectories.csv
+
+# ============================================================
+# GENERATED ANALYSIS OUTPUTS
+# ============================================================
+
+logs/
+results/
+outputs/
+*.html
+*.bak
