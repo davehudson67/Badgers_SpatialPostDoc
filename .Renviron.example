@@ -1,0 +1,11 @@
+# Woodchester Badger Database
+# Copy this file to .Renviron and replace the placeholders with
+# the individual read-only credentials supplied by the database maintainer.
+#
+# NEVER commit the real .Renviron file.
+
+BADGER_DB_HOST=YOUR_SESSION_POOLER_HOST
+BADGER_DB_PORT=5432
+BADGER_DB_NAME=postgres
+BADGER_DB_USER=YOUR_READ_ONLY_USERNAME
+BADGER_DB_PASSWORD=YOUR_READ_ONLY_PASSWORD
