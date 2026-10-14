@@ -1,52 +1,186 @@
-# Woodchester Badger SQL Database — R Analysis Guide
+# Woodchester Badger Database — Detailed Technical, R and Infection Guide
 
-**Updated:** 27 August 2026  
-**Purpose:** Practical guide for connecting to the Woodchester PostgreSQL/Supabase database from R, choosing the correct table/view, querying safely, and extracting the `all_tests_inferred` probabilistic infection history for V7.
+**Updated:** 14 October 2026  
+**Purpose:** Detailed reference for the Woodchester PostgreSQL/Supabase database, its cleaned relational structure, approved analysis views, R access, infection-probability outputs, and collaborator access model.
+
+For a short collaborator quick-start, see:
+
+- [Woodchester Badger Database — Quick Access Guide](Woodchester_Badger_Database_Access_Guide.md)
 
 ---
 
-## 1. Database structure
+# 1. What the database is
 
-The database is organised into three schemas:
+The historic Woodchester badger data have been migrated from Microsoft Access into a PostgreSQL database hosted by Supabase.
 
-- **`access_raw`** — immutable preservation of the original Access database. Use only for source auditing or resolving cleaning questions.
-- **`research`** — cleaned relational tables.
-- **`analysis`** — analysis-ready views. **Start here wherever possible.**
+The database is intended to be the **single centrally maintained source of the cleaned long-term dataset**. Work that used to be repeated independently in analysis scripts — Access conversion, identifier repair, historical naming cleanup, relational joins and canonical lookups — is now handled upstream in PostgreSQL wherever possible.
 
-Recommended workflow:
+The general workflow is:
 
 ```text
-Supabase/PostgreSQL
-        ↓
-analysis/research query
-        ↓
-DataPrep.R or model-specific preparation
-        ↓
-versioned RDS snapshot
-        ↓
-R/NIMBLE analysis
+Original Microsoft Access data
+            ↓
+       access_raw
+            ↓
+cleaning / relational reconstruction
+            ↓
+         research
+            ↓
+ analysis-ready database views
+            ↓
+         analysis
+            ↓
+      R / NIMBLE / GIS
 ```
 
-For a major model, do not query the live database repeatedly inside the MCMC script.
+This distinction is important:
 
+- the database should contain **shared, reusable cleaning and structure**;
+- analysis scripts should contain **analysis-specific biological decisions**.
 
-## 2. Credentials and connection
+For example, the database can standardise a sett name once, but an individual analysis may still decide whether to exclude post-mortem records, collapse same-day encounters, define quarterly occasions or calculate a particular age variable.
 
-Store credentials in `~/.Renviron`:
+---
+
+# 2. Database schemas
+
+## `access_raw`
+
+This is the preserved import of the original Microsoft Access database.
+
+It exists primarily for:
+
+- source auditing;
+- checking how a historical field was originally recorded;
+- resolving migration or cleaning questions;
+- reproducing provenance when necessary.
+
+It should **not normally be used as the starting point for a new analysis**.
+
+## `research`
+
+This is the cleaned relational layer.
+
+It contains the canonical tables for individuals, captures, diagnostics, wounds, locations, sampling, assessments and model-derived infection outputs.
+
+Normal collaborators do not currently have direct access to this schema.
+
+## `analysis`
+
+This contains the curated analysis-ready views.
+
+This is the normal entry point for research users and the only data schema exposed to the current `badger_readonly` permission role.
+
+---
+
+# 3. Current access model
+
+There are now two deliberately separate access levels.
+
+## Administrator / maintainer access
+
+The database maintainer uses the PostgreSQL `postgres` account.
+
+This account is used for:
+
+- migrations;
+- correcting canonical data;
+- creating or changing views;
+- adding model-derived outputs;
+- creating database roles;
+- database administration.
+
+The `postgres` password must never be shared with ordinary collaborators.
+
+## Researcher access
+
+A group role called:
 
 ```text
-BADGER_DB_HOST=YOUR_SUPABASE_SESSION_POOLER_HOST
+badger_readonly
+```
+
+has been created.
+
+It currently has:
+
+- permission to connect to the `postgres` database;
+- `USAGE` on the `analysis` schema;
+- `SELECT` on the seven approved analysis views;
+- no `INSERT`, `UPDATE` or `DELETE` rights on those views;
+- no access to the underlying `research` schema.
+
+Each collaborator should receive an **individual PostgreSQL login role** that inherits `badger_readonly`.
+
+Do not create one shared researcher username for the whole project.
+
+A typical maintainer operation is:
+
+```sql
+create role researcher_name
+with login
+password '<long-random-password>';
+
+grant badger_readonly to researcher_name;
+```
+
+The password should be generated securely and supplied separately from the repository.
+
+---
+
+# 4. Credential handling
+
+Real credentials are not stored in Git.
+
+The repository now contains:
+
+```text
+.Renviron.example
+```
+
+but the real:
+
+```text
+.Renviron
+```
+
+is ignored by Git and should exist only on the user's local machine or secure server environment.
+
+A local file should contain:
+
+```text
+BADGER_DB_HOST=YOUR_SESSION_POOLER_HOST
 BADGER_DB_PORT=5432
 BADGER_DB_NAME=postgres
-BADGER_DB_USER=YOUR_DATABASE_USER
+BADGER_DB_USER=YOUR_DATABASE_USERNAME
 BADGER_DB_PASSWORD=YOUR_DATABASE_PASSWORD
 ```
 
-Use the **Supabase Session Pooler** on port **5432**. Restart R/RStudio after changing `.Renviron`.
+Restart R/RStudio after changing `.Renviron`.
 
-Do not hard-code or print the password.
+Never:
 
-Save this as `BadgerDatabase.R`:
+- commit a real `.Renviron`;
+- paste the database password into an R script;
+- print the password into logs;
+- share the administrator `postgres` password with collaborators.
+
+---
+
+# 5. Connecting from R
+
+Required packages:
+
+```r
+install.packages(c(
+  "DBI",
+  "RPostgres",
+  "dplyr",
+  "dbplyr"
+))
+```
+
+A reusable connection helper can be defined as:
 
 ```r
 library(DBI)
@@ -54,166 +188,427 @@ library(RPostgres)
 library(dplyr)
 library(dbplyr)
 
-badger_db_connect <- function(){
-  dbConnect(
+badger_db_connect <- function() {
+  DBI::dbConnect(
     RPostgres::Postgres(),
-    host=Sys.getenv("BADGER_DB_HOST"),
-    port=as.integer(Sys.getenv("BADGER_DB_PORT",unset="5432")),
-    dbname=Sys.getenv("BADGER_DB_NAME",unset="postgres"),
-    user=Sys.getenv("BADGER_DB_USER"),
-    password=Sys.getenv("BADGER_DB_PASSWORD"),
-    sslmode="require"
+    host = Sys.getenv("BADGER_DB_HOST"),
+    port = as.integer(
+      Sys.getenv("BADGER_DB_PORT", unset = "5432")
+    ),
+    dbname = Sys.getenv(
+      "BADGER_DB_NAME",
+      unset = "postgres"
+    ),
+    user = Sys.getenv("BADGER_DB_USER"),
+    password = Sys.getenv("BADGER_DB_PASSWORD"),
+    sslmode = "require"
   )
 }
-
-capture_history_db <- function(con)
-  tbl(con,in_schema("analysis","capture_history"))
-
-diagnostic_results_db <- function(con)
-  tbl(con,in_schema("analysis","diagnostic_results"))
-
-infection_probabilities_db <- function(con)
-  tbl(con,in_schema("analysis","infection_probabilities"))
-
-capture_infection_probabilities_db <- function(con)
-  tbl(con,in_schema("analysis","capture_infection_probabilities"))
 ```
 
 Connect:
 
 ```r
-source("BadgerDatabase.R")
 con <- badger_db_connect()
+```
 
-dbGetQuery(con,"SELECT current_database(), current_user;")
+Check the connection:
+
+```r
+DBI::dbGetQuery(
+  con,
+  "SELECT current_database(), current_user;"
+)
 ```
 
 Disconnect when finished:
 
 ```r
-dbDisconnect(con)
+DBI::dbDisconnect(con)
 ```
 
+---
 
-## 3. How `dbplyr` querying works
+# 6. How remote R queries work
 
-A remote table reference does not download the table:
+Using `dbplyr`, this:
 
 ```r
-captures <- tbl(con,in_schema("analysis","capture_history"))
+captures <- tbl(
+  con,
+  in_schema("analysis", "capture_history")
+)
 ```
 
-These operations are executed in PostgreSQL:
+does **not** immediately download the complete capture table.
+
+Operations such as:
 
 ```r
-captures %>%
-  filter(primary_year>=2015) %>%
+captures |>
+  filter(capture_year >= 2020) |>
   count(sex)
 ```
 
-Inspect the generated SQL with:
+are translated into SQL and run in PostgreSQL.
+
+Use:
 
 ```r
-captures %>%
-  filter(primary_year>=2015) %>%
-  count(sex) %>%
-  show_query()
+show_query()
 ```
 
-Download only the final reduced result with:
+to inspect the generated SQL.
+
+Only when:
 
 ```r
 collect()
 ```
 
-Best practice:
+is called is the result transferred into local R memory.
+
+Recommended pattern:
 
 ```text
-filter/select/group/summarise remotely
-                ↓
-             collect()
-                ↓
-      continue locally in R
+filter / select / group / summarise in PostgreSQL
+                        ↓
+                     collect()
+                        ↓
+              continue locally in R
 ```
 
+This is particularly useful for the long diagnostic and infection-result tables.
 
-## 4. Main `analysis` views
+---
 
-### `analysis.capture_history`
+# 7. Live analysis-view inventory
 
-**Grain:** one row per capture.
+The current read-only layer contains seven approved views.
 
-Use for:
+| View | Grain / purpose | Rows checked 14 Oct 2026 |
+|---|---|---:|
+| `analysis.capture_history` | One row per recorded capture | 17,586 |
+| `analysis.diagnostic_results` | One row per diagnostic result | 76,051 |
+| `analysis.capture_infection_probabilities` | One row per capture with infection-model outputs in wide form | 16,255 |
+| `analysis.infection_probabilities` | One row per capture × infection-model variant | 97,530 |
+| `analysis.infection_quarterly_probabilities` | One row per badger-quarter for the imported quarterly infection trajectory | 29,737 |
+| `analysis.historical_sett_candidates` | Summary for historical sett/location review | 358 |
+| `analysis.sett_social_group_observed` | Observed sett/social-group/year combinations | 2,156 |
 
-- individual and capture IDs;
-- tattoo;
-- capture date;
-- year/quarter/season;
-- sex and age;
-- capture-level sett/location;
-- historical capture-level social group;
-- most routine CMR/SCR preparation.
+These are the objects normal researchers should use.
 
-Current database audit: **17,586 capture rows**.
+---
 
-Example:
+# 8. `analysis.capture_history`
+
+## Grain
+
+One row per recorded capture.
+
+Current live audit:
+
+```text
+Capture rows:          17,586
+Individuals:            3,791
+First capture:     1975-12-13
+Last capture:      2026-08-11
+Live rows:              16,298
+PM rows:                 1,288
+```
+
+## Important fields
+
+The view currently includes fields such as:
+
+```text
+capture_id
+individual_id
+tattoo
+elect_tag
+historical_names
+n_historical_names
+sex
+age_first_capture
+year_first_capture
+capture_date
+capture_year
+capture_quarter
+capture_occasion
+is_pm
+moc
+recorded_sett_name
+sett_id
+normalized_sett_name
+recorded_social_group_name
+recorded_social_group_id
+normalized_social_group_name
+recorded_supergroup_name
+capture_location_text
+os_ref
+disease_status
+weight
+body_length
+temperature
+toothwear
+condition
+reproductive_status
+pm_status
+pm_cause
+sampling fields
+assessment fields
+collar fields
+comment
+```
+
+Inspect the full current list programmatically rather than relying on a static document:
 
 ```r
-captures <- capture_history_db(con)
+DBI::dbListFields(
+  con,
+  DBI::Id(
+    schema = "analysis",
+    table = "capture_history"
+  )
+)
+```
 
-capture_dat <- captures %>%
-  filter(primary_year>=2010) %>%
+## Example
+
+```r
+captures <- tbl(
+  con,
+  in_schema("analysis", "capture_history")
+)
+
+capture_dat <- captures |>
+  filter(
+    capture_year >= 2014,
+    capture_year <= 2018,
+    !is_pm
+  ) |>
   select(
-    individual_id,capture_id,tattoo,capture_date,
-    primary_year,sex,age_fc,normalized_sett_name,socg
-  ) %>%
+    individual_id,
+    capture_id,
+    tattoo,
+    capture_date,
+    capture_year,
+    capture_quarter,
+    sex,
+    age_first_capture,
+    sett_id,
+    normalized_sett_name,
+    normalized_social_group_name
+  ) |>
   collect()
 ```
 
-**Important:** capture-recorded `socg` is the historical social group. Do not overwrite it automatically from the current sett lookup.
+---
 
-For spatial work, prefer cleaned identifiers such as `sett_id` / `normalized_sett_name` over arbitrary raw location text.
+# 9. Sett and social-group conventions
+
+Historical spatial data require special care.
+
+The capture view retains both the **recorded historical information** and cleaned identifiers.
+
+Useful fields include:
+
+```text
+recorded_sett_name
+sett_id
+normalized_sett_name
+recorded_social_group_name
+recorded_social_group_id
+normalized_social_group_name
+recorded_supergroup_name
+```
+
+The social group associated with a historical capture should not simply be replaced using a present-day lookup.
+
+For spatial analyses, prefer stable cleaned identifiers such as:
+
+```text
+sett_id
+normalized_sett_name
+```
+
+rather than arbitrary raw location strings.
+
+The view:
+
+```text
+analysis.sett_social_group_observed
+```
+
+contains observed sett/social-group relationships through time. It is useful as a historical summary, but should not automatically be interpreted as a deterministic rule saying that a sett could only belong to one social group in a particular year.
+
+The view:
+
+```text
+analysis.historical_sett_candidates
+```
+
+supports review of historical location strings and candidate sett assignments.
 
 ---
 
-### `analysis.diagnostic_results`
+# 10. `analysis.diagnostic_results`
 
-**Grain:** one row per diagnostic result.
+## Grain
 
-A capture can therefore have several rows. Current audit: about **76,051 diagnostic-result rows**.
+One row per diagnostic result.
 
-Use for:
+This is intentionally a long-format dataset.
 
-- diagnostic histories;
-- test-specific analyses;
-- sensitivity/specificity models;
-- long-format diagnostic summaries.
+A single capture can therefore have several rows.
 
-Example:
+Current diagnostic inventory:
+
+| Test family | Rows | Distinct captures represented |
+|---|---:|---:|
+| Culture | 48,699 | 16,960 |
+| ELISA | 15,162 | 12,905 |
+| IFN-gamma ELISA | 4,375 | 4,089 |
+| DPP | 3,316 | 1,799 |
+| Stat-Pak | 2,851 | 2,851 |
+| Brock | 1,648 | 1,648 |
+
+Total diagnostic rows:
+
+```text
+76,051
+```
+
+## Important fields
+
+The view includes:
+
+```text
+source_table
+source_record_id
+capture_id
+individual_id
+tattoo
+capture_date
+is_pm
+test_family
+test_type
+sample_type
+result
+result_code
+visual_line_1
+visual_line_1_result
+optical_density_1
+visual_line_2
+visual_line_2_result
+optical_density_2
+reference_value
+mean_od
+blot_cf
+blotson
+brock_test_od
+no_clotted
+afno
+lesions
+abscesses
+spoligo
+spolprime
+wgs_clade
+plate_number
+experiment_date
+nil_value
+avian_ppd_value
+bovine_ppd_value
+pwm_value
+bovine_minus_nil
+avian_minus_nil
+bovine_minus_avian
+retest
+test_failed
+test_info
+blood_quality
+qc_note
+comments
+```
+
+## Example
 
 ```r
-diagnostics <- diagnostic_results_db(con)
+diagnostics <- tbl(
+  con,
+  in_schema("analysis", "diagnostic_results")
+)
 
-diagnostics %>%
-  count(test_type,result_label,sort=TRUE) %>%
+diagnostics |>
+  count(test_family, result, sort = TRUE) |>
   collect()
 ```
 
-Do not join this directly to capture history and then assume one row still equals one capture.
+---
+
+# 11. Joining diagnostics to captures
+
+This is one of the most important structural points in the database.
+
+`capture_history` is approximately one row per capture.
+
+`diagnostic_results` can have multiple rows per capture.
+
+Therefore:
+
+```r
+captures |>
+  left_join(
+    diagnostics,
+    by = "capture_id"
+  )
+```
+
+will generally produce **more rows than the capture history**.
+
+That is correct if the desired unit is:
+
+```text
+capture × diagnostic result
+```
+
+but not if the desired unit is:
+
+```text
+capture
+```
+
+If one row per capture is required, diagnostics need to be aggregated or pivoted deliberately according to the biological question.
+
+Do not silently use `first()`, `max()` or another arbitrary aggregation unless that rule has a defensible diagnostic interpretation.
 
 ---
 
-### `analysis.infection_probabilities`
+# 12. Infection-probability system
 
-**Grain:** one row per capture × infection-model variant.
+The database now contains both capture-level and complete quarterly infection-probability outputs.
 
-Current model run:
+The current model run is:
 
 ```text
 infection_probabilities_2026_08_27
 ```
 
-Available variants:
+## Capture-level long-format probabilities
+
+View:
+
+```text
+analysis.infection_probabilities
+```
+
+Grain:
+
+```text
+capture × model variant
+```
+
+Available model variants are:
 
 ```text
 diagnostic_fixed_prevalence
@@ -224,435 +619,352 @@ all_tests_inferred
 culture_only_fixed
 ```
 
-Each currently contains:
+Each variant currently contains:
 
-- **16,255 rows**
-- **3,214 badgers**
-- **1976-02-09 to 2025-12-10**
-
-This long-format view is the preferred canonical source when selecting one infection model or comparing variants.
-
----
-
-### `analysis.capture_infection_probabilities`
-
-**Grain:** one row per capture.
-
-Contains the six infection probabilities as separate columns. Use when a wide one-row-per-capture infection object is more convenient.
-
-Because it is one row per capture, it can be joined safely to `analysis.capture_history` by `capture_id`.
-
----
-
-### `analysis.sett_social_group_observed`
-
-Observed sett/social-group/year relationships.
-
-Use it as an **observed historical summary**, not as a hard inferred validity table saying that a sett could only belong to a given group during particular years.
-
-
-## 5. Main `research` tables
-
-Use `analysis` views first. Move to `research` when a specific relational/test field is required.
-
-### Core tables
-
-- **`research.individuals`** — one row per badger; `individual_id`, tattoo, demographics/sex and baseline information.
-- **`research.captures`** — one row per capture; `capture_id`, `individual_id`, date, live/PM status and core capture fields.
-- **`research.capture_sampling`** — capture-associated biological sampling.
-- **`research.capture_assessments`** — capture-associated health/clinical assessment information.
-- **`research.capture_collars`** — capture-associated collar information.
-- **`research.wounds`** — wound records; potentially one-to-many.
-
-### Diagnostic/test tables
-
-- **`research.cultures`**
-- **`research.ifn_gamma_elisa`**
-- **`research.dpp_tests`**
-- **`research.stat_pak`**
-- **`research.elisa_tests`**
-- **`research.brock_tests`**
-
-Use these if fields specific to one assay are required. Otherwise `analysis.diagnostic_results` is usually easier.
-
-### Location tables
-
-- **`research.setts`** — cleaned sett lookup.
-- **`research.social_groups`** — cleaned social-group lookup.
-
-There are also cleaned location/history/lookup structures used by the analysis views. Because schema details can evolve, inspect the live database rather than relying on an old list.
-
-List every current `research` table:
-
-```r
-dbGetQuery(
-  con,
-  "
-  SELECT table_name
-  FROM information_schema.tables
-  WHERE table_schema='research'
-  ORDER BY table_name;
-  "
-)
+```text
+16,255 capture rows
+3,214 badgers
+1976-02-09 to 2025-12-10
 ```
 
-List every current `analysis` view:
+Across all six variants, the long view contains:
+
+```text
+97,530 rows
+```
+
+Key fields:
+
+```text
+infection_probability_id
+individual_id
+tattoo
+capture_id
+sample_date
+year
+quarter
+model_variant
+infection_probability
+model_run
+source_file
+imported_at
+```
+
+---
+
+# 13. Capture-level wide infection view
+
+View:
+
+```text
+analysis.capture_infection_probabilities
+```
+
+This provides one row per represented capture and places the infection-model variants in separate columns.
+
+Current rows:
+
+```text
+16,255
+```
+
+Columns include:
+
+```text
+capture_id
+individual_id
+tattoo
+sample_date
+year
+quarter
+model_run
+diagnostic_fixed_prevalence
+diagnostic_annual_prevalence
+diagnostic_adjusted_annual
+all_tests_fixed
+all_tests_inferred
+culture_only_fixed
+```
+
+This is convenient when capture-level infection probabilities need to be joined directly onto `analysis.capture_history`.
+
+Example:
 
 ```r
-dbGetQuery(
+capture_inf <- tbl(
+  con,
+  in_schema(
+    "analysis",
+    "capture_infection_probabilities"
+  )
+)
+
+capture_with_inf <- captures |>
+  left_join(
+    capture_inf |>
+      select(
+        capture_id,
+        p_infected = all_tests_inferred
+      ),
+    by = "capture_id"
+  ) |>
+  collect()
+```
+
+---
+
+# 14. Complete quarterly infection trajectory
+
+The earlier database documentation treated quarter-level completeness as unresolved.
+
+That is no longer the case.
+
+The database now contains:
+
+```text
+analysis.infection_quarterly_probabilities
+```
+
+For the current:
+
+```text
+model_run     = infection_probabilities_2026_08_27
+model_variant = all_tests_inferred
+```
+
+the live database contains:
+
+```text
+Rows:                    29,737
+Badgers:                  3,224
+First quarter:       1976-01-01
+Last quarter:        2026-07-01
+Badgers with complete
+first-to-last histories:  3,224 / 3,224
+Missing internal quarters: 0
+```
+
+Therefore the imported quarterly object is a **complete quarterly trajectory between each animal's first and last represented quarter**.
+
+This is the appropriate database source when an analysis needs infection state through time rather than only infection probability at observed captures.
+
+Key fields:
+
+```text
+infection_quarterly_id
+individual_id
+tattoo
+quarter_date
+year
+quarter
+model_variant
+infection_probability
+model_run
+source_file
+imported_at
+```
+
+## R example
+
+```r
+infection_quarterly <- tbl(
+  con,
+  in_schema(
+    "analysis",
+    "infection_quarterly_probabilities"
+  )
+) |>
+  filter(
+    model_run ==
+      "infection_probabilities_2026_08_27",
+    model_variant ==
+      "all_tests_inferred"
+  ) |>
+  select(
+    individual_id,
+    tattoo,
+    quarter_date,
+    year,
+    quarter,
+    p_infected = infection_probability
+  ) |>
+  arrange(
+    individual_id,
+    year,
+    quarter
+  ) |>
+  collect()
+```
+
+This should be the default quarterly infection source for the current movement/disease model development.
+
+---
+
+# 15. Which infection object should I use?
+
+Use:
+
+## `analysis.infection_probabilities`
+
+when:
+
+- comparing infection-model variants;
+- extracting one variant at actual capture occasions;
+- retaining long-format model metadata.
+
+## `analysis.capture_infection_probabilities`
+
+when:
+
+- you need one row per capture;
+- you want infection probabilities as several columns;
+- you are joining directly to capture-level biological data.
+
+## `analysis.infection_quarterly_probabilities`
+
+when:
+
+- infection is needed at every quarter between first and last represented state;
+- modelling temporal disease history;
+- studying whether infection precedes movement/relocation or vice versa;
+- building quarter-level hidden-state or survival/movement models.
+
+For current model development, the primary infection series remains:
+
+```text
+all_tests_inferred
+```
+
+Do not automatically convert:
+
+```r
+p_infected > 0.5
+```
+
+into a hard infected/not-infected state unless a particular analysis explicitly requires such a threshold.
+
+The probability carries information about uncertainty.
+
+If posterior infection-state draws are available for a future analysis, they may preserve uncertainty more completely than posterior mean probabilities alone.
+
+---
+
+# 16. Underlying `research` tables
+
+Normal read-only users cannot query these directly, but maintainers should understand the relational layer.
+
+## Individuals and identity
+
+```text
+research.individuals
+research.individual_names
+```
+
+These store canonical individual identity and historical naming information.
+
+## Captures and capture-associated data
+
+```text
+research.captures
+research.capture_sampling
+research.capture_assessments
+research.capture_collars
+research.wounds
+```
+
+These separate the core capture event from one-to-one or one-to-many associated biological records.
+
+## Diagnostic tables
+
+```text
+research.cultures
+research.ifn_gamma_elisa
+research.dpp_tests
+research.elisa_tests
+research.brock_tests
+research.stat_pak_tests
+research.stat_pak_results
+```
+
+Supporting lookup/detail tables include:
+
+```text
+research.dpp_sample_types
+research.dpp_visual_line_results
+research.disease_statuses
+```
+
+## Spatial/social structure
+
+```text
+research.setts
+research.social_groups
+research.supergroups
+research.sett_social_group_history
+research.social_group_supergroup_history
+```
+
+These support cleaned sett, social-group and supergroup relationships.
+
+## Infection-model storage
+
+```text
+research.infection_probabilities
+research.infection_probabilities_import
+research.infection_quarterly_probabilities
+research.infection_quarterly_import
+```
+
+The `*_import` tables are staging/import structures.
+
+Analysis scripts should use the curated `analysis` views instead of relying directly on import tables.
+
+---
+
+# 17. Inspecting the live schema
+
+Because the schema can evolve, the live database should be treated as authoritative.
+
+List the current analysis views:
+
+```r
+DBI::dbGetQuery(
   con,
   "
   SELECT table_name
   FROM information_schema.views
-  WHERE table_schema='analysis'
+  WHERE table_schema = 'analysis'
   ORDER BY table_name;
   "
 )
 ```
 
-Inspect fields in any table/view:
+A read-only collaborator will see only objects for which their role has permission.
 
-```r
-dbListFields(con,Id(schema="research",table="captures"))
-dbListFields(con,Id(schema="analysis",table="capture_history"))
+Maintainers can list research tables with:
+
+```sql
+select table_name
+from information_schema.tables
+where table_schema = 'research'
+order by table_name;
 ```
 
-
-## 6. Example database queries
-
-Captures per year:
+Inspect fields in a view:
 
 ```r
-captures %>%
-  count(primary_year) %>%
-  arrange(primary_year) %>%
-  collect()
-```
-
-Unique badgers per year:
-
-```r
-captures %>%
-  distinct(primary_year,individual_id) %>%
-  count(primary_year,name="n_badgers") %>%
-  collect()
-```
-
-Pull a period:
-
-```r
-dat <- captures %>%
-  filter(primary_year>=2014,primary_year<=2018) %>%
-  select(
-    individual_id,capture_id,tattoo,capture_date,
-    primary_year,sex,age_fc,normalized_sett_name,socg
-  ) %>%
-  collect()
-```
-
-Direct SQL example:
-
-```r
-dbGetQuery(
+DBI::dbListFields(
   con,
-  "
-  SELECT primary_year,
-         COUNT(*) AS n_captures,
-         COUNT(DISTINCT individual_id) AS n_badgers
-  FROM analysis.capture_history
-  GROUP BY primary_year
-  ORDER BY primary_year;
-  "
+  DBI::Id(
+    schema = "analysis",
+    table = "capture_history"
+  )
 )
 ```
 
+---
 
-## 7. Primary infection series for V7: `all_tests_inferred`
-
-The planned primary infection information is:
-
-```text
-model_variant = all_tests_inferred
-model_run     = infection_probabilities_2026_08_27
-```
-
-Pull it directly:
-
-```r
-source("BadgerDatabase.R")
-con <- badger_db_connect()
-
-infection_all_tests <- infection_probabilities_db(con) %>%
-  filter(
-    model_run=="infection_probabilities_2026_08_27",
-    model_variant=="all_tests_inferred"
-  ) %>%
-  select(
-    individual_id,
-    tattoo,
-    capture_id,
-    sample_date,
-    year,
-    quarter,
-    p_infected=infection_probability
-  ) %>%
-  arrange(individual_id,year,quarter,sample_date) %>%
-  collect()
-
-dbDisconnect(con)
-```
-
-Audit:
-
-```r
-infection_all_tests %>%
-  summarise(
-    n=n(),
-    n_badgers=n_distinct(individual_id),
-    first_date=min(sample_date),
-    last_date=max(sample_date),
-    min_p=min(p_infected),
-    mean_p=mean(p_infected),
-    max_p=max(p_infected)
-  )
-```
-
-Current imported `all_tests_inferred` coverage is:
-
-```text
-16,255 rows
-3,214 badgers
-1976-02-09 to 2025-12-10
-mean p(infected) ≈ 0.1121
-```
-
-
-## 8. Critical V7 audit: is this really every quarter-year time step?
-
-The intended interpretation is that `all_tests_inferred` gives a posterior probability of infection at **every quarter-year time step from first capture to last capture**.
-
-However, the SQL import came from:
-
-```text
-p_infected_per_capture.csv
-```
-
-and all **16,255/16,255** imported rows matched a live `capture_id`.
-
-That proves that the imported file has an infection probability for every row in the per-capture export. It does **not by itself prove** that every latent quarter between first and last capture is represented in SQL.
-
-Before V7, audit this explicitly.
-
-### Check for multiple capture rows per individual-quarter
-
-```r
-infection_q_audit <- infection_all_tests %>%
-  mutate(q_index=year*4L+(quarter-1L))
-
-infection_q_audit %>%
-  count(individual_id,year,quarter,name="n_rows") %>%
-  count(n_rows)
-```
-
-### If a quarter has multiple captures, check whether the probability is identical
-
-```r
-within_quarter <- infection_q_audit %>%
-  group_by(individual_id,year,quarter) %>%
-  summarise(
-    n_capture_rows=n(),
-    p_min=min(p_infected),
-    p_max=max(p_infected),
-    p_range=p_max-p_min,
-    .groups="drop"
-  )
-
-within_quarter %>%
-  summarise(
-    n_quarters=n(),
-    n_multiple=sum(n_capture_rows>1),
-    n_probability_disagreements=sum(p_range>1e-12)
-  )
-```
-
-If `n_probability_disagreements = 0`, repeated captures within a quarter carry the same quarter-level posterior and can be collapsed safely.
-
-
-## 9. Build one probability per badger-quarter
-
-Only after the within-quarter audit is satisfactory:
-
-```r
-infection_quarter <- infection_all_tests %>%
-  group_by(individual_id,tattoo,year,quarter) %>%
-  summarise(
-    p_infected=first(p_infected),
-    n_capture_rows=n(),
-    .groups="drop"
-  ) %>%
-  mutate(q_index=year*4L+(quarter-1L)) %>%
-  arrange(individual_id,q_index)
-```
-
-Test complete coverage from first represented quarter to last:
-
-```r
-quarter_coverage <- infection_quarter %>%
-  group_by(individual_id,tattoo) %>%
-  summarise(
-    first_q=min(q_index),
-    last_q=max(q_index),
-    observed_quarters=n(),
-    expected_quarters=last_q-first_q+1L,
-    missing_quarters=expected_quarters-observed_quarters,
-    .groups="drop"
-  )
-
-quarter_coverage %>%
-  summarise(
-    n_badgers=n(),
-    complete_badgers=sum(missing_quarters==0),
-    incomplete_badgers=sum(missing_quarters>0),
-    total_missing_quarters=sum(missing_quarters)
-  )
-```
-
-Inspect any incomplete histories:
-
-```r
-quarter_coverage %>%
-  filter(missing_quarters>0) %>%
-  arrange(desc(missing_quarters))
-```
-
-### Interpretation
-
-If every animal has `missing_quarters = 0`, the current imported data genuinely form a complete quarterly trajectory.
-
-If many quarters are absent, then the **underlying infection model may have estimated every quarter but the current CSV exported only capture occasions**. In that case, obtain/import the full quarter-level output. Do not interpolate or carry probabilities forward unless that is explicitly part of the infection model.
-
-
-## 10. Identify the missing quarters if needed
-
-```r
-expected_quarters <- infection_quarter %>%
-  group_by(individual_id,tattoo) %>%
-  tidyr::complete(
-    q_index=seq(min(q_index),max(q_index))
-  ) %>%
-  ungroup() %>%
-  mutate(
-    year=q_index %/% 4L,
-    quarter=(q_index %% 4L)+1L
-  )
-
-missing_quarter_rows <- expected_quarters %>%
-  filter(is.na(p_infected))
-
-missing_quarter_rows
-```
-
-Quarter indexing convention:
-
-```r
-q_index <- year*4L+(quarter-1L)
-year <- q_index %/% 4L
-quarter <- (q_index %% 4L)+1L
-```
-
-
-## 11. Join `all_tests_inferred` to captures
-
-For infection probability at actual capture occasions:
-
-```r
-source("BadgerDatabase.R")
-con <- badger_db_connect()
-
-captures <- capture_history_db(con)
-
-infection <- infection_probabilities_db(con) %>%
-  filter(
-    model_run=="infection_probabilities_2026_08_27",
-    model_variant=="all_tests_inferred"
-  ) %>%
-  select(
-    capture_id,
-    p_infected=infection_probability
-  )
-
-capture_with_infection <- captures %>%
-  left_join(infection,by="capture_id") %>%
-  collect()
-
-dbDisconnect(con)
-```
-
-Because there is one `all_tests_inferred` record per imported capture, this should remain one row per capture.
-
-
-## 12. How the infection probabilities should enter V7
-
-Do **not** default to:
-
-```r
-infected <- p_infected > .5
-```
-
-The probability itself carries uncertainty and should be preserved.
-
-The planned directional questions are:
-
-### Infection -> future relocation/high mobility
-
-\[
-\mathrm{logit}\{P(D_{i,t+1}=1|D_{it}=0)\}
-=
-lpha_{RD}+
-eta_{RD,sex}Sex_i+
-eta_{RD,inf}I_{it}+\ldots
-\]
-
-### Relocation/high mobility -> future infection
-
-\[
-\mathrm{logit}\{P(I_{i,t+1}=1|I_{it}=0)\}
-=
-lpha_I+
-eta_{I,D}D_{it}+\ldots
-\]
-
-If posterior **infection-state draws** are available, they are preferable to using only posterior mean probabilities because they preserve uncertainty and temporal dependence more faithfully.
-
-The exact V7 implementation should therefore be decided after confirming whether we possess:
-
-1. posterior draws of the quarterly infection histories;
-2. only posterior mean probabilities;
-3. complete quarter-level probabilities;
-4. or probabilities exported only at capture occasions.
-
-
-## 13. Recommended co-author rules
-
-1. Start from `analysis` views whenever possible.
-2. Treat `access_raw` as an immutable historical archive.
-3. Use `research` for specific relational/test detail.
-4. Do not alter database tables without agreement.
-5. Never hard-code passwords.
-6. Filter/summarise in SQL before `collect()`.
-7. Preserve `individual_id` and `capture_id`.
-8. Remember that diagnostic data are one-to-many.
-9. `analysis.diagnostic_results` is long-format.
-10. `analysis.infection_probabilities` is long-format by infection-model variant.
-11. `analysis.capture_infection_probabilities` is wide and one row per capture.
-12. For current V7 development, select `all_tests_inferred`.
-13. Preserve infection uncertainty.
-14. Verify quarter-by-quarter completeness before calling the SQL import a complete latent quarterly trajectory.
-15. Save final model inputs as versioned RDS snapshots.
-16. Disconnect from PostgreSQL when finished.
-
-
-## 14. Minimal quick-start
+# 18. Example: capture dataset for a survival/movement analysis
 
 ```r
 library(DBI)
@@ -660,35 +972,475 @@ library(RPostgres)
 library(dplyr)
 library(dbplyr)
 
-source("BadgerDatabase.R")
-
 con <- badger_db_connect()
 
-captures <- capture_history_db(con)
+captures <- tbl(
+  con,
+  in_schema("analysis", "capture_history")
+)
 
-infection <- infection_probabilities_db(con) %>%
+dat <- captures |>
   filter(
-    model_run=="infection_probabilities_2026_08_27",
-    model_variant=="all_tests_inferred"
-  )
-
-dat <- captures %>%
-  left_join(
-    infection %>%
-      select(capture_id,p_infected=infection_probability),
-    by="capture_id"
-  ) %>%
+    !is_pm,
+    capture_year >= 2000
+  ) |>
+  select(
+    individual_id,
+    capture_id,
+    tattoo,
+    capture_date,
+    capture_year,
+    capture_quarter,
+    sex,
+    age_first_capture,
+    sett_id,
+    normalized_sett_name,
+    recorded_social_group_id,
+    normalized_social_group_name
+  ) |>
   collect()
 
 dbDisconnect(con)
 ```
 
+At this point the analysis script can make its own decisions about:
+
+- same-day biological encounter fusion;
+- quarterly collapse;
+- defining age at time;
+- treatment of unknown location;
+- study-period restrictions;
+- censoring;
+- movement-state construction.
+
+Those are not necessarily database-level cleaning operations.
+
 ---
 
-## 15. Current next step for V7
+# 19. Example: diagnostic extraction
 
-Run the quarter-coverage audit in Sections 8–9.
+```r
+con <- badger_db_connect()
 
-If `all_tests_inferred` is present for every quarter from first capture to last capture, it can be converted directly into the quarterly infection array for V7.
+diagnostics <- tbl(
+  con,
+  in_schema("analysis", "diagnostic_results")
+)
 
-If the current SQL import contains only capture occasions, obtain the underlying complete quarter-level infection-model output and add that as a separate quarter-level SQL table/view rather than fabricating missing probabilities.
+diag_dat <- diagnostics |>
+  filter(
+    !is_pm,
+    capture_date >= as.Date("2010-01-01")
+  ) |>
+  select(
+    individual_id,
+    capture_id,
+    tattoo,
+    capture_date,
+    test_family,
+    test_type,
+    sample_type,
+    result,
+    result_code
+  ) |>
+  collect()
+
+dbDisconnect(con)
+```
+
+Remember that this remains a one-to-many diagnostic dataset.
+
+---
+
+# 20. Example: quarter-level infection plus capture history
+
+A common workflow is to use capture history for observed encounters and the quarterly infection view for latent disease information through time.
+
+```r
+con <- badger_db_connect()
+
+captures <- tbl(
+  con,
+  in_schema("analysis", "capture_history")
+) |>
+  filter(!is_pm)
+
+infection_q <- tbl(
+  con,
+  in_schema(
+    "analysis",
+    "infection_quarterly_probabilities"
+  )
+) |>
+  filter(
+    model_run ==
+      "infection_probabilities_2026_08_27",
+    model_variant ==
+      "all_tests_inferred"
+  )
+
+captures_local <- captures |>
+  select(
+    individual_id,
+    capture_id,
+    tattoo,
+    capture_date,
+    capture_year,
+    capture_quarter,
+    sex,
+    sett_id,
+    normalized_sett_name
+  ) |>
+  collect()
+
+infection_local <- infection_q |>
+  select(
+    individual_id,
+    tattoo,
+    quarter_date,
+    year,
+    quarter,
+    p_infected = infection_probability
+  ) |>
+  collect()
+
+dbDisconnect(con)
+```
+
+The two objects can then be aligned to a shared quarter index in the analysis-specific preparation code.
+
+---
+
+# 21. Recommended model-data workflow
+
+For computationally intensive models, especially NIMBLE models, do not repeatedly query PostgreSQL from inside each chain.
+
+Recommended approach:
+
+```text
+1. Query the required database views
+2. Apply reproducible analysis-specific preparation
+3. Audit row counts / identifiers / dates
+4. Save a versioned RDS snapshot
+5. Fit all model chains from the same snapshot
+6. Record the database/model-data preparation version
+```
+
+This separates:
+
+- live database maintenance;
+- analysis preparation;
+- model fitting.
+
+It also makes multi-chain/HPC fitting reproducible.
+
+---
+
+# 22. What belongs in the database versus the analysis
+
+## Good candidates for central database handling
+
+- canonical individual IDs;
+- capture IDs;
+- repaired historical names;
+- standardized sett names;
+- standardized social-group names;
+- shared diagnostic structure;
+- reusable joins;
+- centrally agreed data corrections;
+- reusable infection-model outputs;
+- common analysis views.
+
+## Usually analysis-specific
+
+- study-period filtering;
+- live/PM inclusion decisions;
+- same-day fusion rules;
+- quarter/occasion definitions;
+- age-at-time calculation;
+- modal location rules;
+- movement classification;
+- censoring decisions;
+- construction of model matrices/arrays;
+- model-specific derived covariates.
+
+If several analyses independently repeat the same complicated cleaning operation, that is a sign it may belong in a central database view instead.
+
+---
+
+# 23. Adding a new analysis view
+
+A new view is preferable when a cleaned or derived object is:
+
+- needed repeatedly;
+- biologically well defined;
+- useful across several projects;
+- not specific to one model implementation.
+
+New views should normally be created by the maintainer and then explicitly granted to `badger_readonly`.
+
+For example:
+
+```sql
+grant select on analysis.new_view
+to badger_readonly;
+```
+
+Future views are **not automatically exposed** to collaborators. This is deliberate.
+
+---
+
+# 24. Adding a new researcher
+
+Create an individual login:
+
+```sql
+create role researcher_name
+with login
+password '<secure-random-password>';
+```
+
+Then:
+
+```sql
+grant badger_readonly
+to researcher_name;
+```
+
+Verify effective access:
+
+```sql
+select
+  has_schema_privilege(
+    'researcher_name',
+    'analysis',
+    'usage'
+  ) as can_use_analysis,
+  has_schema_privilege(
+    'researcher_name',
+    'research',
+    'usage'
+  ) as can_use_research;
+```
+
+The expected result is:
+
+```text
+can_use_analysis = true
+can_use_research = false
+```
+
+The researcher should then receive:
+
+- the session-pooler host;
+- port `5432`;
+- database name `postgres`;
+- their own username;
+- their own password.
+
+Transfer the password securely.
+
+---
+
+# 25. Removing researcher access
+
+Because users have individual logins, access can be revoked per person without changing everyone else's credentials.
+
+A maintainer can remove membership:
+
+```sql
+revoke badger_readonly
+from researcher_name;
+```
+
+or disable the login:
+
+```sql
+alter role researcher_name
+nologin;
+```
+
+If the account is no longer needed and owns no objects, it can later be dropped by the maintainer.
+
+---
+
+# 26. Current security posture
+
+As of 14 October 2026:
+
+- the underlying `research` tables have RLS enabled;
+- ordinary researchers do not have access to the `research` schema;
+- approved collaborator access is through `analysis` views;
+- `badger_readonly` cannot write to the approved views;
+- the repository no longer tracks the real `.Renviron`;
+- `.Renviron` and `.env` files are now ignored;
+- `.Renviron.example` is the only credential template kept in Git.
+
+The Supabase security advisor reports the underlying protected tables as **RLS enabled with no policies**. For these private schemas that means ordinary roles are not granted a row-level route into those tables; access is intentionally provided through the curated analysis layer instead.
+
+The previous administrator database password should be rotated because a real `.Renviron` had previously been committed to the public GitHub repository. Removing it from the current branch prevents future exposure but does not erase it from historical commits.
+
+---
+
+# 27. Current database facts at a glance
+
+```text
+Capture history
+---------------
+Rows:              17,586
+Individuals:        3,791
+Date range:         1975-12-13 to 2026-08-11
+Live rows:          16,298
+PM rows:             1,288
+
+Diagnostics
+-----------
+Culture:            48,699
+ELISA:              15,162
+IFN-gamma ELISA:     4,375
+DPP:                  3,316
+Stat-Pak:             2,851
+Brock:                1,648
+Total:               76,051
+
+Capture-level infection probabilities
+-------------------------------------
+Model run: infection_probabilities_2026_08_27
+Variants: 6
+Rows per variant:    16,255
+Badgers per variant:  3,214
+Date range:           1976-02-09 to 2025-12-10
+
+Quarterly infection trajectory
+------------------------------
+Model variant: all_tests_inferred
+Rows:                 29,737
+Badgers:               3,224
+Range:                 Q1 1976 to Q3 2026
+Complete first-to-last histories:
+                       3,224 / 3,224
+Missing internal quarters:
+                       0
+```
+
+---
+
+# 28. Recommended starting points
+
+For most work:
+
+```text
+Capture/survival/movement:
+    analysis.capture_history
+
+Diagnostic test work:
+    analysis.diagnostic_results
+
+Capture-level infection:
+    analysis.capture_infection_probabilities
+or
+    analysis.infection_probabilities
+
+Quarterly disease trajectory:
+    analysis.infection_quarterly_probabilities
+
+Historical sett/social-group review:
+    analysis.sett_social_group_observed
+    analysis.historical_sett_candidates
+```
+
+Normal researchers should not need to start from `research` or `access_raw`.
+
+---
+
+# 29. Minimal complete R example
+
+```r
+library(DBI)
+library(RPostgres)
+library(dplyr)
+library(dbplyr)
+
+badger_db_connect <- function() {
+  DBI::dbConnect(
+    RPostgres::Postgres(),
+    host = Sys.getenv("BADGER_DB_HOST"),
+    port = as.integer(
+      Sys.getenv("BADGER_DB_PORT", unset = "5432")
+    ),
+    dbname = Sys.getenv(
+      "BADGER_DB_NAME",
+      unset = "postgres"
+    ),
+    user = Sys.getenv("BADGER_DB_USER"),
+    password = Sys.getenv("BADGER_DB_PASSWORD"),
+    sslmode = "require"
+  )
+}
+
+con <- badger_db_connect()
+
+captures <- tbl(
+  con,
+  in_schema("analysis", "capture_history")
+)
+
+infection_q <- tbl(
+  con,
+  in_schema(
+    "analysis",
+    "infection_quarterly_probabilities"
+  )
+)
+
+capture_dat <- captures |>
+  filter(
+    !is_pm,
+    capture_year >= 2015
+  ) |>
+  collect()
+
+infection_dat <- infection_q |>
+  filter(
+    model_run ==
+      "infection_probabilities_2026_08_27",
+    model_variant ==
+      "all_tests_inferred"
+  ) |>
+  collect()
+
+DBI::dbDisconnect(con)
+```
+
+At this point both objects are ordinary local R data frames and can be prepared for the specific biological/model analysis.
+
+---
+
+# 30. Summary
+
+The database now has a clear separation of responsibilities:
+
+```text
+access_raw
+    historical source archive
+
+research
+    canonical cleaned relational database
+    maintainer access
+
+analysis
+    curated research-ready views
+    read-only collaborator access
+
+R analysis
+    project-specific biological preparation
+
+model
+    survival / movement / disease / SCR / CMR etc.
+```
+
+The most important practical rule is:
+
+> **Use the central database for shared data cleaning and structure; use analysis scripts for decisions that are specific to the scientific question.**
+
+That should prevent the long-term Woodchester dataset from fragmenting again into many slightly different locally cleaned versions.
