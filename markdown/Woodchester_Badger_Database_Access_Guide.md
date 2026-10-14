@@ -1,94 +1,94 @@
-# Woodchester Badger Database — R Access Guide
+# Woodchester Badger Database — Quick Access Guide
 
-**Purpose:** Instructions for co-authors/collaborators who need read access to the Woodchester badger PostgreSQL database for analysis in R.
+## What is this?
+
+The historic Woodchester badger data are now stored in a PostgreSQL database hosted by Supabase.
+
+The database is intended to be the **single cleaned source of the long-term badger data**. Historical Access conversion, identifier repair, and database-level cleaning are handled centrally rather than repeated in individual R projects.
+
+For normal research use, collaborators are given **individual read-only database accounts**. These accounts can query the prepared `analysis` views but cannot edit the underlying data.
 
 ---
 
-## 1. Overview
+## Database structure
 
-The Woodchester database is stored in **PostgreSQL**, hosted through **Supabase**.
+There are two important layers:
 
-The database is organised into three main schemas:
+- `research` — underlying cleaned relational tables. These are maintained centrally and are **not available to normal read-only users**.
+- `analysis` — analysis-ready views. These are the normal starting point for R analyses.
 
-- **`access_raw`** — preserved import of the original Microsoft Access database. This should normally **not** be used for analysis.
-- **`research`** — cleaned relational tables.
-- **`analysis`** — analysis-ready views designed for most routine work.
+The read-only role currently has access to the following views:
 
-For most analyses, start with the **`analysis`** schema.
+| View | Purpose | Current rows* |
+|---|---|---:|
+| `analysis.capture_history` | One row per capture, with individual, capture, sett/social-group and biological information | 17,586 |
+| `analysis.diagnostic_results` | Long-format diagnostic/test results linked to captures | 76,051 |
+| `analysis.capture_infection_probabilities` | Capture-level infection probabilities from the fitted diagnostic models | 16,255 |
+| `analysis.infection_probabilities` | Model-specific capture-level infection probability output | 97,530 |
+| `analysis.infection_quarterly_probabilities` | Model-specific badger-quarter infection probabilities | 29,737 |
+| `analysis.historical_sett_candidates` | Summary used when reviewing historical sett/location assignments | 358 |
+| `analysis.sett_social_group_observed` | Observed sett/social-group relationships through time | 2,156 |
 
-The two most useful analysis views are:
+\*Row counts checked 14 October 2026 and will change as the database is updated.
+
+For most biological analyses, start with:
 
 ```text
 analysis.capture_history
 analysis.diagnostic_results
 ```
 
-### Important distinction
-
-`analysis.capture_history` contains **one row per capture**.
-
-`analysis.diagnostic_results` is **long format**, so one capture may have several diagnostic-result rows.
-
-Do **not** join all diagnostic rows directly to `capture_history` and then assume you still have one row per capture.
+For disease-state analyses, also use the infection-probability views.
 
 ---
 
-## 2. Install the required R packages
+## Getting access
 
-If needed:
+Ask the database maintainer for an individual read-only username and password.
 
-```r
-install.packages(c("DBI","RPostgres","dplyr","dbplyr"))
-```
+Researchers do **not** use the main `postgres` administrator account.
 
-Then load them:
+Each researcher account inherits the `badger_readonly` role, which:
 
-```r
-library(DBI)
-library(RPostgres)
-library(dplyr)
-library(dbplyr)
-```
+- can connect to the database;
+- can use the `analysis` schema;
+- can read the approved analysis views;
+- cannot insert, update or delete records;
+- cannot access the underlying `research` schema.
+
+Do not share accounts between researchers.
 
 ---
 
-## 3. Store database credentials securely
+## Store credentials locally
 
-Database usernames/passwords should **not** be written directly into analysis scripts.
+Credentials should never be written into an R script or committed to Git.
 
-Instead, store them in an R `.Renviron` file.
-
-In R, open the user-level `.Renviron` file with:
-
-```r
-file.edit("~/.Renviron")
-```
-
-Add:
+Create or edit your local `.Renviron` file and add:
 
 ```text
-BADGER_DB_HOST=YOUR_SUPABASE_SESSION_POOLER_HOST
+BADGER_DB_HOST=YOUR_SESSION_POOLER_HOST
 BADGER_DB_PORT=5432
 BADGER_DB_NAME=postgres
-BADGER_DB_USER=YOUR_DATABASE_USER
-BADGER_DB_PASSWORD=YOUR_DATABASE_PASSWORD
+BADGER_DB_USER=YOUR_READ_ONLY_USERNAME
+BADGER_DB_PASSWORD=YOUR_READ_ONLY_PASSWORD
 ```
 
-Then **save the file and restart R/RStudio**.
+Then restart R/RStudio.
 
-For this database, use the **Supabase Session Pooler on port 5432**.
-
-### Security note
-
-Do not commit `.Renviron` to GitHub or another shared repository.
-
-The actual password-containing `.Renviron` file should ideally be transferred using a secure method rather than normal email. The accompanying `.Renviron.example` file can be shared freely, with the real credentials supplied separately.
+A safe template is provided in the repository as `.Renviron.example`.
 
 ---
 
-## 4. Create the database connection script
+## Connect from R
 
-Create a file called `BadgerDatabase.R` containing:
+Install the required packages once:
+
+```r
+install.packages(c("DBI", "RPostgres", "dplyr", "dbplyr"))
+```
+
+Then connect:
 
 ```r
 library(DBI)
@@ -96,578 +96,196 @@ library(RPostgres)
 library(dplyr)
 library(dbplyr)
 
-badger_db_connect <- function(){
-  dbConnect(
-    RPostgres::Postgres(),
-    host=Sys.getenv("BADGER_DB_HOST"),
-    port=as.integer(Sys.getenv("BADGER_DB_PORT",unset="5432")),
-    dbname=Sys.getenv("BADGER_DB_NAME",unset="postgres"),
-    user=Sys.getenv("BADGER_DB_USER"),
-    password=Sys.getenv("BADGER_DB_PASSWORD"),
-    sslmode="require"
-  )
-}
-
-capture_history_db <- function(con)
-  tbl(con,in_schema("analysis","capture_history"))
-
-diagnostic_results_db <- function(con)
-  tbl(con,in_schema("analysis","diagnostic_results"))
-```
-
-This script contains **no password**. It reads credentials from `.Renviron`.
-
----
-
-## 5. Connect from R
-
-Start a new R session, then run:
-
-```r
-source("BadgerDatabase.R")
-
-con <- badger_db_connect()
-```
-
-Check that the connection works:
-
-```r
-dbGetQuery(
-  con,
-  "SELECT current_database(), current_user;"
+con <- dbConnect(
+  RPostgres::Postgres(),
+  host = Sys.getenv("BADGER_DB_HOST"),
+  port = as.integer(Sys.getenv("BADGER_DB_PORT", unset = "5432")),
+  dbname = Sys.getenv("BADGER_DB_NAME", unset = "postgres"),
+  user = Sys.getenv("BADGER_DB_USER"),
+  password = Sys.getenv("BADGER_DB_PASSWORD"),
+  sslmode = "require"
 )
 ```
 
-When finished:
+Check the connection:
 
 ```r
-dbDisconnect(con)
+dbGetQuery(con, "SELECT current_database(), current_user;")
 ```
 
 ---
 
-## 6. Access the main analysis views
+## Load the main data
 
-Create remote references:
+### Capture history
 
 ```r
 captures <- tbl(
   con,
-  in_schema("analysis","capture_history")
+  in_schema("analysis", "capture_history")
 )
+```
 
+Useful fields include:
+
+```text
+capture_id
+individual_id
+tattoo
+sex
+age_first_capture
+year_first_capture
+capture_date
+capture_year
+capture_quarter
+is_pm
+normalized_sett_name
+normalized_social_group_name
+recorded_supergroup_name
+weight
+condition
+reproductive_status
+```
+
+### Diagnostic results
+
+```r
 diagnostics <- tbl(
   con,
-  in_schema("analysis","diagnostic_results")
+  in_schema("analysis", "diagnostic_results")
 )
 ```
 
-Or use the helper functions:
+Useful fields include:
 
-```r
-captures <- capture_history_db(con)
-diagnostics <- diagnostic_results_db(con)
+```text
+capture_id
+individual_id
+tattoo
+capture_date
+is_pm
+test_family
+test_type
+sample_type
+result
+result_code
 ```
 
-These are initially **remote database tables**. They are not yet downloaded into R.
+`diagnostic_results` is **long format**: a capture can have several diagnostic rows.
 
 ---
 
-## 7. Inspect available variables
+## Query before downloading
 
-```r
-captures %>% glimpse()
-diagnostics %>% glimpse()
-```
-
-Alternatively:
-
-```r
-dbListFields(
-  con,
-  Id(schema="analysis",table="capture_history")
-)
-
-dbListFields(
-  con,
-  Id(schema="analysis",table="diagnostic_results")
-)
-```
-
----
-
-## 8. Basic querying with `dplyr`
-
-The database can be queried using familiar `dplyr` syntax.
+`dbplyr` lets you filter and summarise in PostgreSQL before bringing data into R.
 
 For example:
 
 ```r
-captures %>%
-  count(primary_year)
-```
-
-This is still being handled by PostgreSQL.
-
-To bring the result into R:
-
-```r
-captures %>%
-  count(primary_year) %>%
-  collect()
-```
-
-Recommended workflow:
-
-```text
-filter / select / group / summarise in PostgreSQL
-                    ↓
-                 collect()
-                    ↓
-continue analysis locally in R
-```
-
-This avoids unnecessarily downloading the entire database.
-
----
-
-## 9. Example queries
-
-### Number of captures per year
-
-```r
-capture_counts <- captures %>%
-  count(primary_year) %>%
-  arrange(primary_year) %>%
-  collect()
-
-capture_counts
-```
-
-### Number of unique badgers per year
-
-```r
-badgers_by_year <- captures %>%
-  filter(!is.na(tattoo)) %>%
-  distinct(primary_year,tattoo) %>%
-  count(primary_year,name="n_badgers") %>%
-  collect()
-
-badgers_by_year
-```
-
-### Extract captures from a particular period
-
-For example, 2014–2018:
-
-```r
-dat <- captures %>%
+dat <- captures |>
   filter(
-    primary_year>=2014,
-    primary_year<=2018
-  ) %>%
+    capture_year >= 2014,
+    capture_year <= 2018,
+    !is_pm
+  ) |>
   select(
     individual_id,
     capture_id,
     tattoo,
     capture_date,
-    primary_year,
+    capture_year,
+    capture_quarter,
     sex,
-    age_fc,
+    age_first_capture,
     normalized_sett_name,
-    socg
-  ) %>%
+    normalized_social_group_name
+  ) |>
   collect()
 ```
 
-### Count diagnostic result types
+For diagnostics:
 
 ```r
-diagnostics %>%
-  count(
-    test_type,
-    result_label,
-    sort=TRUE
-  ) %>%
-  collect()
-```
-
-### Extract diagnostic results for a period
-
-```r
-diag_dat <- diagnostics %>%
+diag_dat <- diagnostics |>
   filter(
-    primary_year>=2014,
-    primary_year<=2018
-  ) %>%
+    capture_date >= as.Date("2014-01-01"),
+    capture_date < as.Date("2019-01-01")
+  ) |>
   select(
-    individual_id,
     capture_id,
     tattoo,
     capture_date,
-    primary_year,
+    test_family,
     test_type,
-    result_label
-  ) %>%
+    result
+  ) |>
   collect()
 ```
 
----
-
-## 10. Joining capture and diagnostic data
-
-Because `diagnostic_results` is long-format, one capture can have multiple diagnostic rows.
-
-For example:
-
-```r
-capture_subset <- captures %>%
-  filter(primary_year>=2014,primary_year<=2018) %>%
-  select(
-    capture_id,
-    individual_id,
-    tattoo,
-    capture_date,
-    primary_year,
-    sex,
-    age_fc,
-    normalized_sett_name,
-    socg
-  )
-
-diag_subset <- diagnostics %>%
-  filter(primary_year>=2014,primary_year<=2018) %>%
-  select(
-    capture_id,
-    test_type,
-    result_label
-  )
-```
-
-A direct join such as:
-
-```r
-capture_subset %>%
-  left_join(
-    diag_subset,
-    by="capture_id"
-  )
-```
-
-will create **multiple rows per capture** whenever several tests exist.
-
-That is correct if a long-format capture × diagnostic dataset is required.
-
-If the analysis requires **one row per capture**, diagnostic results should first be summarized or pivoted deliberately.
-
-For example:
-
-```r
-diag_summary <- diag_subset %>%
-  group_by(capture_id,test_type) %>%
-  summarise(
-    result_label=first(result_label),
-    .groups="drop"
-  ) %>%
-  collect() %>%
-  tidyr::pivot_wider(
-    names_from=test_type,
-    values_from=result_label
-  )
-```
-
-The exact summarization should depend on the biological question.
+Filtering before `collect()` is preferable when only part of the database is needed.
 
 ---
 
-## 11. Querying with SQL directly
+## Important points
 
-You can also send SQL directly to PostgreSQL:
+`analysis.capture_history` is approximately one row per recorded capture.
 
-```r
-dbGetQuery(
-  con,
-  "
-  SELECT
-    primary_year,
-    COUNT(*) AS n_captures,
-    COUNT(DISTINCT individual_id) AS n_badgers
-  FROM analysis.capture_history
-  GROUP BY primary_year
-  ORDER BY primary_year;
-  "
-)
-```
+`analysis.diagnostic_results` is one row per diagnostic result, so joining it directly to `capture_history` can produce several rows per capture.
 
----
+The database handles shared cleaning and data structure. Individual analysis scripts should still make analysis-specific decisions such as:
 
-## 12. List available tables and views
+- study period;
+- live versus post-mortem records;
+- capture occasions;
+- repeated/same-day encounters;
+- age definitions;
+- diagnostic aggregation;
+- construction of model-specific encounter histories.
 
-```r
-dbGetQuery(
-  con,
-  "
-  SELECT
-    table_schema,
-    table_name
-  FROM information_schema.tables
-  WHERE table_schema IN ('research','analysis')
-  ORDER BY table_schema, table_name;
-  "
-)
-```
-
-For views:
-
-```r
-dbGetQuery(
-  con,
-  "
-  SELECT
-    table_schema,
-    table_name
-  FROM information_schema.views
-  WHERE table_schema IN ('research','analysis')
-  ORDER BY table_schema, table_name;
-  "
-)
-```
+Do not independently overwrite centrally cleaned identifiers or historical sett/social-group assignments without discussing the change with the database maintainer.
 
 ---
 
-## 13. Useful database structure
-
-The cleaned `research` schema contains relational tables including:
-
-```text
-individuals
-captures
-capture_sampling
-capture_assessments
-capture_collars
-wounds
-cultures
-ifn_gamma_elisa
-dpp_tests
-stat_pak
-elisa_tests
-brock_tests
-setts
-social_groups
-```
-
-For most analyses, however, it is preferable to begin with the curated views in `analysis`.
-
----
-
-## 14. Important data conventions
-
-### Capture-level social group
-
-The social group recorded on the capture record is treated as the **historical capture-level social group**.
-
-Do not overwrite this automatically using the current sett-to-social-group lookup.
-
-### Sett identity
-
-For spatial analyses, prefer:
-
-```text
-sett_id
-normalized_sett_name
-```
-
-rather than arbitrary raw location text.
-
-### Diagnostic data
-
-Diagnostics are intentionally stored separately from the one-row-per-capture history.
-
-Tests include, depending on historical availability:
-
-```text
-Culture
-IFN-gamma
-DPP
-Stat-Pak
-ELISA
-Brock
-```
-
-Different tests were available in different historical periods.
-
-### Disease categories
-
-Where disease classifications are used, the cleaned analysis convention is:
-
-```text
-1 = Negative
-2 = Exposed
-3 = Excretor
-4 = Super excretor
-```
-
-Do not assume these classifications are equivalent to any one diagnostic test result.
-
----
-
-## 15. Recommended analysis-script template
+## Minimal example
 
 ```r
-# =============================================================================
-# Woodchester analysis
-# =============================================================================
-
 library(DBI)
 library(RPostgres)
 library(dplyr)
 library(dbplyr)
-library(tidyr)
 
-source("BadgerDatabase.R")
+con <- dbConnect(
+  RPostgres::Postgres(),
+  host = Sys.getenv("BADGER_DB_HOST"),
+  port = as.integer(Sys.getenv("BADGER_DB_PORT", unset = "5432")),
+  dbname = "postgres",
+  user = Sys.getenv("BADGER_DB_USER"),
+  password = Sys.getenv("BADGER_DB_PASSWORD"),
+  sslmode = "require"
+)
 
-con <- badger_db_connect()
+captures <- tbl(
+  con,
+  in_schema("analysis", "capture_history")
+)
 
-captures <- capture_history_db(con)
-diagnostics <- diagnostic_results_db(con)
-
-# ---- query only the data required -------------------------------------------
-
-dat <- captures %>%
-  filter(primary_year>=2014,primary_year<=2018) %>%
-  select(
-    individual_id,
-    capture_id,
-    tattoo,
-    capture_date,
-    primary_year,
-    sex,
-    age_fc,
-    normalized_sett_name,
-    socg
-  ) %>%
-  collect()
-
-# ---- close database connection ----------------------------------------------
-
-dbDisconnect(con)
-
-# ---- continue local analysis below ------------------------------------------
-
-glimpse(dat)
-```
-
----
-
-## 16. Recommended working practice
-
-1. **Use `analysis` views where possible.**
-2. Treat `access_raw` as a preserved source archive rather than an analysis dataset.
-3. Do not modify database tables unless specifically agreed with the database maintainer.
-4. Filter and summarize remotely before using `collect()`.
-5. Do not store passwords in R scripts, Markdown files or Git repositories.
-6. Be cautious when joining one-to-many diagnostic/test tables.
-7. Preserve `capture_id` and `individual_id` wherever possible when constructing derived datasets.
-8. Record the exact query/code used to generate analysis datasets so analyses remain reproducible.
-9. If an analysis needs a substantial new cleaned variable or view, discuss creating it centrally rather than independently re-cleaning the same field.
-10. Disconnect from the database when finished.
-
----
-
-## 17. Troubleshooting
-
-### Credentials appear blank
-
-Check:
-
-```r
-Sys.getenv("BADGER_DB_HOST")
-Sys.getenv("BADGER_DB_PORT")
-Sys.getenv("BADGER_DB_NAME")
-Sys.getenv("BADGER_DB_USER")
-```
-
-Do **not** print `BADGER_DB_PASSWORD` into shared logs/screenshots.
-
-If the environment variables were only just added, restart R/RStudio.
-
-### Cannot connect
-
-Confirm that:
-
-- the Session Pooler hostname is being used;
-- port is `5432`;
-- `sslmode="require"` is present;
-- the username/password are correct;
-- the internet connection allows outbound PostgreSQL traffic.
-
-### `collect()` takes a long time
-
-The query is probably returning too many rows.
-
-Prefer:
-
-```r
-captures %>%
-  filter(primary_year>=2020) %>%
-  select(tattoo,primary_year,sex) %>%
-  collect()
-```
-
-rather than downloading all captures and filtering afterwards.
-
-### Check what SQL `dbplyr` is generating
-
-```r
-captures %>%
-  filter(primary_year>=2020) %>%
-  count(sex) %>%
-  show_query()
-```
-
----
-
-## 18. Closing the connection
-
-Always close the connection when finished:
-
-```r
-dbDisconnect(con)
-```
-
-If unsure whether a connection is still valid:
-
-```r
-dbIsValid(con)
-```
-
----
-
-## 19. Minimal quick-start version
-
-Once `.Renviron` and `BadgerDatabase.R` are set up:
-
-```r
-source("BadgerDatabase.R")
-
-con <- badger_db_connect()
-
-captures <- capture_history_db(con)
-
-my_data <- captures %>%
-  filter(primary_year>=2015) %>%
-  select(
-    tattoo,
-    capture_date,
-    primary_year,
-    sex,
-    age_fc,
-    normalized_sett_name,
-    socg
-  ) %>%
+my_data <- captures |>
+  filter(capture_year >= 2020, !is_pm) |>
   collect()
 
 dbDisconnect(con)
 ```
 
-That is all that is required for most straightforward analyses.
+That is sufficient for most straightforward analyses.
+
+---
+
+## For database maintainers
+
+The underlying `research` schema contains the cleaned relational source tables, including individuals, captures, wounds, diagnostic-test tables, setts, social groups, sampling/assessment records and model-derived infection outputs.
+
+Normal collaborators should not need direct access to these tables. If a commonly needed cleaned variable or derived dataset is missing, it is usually better to add or update an `analysis` view centrally rather than have multiple projects independently recreate the same cleaning.
+
+New researcher accounts should be individual PostgreSQL login roles that inherit `badger_readonly`. Passwords should be generated separately and transferred securely.
+
+No database passwords or administrator credentials should ever be committed to this repository.
