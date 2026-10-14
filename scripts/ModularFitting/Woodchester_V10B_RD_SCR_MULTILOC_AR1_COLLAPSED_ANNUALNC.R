@@ -728,10 +728,8 @@ code_V10B_collapsed <- nimbleCode({
   #
   # We sample the directly identified high-mobility log scale instead:
   beta_move_high ~ dexp(1)
-  alpha_logmove_high ~
-    dnorm(log(20) + beta_move_high, sd = 1)
-  alpha_logmove <-
-    alpha_logmove_high - beta_move_high
+  alpha_logmove_high ~ dnorm(log(20) + beta_move_high, sd = 1)
+  alpha_logmove <- alpha_logmove_high - beta_move_high
 
   beta_move_sex ~ dnorm(0, sd = 0.50)
 
@@ -849,72 +847,32 @@ code_V10B_collapsed <- nimbleCode({
     # Stationary AR(1) deviations around the annual AC, expressed through
     # iid innovations. This is distributionally identical to centred V10B.
     # -------------------------------------------------------------------------
-    qinnov[i, 1:2, 1, first[i]] ~
-      dmnorm(
-        mean = q_zero[1:2],
-        prec = q_prec[1:2, 1:2]
-      )
+    qinnov[i, 1:2, 1, first[i]] ~ dmnorm(mean = q_zero[1:2], prec = q_prec[1:2, 1:2])
 
-    qeps[i, 1, 1, first[i]] <-
-      qinnov[i, 1, 1, first[i]]
-    qeps[i, 2, 1, first[i]] <-
-      qinnov[i, 2, 1, first[i]]
+    qeps[i, 1, 1, first[i]] <- qinnov[i, 1, 1, first[i]] 
+    qeps[i, 2, 1, first[i]] <- qinnov[i, 2, 1, first[i]]
 
     for (j in 2:J) {
-      qinnov[i, 1:2, j, first[i]] ~
-        dmnorm(
-          mean = q_zero[1:2],
-          prec = q_prec[1:2, 1:2]
-        )
+      qinnov[i, 1:2, j, first[i]] ~ dmnorm(mean = q_zero[1:2], prec = q_prec[1:2, 1:2])
 
-      qeps[i, 1, j, first[i]] <-
-        rho * qeps[i, 1, j - 1, first[i]] +
-        q_innov_scale * qinnov[i, 1, j, first[i]]
+      qeps[i, 1, j, first[i]] <- rho * qeps[i, 1, j - 1, first[i]] + q_innov_scale * qinnov[i, 1, j, first[i]]
 
-      qeps[i, 2, j, first[i]] <-
-        rho * qeps[i, 2, j - 1, first[i]] +
-        q_innov_scale * qinnov[i, 2, j, first[i]]
+      qeps[i, 2, j, first[i]] <- rho * qeps[i, 2, j - 1, first[i]] + q_innov_scale * qinnov[i, 2, j, first[i]]
     }
 
     for (j in 1:J) {
 
-      Qx[i, j, first[i]] <-
-        A[i, 1, first[i]] +
-        omega * qeps[i, 1, j, first[i]]
+      Qx[i, j, first[i]] <- A[i, 1, first[i]] + omega * qeps[i, 1, j, first[i]]
 
-      Qy[i, j, first[i]] <-
-        A[i, 2, first[i]] +
-        omega * qeps[i, 2, j, first[i]]
+      Qy[i, j, first[i]] <- A[i, 2, first[i]] + omega * qeps[i, 2, j, first[i]]
 
-      col_Q_raw[i, j, first[i]] <-
-        trunc(
-          (Qx[i, j, first[i]] - grid_xmin) /
-            cell_size
-        ) + 1
+      col_Q_raw[i, j, first[i]] <- trunc((Qx[i, j, first[i]] - grid_xmin) / cell_size) + 1
 
-      row_Q_raw[i, j, first[i]] <-
-        trunc(
-          (grid_ymax - Qy[i, j, first[i]]) /
-            cell_size
-        ) + 1
+      row_Q_raw[i, j, first[i]] <- trunc((grid_ymax - Qy[i, j, first[i]]) / cell_size) + 1
 
-      col_Q[i, j, first[i]] <-
-        max(
-          1,
-          min(
-            n_cols,
-            col_Q_raw[i, j, first[i]]
-          )
-        )
+      col_Q[i, j, first[i]] <- max(1, min(n_cols, col_Q_raw[i, j, first[i]]))
 
-      row_Q[i, j, first[i]] <-
-        max(
-          1,
-          min(
-            n_rows,
-            row_Q_raw[i, j, first[i]]
-          )
-        )
+      row_Q[i, j, first[i]] <- max(1, min(n_rows, row_Q_raw[i, j, first[i]]))
 
       in_bounds_Q[i, j, first[i]] <-
         step(Qx[i, j, first[i]] - grid_xmin) *

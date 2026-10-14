@@ -48,13 +48,23 @@ K <- first_obj$K
 years <- first_obj$years
 disp_index <- first_obj$disp_index
 disp_nodes <- disp_index$node
-core_requested <- first_obj$core_monitors
+core_requested <- setdiff(first_obj$core_monitors,"disp")
 
-# Use exact column names present in chain 1. This safely expands vector monitors
-# such as beta_season_raw[1].
+# Expand only the requested global/core monitors to their exact sample columns.
+# This handles vector parameters such as beta_season_raw[1], [2], etc.
 m1_names <- colnames(as.matrix(first_obj$samples))
 
-core_exact <- setdiff(m1_names,disp_nodes)
+core_exact <- unique(unlist(lapply(core_requested,function(v){
+  m1_names[m1_names==v | startsWith(m1_names,paste0(v,"["))]
+})))
+
+missing_core <- core_requested[!vapply(core_requested,function(v){
+  any(m1_names==v | startsWith(m1_names,paste0(v,"[")))
+},logical(1))]
+
+if(length(missing_core))
+  stop("Could not find monitored core parameter(s): ",
+       paste(missing_core,collapse=", "))
 
 cat("Badgers:",length(ids),"\n")
 cat("Movement intervals:",nrow(disp_index),"\n")
