@@ -1444,3 +1444,51 @@ The most important practical rule is:
 > **Use the central database for shared data cleaning and structure; use analysis scripts for decisions that are specific to the scientific question.**
 
 That should prevent the long-term Woodchester dataset from fragmenting again into many slightly different locally cleaned versions.
+
+
+---
+
+# 31. Advanced research read-only tier
+
+The database now has two researcher-facing permission tiers.
+
+## Default: `badger_readonly`
+
+Use for most analyses.
+
+This role can read the approved `analysis` views but cannot access `research`.
+
+## Advanced: `badger_research_readonly`
+
+Use for:
+
+- cleaning/provenance audits;
+- assay-specific work;
+- direct inspection of canonical relational tables;
+- specialist data extraction not yet represented by a curated view.
+
+It can read approved canonical `research` tables and all approved analysis views.
+
+It cannot write, does not bypass RLS, and cannot access:
+
+```text
+research.infection_probabilities_import
+research.infection_quarterly_import
+```
+
+These remain staging/import structures.
+
+### Why the analysis layer remains the default
+
+Direct research-table access is powerful, but users must understand table grain and relationships. In particular, joining multiple one-to-many tables can silently multiply rows.
+
+The analysis layer exists to provide stable scientific interfaces with explicit units of observation and centrally maintained joins.
+
+For the full cleaning/provenance framework, see:
+
+```text
+docs/database/DATABASE_GOVERNANCE_AND_PROVENANCE.md
+docs/database/SETT_SOCIAL_GROUP_RULES.md
+docs/database/DATA_DICTIONARY.md
+sql/audit/Woodchester_database_cleaning_audit.sql
+```
