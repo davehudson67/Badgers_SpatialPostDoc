@@ -289,3 +289,33 @@ Normal collaborators should not need direct access to these tables. If a commonl
 New researcher accounts should be individual PostgreSQL login roles that inherit `badger_readonly`. Passwords should be generated separately and transferred securely.
 
 No database passwords or administrator credentials should ever be committed to this repository.
+
+
+---
+
+## Advanced research-level access
+
+The default collaborator account uses `badger_readonly` and should normally work from the curated `analysis` views.
+
+Some coauthors may instead be granted membership of:
+
+```text
+badger_research_readonly
+```
+
+This advanced role can read selected canonical `research` tables as well as the analysis views, but cannot write to the database and cannot access import/staging tables.
+
+Use research-level access when you need to:
+
+- audit how a cleaned value was derived;
+- inspect assay-specific fields not exposed in a view;
+- inspect canonical sett/social-group lookup tables;
+- build a specialist dataset not yet represented by an analysis view.
+
+The main hazards of using `research` directly are incorrect one-to-many joins, confusing recorded with normalised values, and reproducing central cleaning differently in different projects.
+
+For full provenance and cleaning documentation, see:
+
+- `docs/database/DATABASE_GOVERNANCE_AND_PROVENANCE.md`
+- `docs/database/SETT_SOCIAL_GROUP_RULES.md`
+- `docs/database/DATA_DICTIONARY.md`
