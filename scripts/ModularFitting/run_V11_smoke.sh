@@ -44,4 +44,12 @@ Rscript scripts/ModularFitting/Woodchester_V11_combine_chains.R \
 2>&1 | tee "logs/V11_combine_${MAX_BADGERS}.log"
 
 echo
+echo "---- REPEAT-MOVER PPC ----"
+MAX_BADGERS="${MAX_BADGERS}" \
+FILE_STEM="${FILE_STEM}" \
+PPC_DRAWS="${PPC_DRAWS:-500}" \
+Rscript scripts/ModularFitting/Woodchester_V11_repeat_mover_ppc.R \
+2>&1 | tee "logs/V11_repeat_mover_ppc_${MAX_BADGERS}.log"
+
+echo
 echo "V11 smoke workflow complete."
