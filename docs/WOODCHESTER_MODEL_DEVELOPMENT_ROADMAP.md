@@ -577,3 +577,734 @@ This prevents model-number inflation and protects the main biological trajectory
 6. Carry accepted V11 movement structure directly into V12.
 7. Design V13 around infectiousness/progression and infectious-source pressure rather than repeating infection-acquisition regressions.
 
+
+
+---
+
+# 11. Full model lineage and what each stage contributed
+
+This section is deliberately broader than the immediate V11-V13 plan. It records
+the methodological ancestry so that future development does not accidentally
+recreate an old branch.
+
+| Stage | Main purpose | Important development | Current status |
+|---|---|---|---|
+| V1 | Robust-design spatial CMR on full historical dataset | Years as primary occasions, four trapping seasons, sett-coordinate detection, annual movement, entry-group detection/survival | Historical scaffold; superseded |
+| V2 | Improve annual activity-centre process | Latent first-year AC and direct bivariate-normal annual AC transitions | Historical scaffold; superseded |
+| V3 | Introduce spatial landscape/state space | 50 m habitat/social-group grid, explicit spatial state-space constraints | Important ancestry; superseded |
+| V3c | Test heavy-tailed movement | Non-centred bivariate Student-t3 movement; deliberately excluded SG penalty until it could be normalized correctly | Development result; superseded |
+| V4c | Add normalized social landscape and sex | Dynamic normalization for social-group/peripheral resistance; latent/partly observed sex; sex effects on survival, detection and movement | Important proof-of-concept; not current model |
+| V5 / V5c / V5d | Immigration development | Latent immigrant status among adult-entry badgers, inferred without sex; movement and in some variants survival effects; adult-enriched sampling; prepared-data version | Proof-of-concept only; informs V12 |
+| V6c | Resident/local versus disperser/high-mobility states | Two-state annual movement HMM, wide movement support, sex-specific state dynamics; survival deliberately conditioned out | Direct ancestor of modern movement-state interpretation |
+| V7a-T / V7b-T | Early integrated directional disease attempts | Infection→movement and movement→infection built directly into larger trajectory models | Superseded by modular V7 framework |
+| V7M | Freeze movement then analyse disease directionally | Production movement-only fit with posterior movement histories exported downstream | Historical production base for V7a-M/V7b-M |
+| V7a-M | Infection acquisition/status→movement | Modular directional analysis integrating movement and infection-history uncertainty | Completed biological analysis |
+| V7b-M | Movement→infection acquisition | Modular susceptible-risk analysis with time ordering and robustness analyses | Completed biological analysis |
+| V7b pressure | Mechanistic exposure environment | Same-group and Euclidean infection-pressure covariates based on latent infected sources | Method developed; final same-group result requires verification |
+| V8 age | Chronological-age extension | Reconstructed age for known-age animals; tested age effects on high-mobility initiation | Superseded by V11's more inclusive age treatment |
+| V8 maximal | Maximise movement population | Expanded movement inference to 1,932 spatially informative badgers; removed disease-analysis restriction | Important population-definition step |
+| V10A | Multi-location quarterly observation model | Retained multiple within-quarter spatial observations rather than one selected sett | Modern observation-model foundation |
+| V10B | AR(1) quarterly centres + extensive sampler/biology audit | Collapsed movement HMM, non-centred annual trajectory, overlapping blocks, state recovery, trajectory/ridge audits | Frozen reference model |
+| V11 | Age + persistent individual mobility propensity | rho=0; current chronological age; badger random effect on entry to high mobility | Current active movement model |
+| V12 | Open-population demography | Entry, survival/retention, known death, apparent emigration, immigrant inference | Next major model |
+| V13 | Infectiousness/transmission | Distinguish infected from infectious; movement/demography/social exposure interactions | Planned after V12 |
+
+## Why the numbering can be misleading
+
+Several version numbers contain multiple experimental branches. A larger number
+does not automatically mean that every ingredient of the earlier model should
+be carried forward.
+
+For example:
+
+- V4/V5 social-group resistance was useful proof-of-concept, but it relied on a
+  largely static spatial social-group layer;
+- V5 immigration was useful proof-of-concept, but used an earlier movement and
+  observation architecture;
+- V7 directional disease models answered specific questions that should not be
+  repeated merely because V13 will use a newer movement model;
+- V10B's AR(1) quarterly process was investigated and intentionally removed from
+  V11.
+
+The scientific lineage is therefore **selective**, not cumulative.
+
+---
+
+# 12. Evidence ledger: completed biological questions
+
+This is the canonical “have we already answered this?” table.
+
+| Biological question | Best existing analysis | Main result | Repeat? |
+|---|---|---|---|
+| Are there distinct local and high-mobility annual movement states? | V6/V7 then V10 audit | Yes; V10 independent SG-change validation strongly supports interpretation | No |
+| Are males more likely to show high mobility? | V6/V7/V10 | Strong recurring male signal | Retain as covariate; no need to rediscover |
+| Does infection acquisition/status predict later high mobility? | V7a-M | Weak/uncertain overall effect; strict lag essentially null | No, unless exposure becomes infectiousness/progression |
+| Does high mobility predict subsequent infection acquisition? | V7b-M | No positive primary population-level effect | No, unless outcome becomes infectiousness/progression or mechanism differs |
+| Is within-animal movement associated with acquisition? | V7b within/time-stratified sensitivities | Positive point estimates but very wide uncertainty | Keep as sensitivity evidence; do not make primary |
+| Is movement concentrated among repeat movers? | V10 audit | Yes, strongly | V11 is the formal model for this heterogeneity |
+| Does a persistent individual effect reproduce repeat-mover concentration? | V11 50-badger smoke | Yes structurally; PPC concentration metrics reproduced closely | Validate at 300; do not add extra persistence effect unless needed |
+| Is quarterly AR(1) persistence essential? | V10B audit | Weak rho and problematic decomposition | No; V11 fixes rho=0 |
+| Are excursions present? | V10 biology audit | Yes, but not sufficiently important to justify third state now | Defer |
+| Are terminal high movements important? | V10 biology audit | Yes; major unresolved biological class | Address in V12 |
+| Can latent immigration be modelled at all? | V5 development | Yes in principle | Rebuild in V12 with modern architecture |
+| Does social-group change validate high mobility? | V10 biology audit | Strongly yes | Use as external validation/mechanistic overlay |
+| Does infected-source spatial pressure have usable data support? | V7b pressure build/audit | Yes for several metrics including same-group pressure | Reuse architecture, but distinguish infected from infectious |
+
+---
+
+# 13. Canonical result files for completed directional disease work
+
+These files contain the results that must be checked before anyone proposes
+re-fitting the same infection/movement question.
+
+## Infection/status → subsequent movement
+
+Primary:
+
+```
+results/V7aM_infection_to_movement_FULL_1500_summary.csv
+```
+
+Additional sensitivity results:
+
+```
+results/V7aM_sensitivity_period_entry_lag0_FULL_1500_summary.csv
+results/V7aM_sensitivity_period_entry_lag1_STRICTLAG_FULL_1500_summary.csv
+results/V7aM_within_individual_v3_lag0_FULL_1500_summary.csv
+results/V7aM_within_individual_v3_lag1_STRICTLAG_FULL_1500_summary.csv
+```
+
+Primary model documentation/code:
+
+```
+scripts/ModularFitting/V7aM_README.txt
+scripts/ModularFitting/Woodchester_V7aM_infection_to_movement_modular_IS.R
+scripts/ModularFitting/run_V7aM_FULL_1500pairs.R
+```
+
+## Movement → subsequent infection acquisition
+
+Primary:
+
+```
+results/V7bM_movement_to_infection_FULL_1500_summary.csv
+```
+
+Numerical robustness:
+
+```
+results/V7bM_movement_to_infection_FULL_1500_ROBUST_summary.csv
+```
+
+Within-individual/time-stratified sensitivities:
+
+```
+results/V7bM_within_individual_FULL_1500_summary.csv
+results/V7bM_time_stratified_within_5yr_FULL_1500_summary.csv
+results/V7bM_time_stratified_within_10yr_FULL_1500_summary.csv
+```
+
+Mundlak/random-intercept development:
+
+```
+results/V7bM_Mundlak_random_intercept_SMOKE_10_summary.csv
+```
+
+Primary documentation/code:
+
+```
+scripts/ModularFitting/V7bM_README.txt
+scripts/ModularFitting/V7bM_ROBUSTNESS_README.txt
+scripts/ModularFitting/Woodchester_V7bM_movement_to_infection_modular_IS.R
+scripts/ModularFitting/Woodchester_V7bM_robustness_patch_poor_IS_pairs.R
+```
+
+## Spatial infection pressure
+
+Build/audit:
+
+```
+scripts/Woodchester_V7b_build_spatial_infection_pressure.R
+scripts/V7b_SPATIAL_PRESSURE_BUILD_README.txt
+scripts/Woodchester_SPATIAL_INFECTION_PRESSURE_input_audit.R
+scripts/SPATIAL_INFECTION_PRESSURE_AUDIT_README.txt
+```
+
+Existing pressure products/results include:
+
+```
+results/V7b_spatial_pressure_distribution.csv
+results/V7b_spatial_pressure_posterior_mean_by_interval.csv
+results/V7b_spatial_pressure_risk_event_retention.csv
+results/V7b_spatial_pressure_support_summary.csv
+results/spatial_pressure_group_year_support.csv
+```
+
+Same-group pressure model code/documentation:
+
+```
+scripts/Woodchester_V7bM_samegroup_pressure_models.R
+scripts/V7bM_SAMEGROUP_PRESSURE_README.txt
+```
+
+**Current repository status:** no final same-group pressure result file was found
+when this roadmap was updated. Verify local/uncommitted outputs before rerunning.
+If no valid result exists, this is one of the few older analyses that may still
+need completion.
+
+---
+
+# 14. Canonical modern movement files
+
+## V10 reference/audit
+
+Key reference model:
+
+```
+scripts/ModularFitting/Woodchester_V10B_RD_SCR_MULTILOC_AR1_COLLAPSED_ANNUALNC_OVERLAP.R
+```
+
+Important V10 diagnostics:
+
+```
+scripts/ModularFitting/Woodchester_V10B_collapsed_recover_states.R
+scripts/ModularFitting/Woodchester_V10B_collapsed_combine_chains.R
+scripts/ModularFitting/Woodchester_V10B_collapsed_global_ridge_diagnostic.R
+scripts/ModularFitting/Woodchester_V10B_collapsed_postadapt_diagnostic.R
+scripts/ModularFitting/Woodchester_V10B_collapsed_trajectory_chain_diagnostic.R
+scripts/ModularFitting/Woodchester_V10B_collapsed_trajectory_support_audit.R
+scripts/data_audits/V10B_full_movement_biology_audit.R
+```
+
+Documentation:
+
+```
+docs/V10B_COLLAPSED_MODEL_ANNOTATED_GUIDE.md
+docs/V10B_MOVEMENT_BIOLOGY_AUDIT_PLAN.md
+```
+
+V10B is frozen. The continuation jobs were stopped on 19 October 2026.
+
+## V11 active files
+
+Fitter:
+
+```
+scripts/ModularFitting/Woodchester_V11_RD_SCR_MULTILOC_IID_AGE_BADGERRE.R
+```
+
+State recovery:
+
+```
+scripts/ModularFitting/Woodchester_V11_recover_states.R
+```
+
+Three-chain combination:
+
+```
+scripts/ModularFitting/Woodchester_V11_combine_chains.R
+```
+
+Repeat-mover posterior predictive check:
+
+```
+scripts/ModularFitting/Woodchester_V11_repeat_mover_ppc.R
+```
+
+Smoke workflow:
+
+```
+scripts/ModularFitting/run_V11_smoke.sh
+```
+
+Specification:
+
+```
+docs/V11_AGE_BADGER_RE_SPEC.md
+```
+
+### V11 50-badger smoke status
+
+Completed successfully on 19 October 2026.
+
+Population:
+
+```
+50 badgers
+151 annual movement intervals
+150 retained draws per chain
+450 retained draws total
+```
+
+Key structural PPC:
+
+| Metric | Posterior movement states | V11 replicated |
+|---|---:|---:|
+| Gini of high events | 0.851 | 0.857 |
+| Maximum consecutive high run | 2.47 | 2.66 |
+| Max high count in one badger | 2.59 | 3.16 |
+| Animals with any high event | 9.09 | 8.98 |
+| Animals with >=2 high events | 3.30 | 2.71 |
+| Top-10% share of high events | 0.720 | 0.734 |
+| Total high events | 13.1 | 13.4 |
+
+Interpretation:
+
+> V11 can reproduce the strong concentration of movement among repeat movers
+> without placing the badger random effect on high→high persistence.
+
+Do not use this 50-badger fit for final coefficient inference.
+
+### V11 current active validation
+
+The next gate is the **300-badger three-chain validation**.
+
+It is intended to decide whether:
+
+- `sigma_badger` is informed by the data;
+- current-age effects are estimable;
+- movement-scale mixing is acceptable after rho removal;
+- repeat-mover PPC remains satisfactory.
+
+If this passes, do not create further movement-only versions without a specific
+failure that requires one.
+
+---
+
+# 15. Infection versus infectiousness: required next disease audit
+
+This is a critical project distinction.
+
+The existing latent infection trajectory uses multiple diagnostics to infer
+probability of **infection acquisition/status**. That trajectory is suitable for
+questions such as when an animal likely became infected.
+
+It is not automatically a model of **infectiousness**.
+
+## Available diagnostic evidence
+
+The database includes long-format diagnostic information covering, among other
+tests:
+
+- culture;
+- ELISA;
+- IFN-gamma ELISA;
+- DPP;
+- Stat-Pak;
+- Brock tests.
+
+Culture records also include sample-type/result fields and other microbiological
+metadata. Post-mortem records can include lesion and disease-severity
+information.
+
+## Required infectiousness phenotype audit
+
+Before V13, create a dedicated audit that answers:
+
+1. Which diagnostic results are defensible evidence of active shedding or
+   transmission potential?
+2. Does sample type matter, e.g. respiratory/faecal/urine/wound or other
+   culture material where recorded?
+3. Should a single positive culture define an infectious quarter, or should
+   repeated/persistent positivity be distinguished?
+4. How should negative cultures be interpreted given imperfect sensitivity?
+5. Can infectiousness cease after a positive observation, or should the model
+   allow intermittent shedding?
+6. Is there enough temporal information to support three disease states:
+   susceptible/uninfected, infected/non-infectious, infectious?
+7. Would a simpler two-layer formulation be better:
+   latent infection state + conditional shedding observation process?
+8. How should PM lesion/culture evidence inform the final part of an animal's
+   disease trajectory?
+9. Which diagnostic eras/tests change through calendar time and therefore need
+   explicit observation-model treatment?
+10. How many animal-quarters contain direct evidence informative about
+    infectiousness?
+
+## Preferred modelling principle
+
+Do not force a deterministic “infectious from first culture positive forever”
+rule merely because it is easy to code.
+
+If diagnostic support is adequate, infectiousness should be treated as a
+time-varying latent process with observations of shedding/infectious evidence.
+
+---
+
+# 16. Dynamic social structure: membership, boundaries and transmission
+
+This is a required bridge between movement and disease.
+
+## Existing trustworthy historical information
+
+The current database structure preserves:
+
+```
+capture-level recorded social group
+capture-level canonical social-group ID
+research.sett_social_group_history
+research.social_group_supergroup_history
+analysis.sett_social_group_observed
+```
+
+The project database rule is explicit:
+
+> Do not overwrite a historical capture's recorded social group merely because
+> its sett is associated with another social group in the current lookup.
+
+This historical time dependence must carry through into spatial modelling.
+
+## Existing static spatial object
+
+Older models use:
+
+```
+data/spatial/V3_spatial_inputs_50m_2km.rds
+data/spatial/CleanSocialGroups.gpkg
+```
+
+and derived `SG_mat` layers.
+
+These are useful as spatial reference layers but must not automatically be
+treated as historically correct boundaries for every year.
+
+## Required social-history data product
+
+Build a dedicated versioned annual table first:
+
+```
+badger_social_structure_by_year
+```
+
+Minimum grain:
+
+```
+year × sett × social-group relationship
+```
+
+with fields for:
+
+- canonical sett ID;
+- canonical social-group ID;
+- recorded evidence count;
+- first/last within-year observation;
+- relationship source;
+- validity interval if known;
+- confidence/status;
+- conflict flag;
+- rename/split/merge notes.
+
+This table should be derived from the cleaned database history and recorded
+capture evidence, not a retrospective static lookup.
+
+## Then decide whether yearly polygons are identifiable
+
+Possible product:
+
+```
+social_group_boundaries_by_year
+```
+
+but this should only be created for years with defensible spatial support.
+
+Potential construction approaches:
+
+- historical mapped polygons where available;
+- active-sett Voronoi/Thiessen territories as a transparent baseline;
+- weighted Voronoi or kernel-based territory surfaces where sett use supports
+  it;
+- probabilistic boundaries rather than hard polygons in uncertain years.
+
+A boundary product must retain uncertainty/quality metadata.
+
+## Model roles
+
+### V11
+
+Do not alter latent high-mobility state using social groups. Continue using
+observed social-group change as external validation.
+
+### V12
+
+Use time-appropriate group structure to classify the demographic interpretation
+of movement:
+
+- within-group relocation;
+- cross-boundary dispersal;
+- settlement into a new group;
+- movement toward study-area edge;
+- high movement followed by permanent disappearance.
+
+This may help distinguish settlement versus probable emigration without making
+group membership itself the latent movement state.
+
+### V13
+
+Dynamic social structure becomes more central.
+
+Potential infectious-pressure quantities:
+
+- number/prevalence of infectious groupmates;
+- infectious-source pressure in the origin group;
+- infectious-source pressure in destination group;
+- change in infectious pressure following movement;
+- infectious neighbours within metric radii;
+- exposure across a shared or crossed boundary;
+- time spent/likelihood mass outside the origin group territory.
+
+This is likely the main mechanism through which movement can alter transmission
+risk even if V7b found no simple total effect of high mobility on acquisition.
+
+---
+
+# 17. V12 design constraints carried forward from previous work
+
+V12 should not begin as a blank-sheet CJS model. It should explicitly inherit
+lessons from earlier versions.
+
+## Carry forward
+
+- modern V11 multi-location spatial observation likelihood;
+- current chronological age;
+- sex;
+- individual mover propensity if supported at 300;
+- local/high annual movement state;
+- known PM/death information;
+- explicit detection/non-detection process;
+- full maximal movement population where support permits.
+
+## Reconsider from V5 rather than copy
+
+Earlier V5 made:
+
+- cub/yearling entrants known local recruits;
+- adult entrants latent immigrant/non-immigrant;
+- first-capture edge proximity informative about immigrant probability.
+
+These are useful hypotheses but should not automatically become V12 assumptions.
+
+V12 should ask whether immigration can be identified more generally from:
+
+- age at entry / chronological age;
+- first observed location relative to study-area edge;
+- first movement trajectory;
+- subsequent settlement;
+- observation history;
+- social-group history.
+
+Adult first capture is evidence about possible immigration, not proof.
+
+## Key identifiability warning
+
+Without independent information, an animal that disappears can represent:
+
+- death;
+- permanent emigration;
+- temporary absence with non-detection;
+- right censoring at study end.
+
+Known deaths help, but for other disappearances the primary demographic
+parameter should be described as **apparent survival/retention** until the model
+or auxiliary data support a stronger separation.
+
+---
+
+# 18. V13 should add new biology, not merely a newer version of V7
+
+The reason to fit V13 is not that V7 was “old”. It is because V13 will ask
+different questions.
+
+## Already answered by V7
+
+```
+infection acquired/status at t -> high movement later
+high movement at t -> infection acquisition later
+```
+
+## Genuinely new V13 targets
+
+```
+infected non-infectious -> infectious/shedding
+high movement -> progression to infectiousness
+infectiousness -> altered movement
+infectiousness -> survival/apparent emigration
+immigrant status -> infectiousness on arrival/progression
+infectious group exposure -> infection acquisition
+boundary crossing -> change in infectious pressure
+movement × infectious-pressure mediation
+```
+
+The V7 estimates remain evidence and should be reported alongside the newer
+integrated model where scientifically relevant.
+
+---
+
+# 19. Project data sources relevant to future models
+
+## Movement/capture
+
+Current prepared objects include:
+
+```
+data/badger_encounters_useful.rds
+data/badger_individuals.rds
+data/WoodchesterSettLocations.csv
+```
+
+Modern spatial inputs include:
+
+```
+data/spatial/V3_spatial_inputs_50m_2km.rds
+data/spatial/CleanSocialGroups.gpkg
+```
+
+## Infection
+
+Database/model-derived objects include capture-level and quarterly latent
+infection probabilities.
+
+Current documented database views:
+
+```
+analysis.capture_history
+analysis.diagnostic_results
+analysis.capture_infection_probabilities
+analysis.infection_probabilities
+analysis.infection_quarterly_probabilities
+analysis.sett_social_group_observed
+```
+
+The current imported quarterly infection model is:
+
+```
+infection_probabilities_2026_08_27
+model variant: all_tests_inferred
+```
+
+## Historical social structure
+
+Canonical database structures include:
+
+```
+research.setts
+research.social_groups
+research.supergroups
+research.sett_social_group_history
+research.social_group_supergroup_history
+```
+
+Rules/provenance:
+
+```
+docs/database/SETT_SOCIAL_GROUP_RULES.md
+markdown/Woodchester_SQL_R_Analysis_and_Infection_Guide.md
+```
+
+---
+
+# 20. Model-development checklist to use in every future chat
+
+Before proposing a new analysis, check this roadmap and answer:
+
+### A. Has this exact biological direction already been tested?
+
+If yes, state the existing result first.
+
+### B. What is genuinely new?
+
+Examples:
+
+- newer observation model alone is **not** necessarily enough reason to repeat;
+- switching from infected to infectious **is** a genuinely new biological
+  exposure;
+- adding demography so disappearance becomes modelled **is** genuinely new;
+- adding dynamic boundary crossing as a mechanism **is** genuinely new.
+
+### C. Does the new model require a new data audit first?
+
+Examples:
+
+- infectiousness requires diagnostic phenotype audit;
+- time-varying boundary effects require historical social-structure audit;
+- immigration requires entry/death/detection support audit.
+
+### D. What will make us stop?
+
+Every development should have a predefined decision gate.
+
+For V11:
+
+> 300-badger validation passes → proceed to V12.
+
+For V12:
+
+> demographic states recover in simulation and real-data fit is identifiable →
+> proceed to infectiousness.
+
+For V13:
+
+> infectiousness observation/state model is supportable from diagnostic data →
+> integrate transmission questions.
+
+---
+
+# 21. Current status snapshot — 19 October 2026
+
+**Frozen/reference:**
+
+- V10B movement model and associated audits.
+
+**Completed historical analyses that remain scientifically relevant:**
+
+- V7a-M infection/status → movement;
+- V7b-M movement → infection acquisition;
+- V7b within-individual/time-stratified sensitivities;
+- V7b spatial infection-pressure infrastructure.
+
+**Current active model:**
+
+- V11 age + persistent mover propensity.
+
+**Completed V11 check:**
+
+- 50-badger smoke test passed;
+- repeat-mover PPC passed structurally.
+
+**Current next computational task:**
+
+- V11 300-badger validation.
+
+**Parallel data-development priorities:**
+
+- infectiousness phenotype/state audit;
+- dynamic social-group history/boundary audit;
+- verify whether same-group pressure full result exists outside version control.
+
+**Next major model:**
+
+- V12 entry + survival/retention + apparent emigration.
+
+**Following major model:**
+
+- V13 infectiousness × movement × demography × social exposure.
+
+---
+
+# 22. Maintenance rule
+
+This file is the canonical modelling-development record.
+
+Whenever a model is fitted, rejected, frozen or superseded, update this file in
+the same commit or immediately afterwards with:
+
+- date;
+- model/script;
+- population;
+- question;
+- key diagnostic;
+- principal estimate/conclusion;
+- status: development / sensitivity / production / frozen / rejected;
+- next decision.
+
+Future ChatGPT sessions should read this file before recommending a new
+Woodchester model or re-running a previous biological analysis.
