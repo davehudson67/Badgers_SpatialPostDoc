@@ -27,7 +27,8 @@
 #   * the 2018 analysis here is temporal/descriptive only. It is NOT a causal
 #     cull-effect model and does not yet use spatial cull exposure.
 #   * observed annual capture spread is NOT a home-range estimator. It is a
-#     data-level diagnostic of within-year spatial breadth.
+#     data-level diagnostic of within-year spatial breadth. Repeated captures
+#     at one sett are retained as zero observed spread (not treated as missing).
 #
 # REQUIRED INPUTS
 #   results/<FILE_STEM>_<N>_trajectory_chain_diagnostic<OUTPUT_SUFFIX>.csv
@@ -224,8 +225,19 @@ clean_sett2 <- function(x) {
 
 max_pair_distance <- function(x, y) {
   ok <- is.finite(x) & is.finite(y)
-  xy <- unique(cbind(x[ok], y[ok]))
-  if (nrow(xy) < 2L) return(NA_real_)
+  x <- x[ok]
+  y <- y[ok]
+
+  # Fewer than two observed locations cannot define a within-year spread.
+  if (length(x) < 2L) return(NA_real_)
+
+  xy <- unique(cbind(x, y))
+
+  # Two or more captures at exactly the same sett are genuine zero observed
+  # spread, not missing information. Returning NA here would condition the
+  # annual median on animals that changed sett and inflate the spread metric.
+  if (nrow(xy) < 2L) return(0)
+
   max(as.numeric(dist(xy)))
 }
 
@@ -383,7 +395,8 @@ traj <- traj %>%
   arrange(from_year, to_year, .by_group = TRUE) %>%
   mutate(
     interval_number = row_number(),
-    is_first_interval = interval_number == 1L
+    is_first_interval = interval_number == 1L,
+    is_last_interval = interval_number == n()
   ) %>%
   ungroup()
 
@@ -739,6 +752,20 @@ year_summary <- traj %>%
     mean_p_high = mean(p_high_mean),
     robust_high_prop = mean(robust_high),
     robust_local_prop = mean(robust_local),
+    last_interval_prop = mean(is_last_interval),
+    n_nonterminal_intervals = sum(!is_last_interval),
+    mean_p_high_nonterminal =
+      if_else(
+        sum(!is_last_interval) > 0,
+        mean(p_high_mean[!is_last_interval]),
+        NA_real_
+      ),
+    robust_high_prop_nonterminal =
+      if_else(
+        sum(!is_last_interval) > 0,
+        mean(robust_high[!is_last_interval]),
+        NA_real_
+      ),
     median_disp_m = median(disp_median_consensus),
     p90_disp_m = safe_q(disp_median_consensus, 0.90),
     sg_change_prop =
@@ -763,6 +790,20 @@ cull_movement_summary <- traj %>%
     n_animals = n_distinct(tattoo),
     mean_p_high = mean(p_high_mean),
     robust_high_prop = mean(robust_high),
+    last_interval_prop = mean(is_last_interval),
+    n_nonterminal_intervals = sum(!is_last_interval),
+    mean_p_high_nonterminal =
+      if_else(
+        sum(!is_last_interval) > 0,
+        mean(p_high_mean[!is_last_interval]),
+        NA_real_
+      ),
+    robust_high_prop_nonterminal =
+      if_else(
+        sum(!is_last_interval) > 0,
+        mean(robust_high[!is_last_interval]),
+        NA_real_
+      ),
     median_disp_m = median(disp_median_consensus),
     sg_change_prop =
       if_else(sum(sg_comparable) > 0, mean(sg_changed, na.rm = TRUE), NA_real_),
@@ -850,6 +891,34 @@ capture_spread <- enc %>%
       TRUE ~ "post"
     )
   )
+
+# Internal algebra check: for an animal-year with >=2 spatial captures,
+# max pairwise span is zero iff RMS radius is zero. This guards against
+# accidentally conditioning one metric on animals that changed sett.
+spread_check <- capture_spread %>%
+  filter(n_spatial_captures >= 2L) %>%
+  summarise(
+    n = n(),
+    n_bad_zero_status = sum(
+      (max_capture_span_m == 0) != (rms_capture_radius_m == 0),
+      na.rm = TRUE
+    ),
+    n_nonfinite_span = sum(!is.finite(max_capture_span_m)),
+    n_nonfinite_rms = sum(!is.finite(rms_capture_radius_m))
+  )
+
+if (
+  spread_check$n_bad_zero_status > 0L ||
+  spread_check$n_nonfinite_span > 0L ||
+  spread_check$n_nonfinite_rms > 0L
+) {
+  stop(
+    "Observed-spread algebra check failed: ",
+    paste(names(spread_check), spread_check[1, ], collapse = "; ")
+  )
+}
+
+cat("\nObserved-spread algebra check: PASS\n")
 
 capture_spread_year <- capture_spread %>%
   group_by(primary_year) %>%
