@@ -65,7 +65,7 @@
 #   INIT_FROM_STEM optional prior result stem. When non-empty, initialise the
 #                 chain from the final retained draw of that chain, including
 #                 exact reconstruction of qinnov from saved A/Q/rho/omega.
-#   OUTPUT_STEM    output stem (default V10B_RD_MULTILOC_AR1_COLLAPSED_ANNUALNC_OVERLAP)
+#   OUTPUT_STEM    output stem (default V10B_RD_MULTILOC_AR1_COLLAPSED_ANNUALNC_OVERLAP_CONT)
 #   AF_ADAPT_MAX   AF_slice factor-adaptation iterations (default 5000)
 #   CHUNK_NITER    post-warm-up raw iterations per checkpoint chunk (default 5000)
 #
@@ -2765,6 +2765,8 @@ saveRDS(
       niter = NITER,
       nburn = NBURN,
       thin = THIN,
+      chunk_niter = CHUNK_NITER,
+      continuation_complete = TRUE,
       primary_period = "year",
       secondary_occasions = "quarterly trapping campaigns",
       multiple_locations_per_quarter = TRUE,
