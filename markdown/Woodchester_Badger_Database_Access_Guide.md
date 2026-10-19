@@ -14,7 +14,7 @@ For normal research use, collaborators are given **individual read-only database
 
 There are two important layers:
 
-- `research` — underlying cleaned relational tables. These are maintained centrally and are **not available to normal read-only users**.
+- `research` — underlying cleaned relational tables.
 - `analysis` — analysis-ready views. These are the normal starting point for R analyses.
 
 The read-only role currently has access to the following views:
@@ -45,8 +45,6 @@ For disease-state analyses, also use the infection-probability views.
 ## Getting access
 
 Ask the database maintainer for an individual read-only username and password.
-
-Researchers do **not** use the main `postgres` administrator account.
 
 Each researcher account inherits the `badger_readonly` role, which:
 
@@ -279,43 +277,3 @@ dbDisconnect(con)
 That is sufficient for most straightforward analyses.
 
 ---
-
-## For database maintainers
-
-The underlying `research` schema contains the cleaned relational source tables, including individuals, captures, wounds, diagnostic-test tables, setts, social groups, sampling/assessment records and model-derived infection outputs.
-
-Normal collaborators should not need direct access to these tables. If a commonly needed cleaned variable or derived dataset is missing, it is usually better to add or update an `analysis` view centrally rather than have multiple projects independently recreate the same cleaning.
-
-New researcher accounts should be individual PostgreSQL login roles that inherit `badger_readonly`. Passwords should be generated separately and transferred securely.
-
-No database passwords or administrator credentials should ever be committed to this repository.
-
-
----
-
-## Advanced research-level access
-
-The default collaborator account uses `badger_readonly` and should normally work from the curated `analysis` views.
-
-Some coauthors may instead be granted membership of:
-
-```text
-badger_research_readonly
-```
-
-This advanced role can read selected canonical `research` tables as well as the analysis views, but cannot write to the database and cannot access import/staging tables.
-
-Use research-level access when you need to:
-
-- audit how a cleaned value was derived;
-- inspect assay-specific fields not exposed in a view;
-- inspect canonical sett/social-group lookup tables;
-- build a specialist dataset not yet represented by an analysis view.
-
-The main hazards of using `research` directly are incorrect one-to-many joins, confusing recorded with normalised values, and reproducing central cleaning differently in different projects.
-
-For full provenance and cleaning documentation, see:
-
-- `docs/database/DATABASE_GOVERNANCE_AND_PROVENANCE.md`
-- `docs/database/SETT_SOCIAL_GROUP_RULES.md`
-- `docs/database/DATA_DICTIONARY.md`
