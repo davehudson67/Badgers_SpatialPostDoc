@@ -10,7 +10,8 @@
 #     2. robust local vs high-mobility intervals;
 #     3. temporary-return vs settled-relocation vs continued-mobility patterns;
 #     4. recurrent / frequent mover concentration among individuals;
-#     5. sex and age structure;
+#     5. sex and CURRENT chronological age structure (age-at-first-capture is
+#        retained only as provenance for age support);
 #     6. recorded historical social-group changes;
 #     7. temporal patterns around the 2018 cull;
 #     8. observed within-year capture spread around the cull;
@@ -389,9 +390,26 @@ traj <- traj %>%
       rename(
         from_year = primary_year,
         age_from_years = age_years,
-        age_from_class = age_model_class
+        age_from_class_old = age_model_class
       ),
     by = c("tattoo", "from_year")
+  ) %>%
+  mutate(
+    # Biological age is chronological age DURING THIS MOVEMENT INTERVAL.
+    # age_entry_class is retained only as provenance for how birth year was
+    # supported at first capture; it must not be interpreted as current age.
+    age_from_class = case_when(
+      is.finite(age_from_years) & age_from_years == 0L ~ "0",
+      is.finite(age_from_years) & age_from_years == 1L ~ "1",
+      is.finite(age_from_years) & age_from_years == 2L ~ "2",
+      is.finite(age_from_years) & age_from_years >= 3L &
+        age_from_years <= 5L ~ "3-5",
+      is.finite(age_from_years) & age_from_years >= 6L ~ "6+",
+      age_entry_class == "Adult_exact_age_unknown" ~
+        "Adult_chronological_age_unknown",
+      TRUE ~ "Age_unknown"
+    ),
+    chronological_age_known = is.finite(age_from_years)
   ) %>%
   group_by(tattoo) %>%
   arrange(from_year, to_year, .by_group = TRUE) %>%
@@ -679,12 +697,6 @@ sex_summary <- traj %>%
   )
 
 age_summary <- traj %>%
-  mutate(
-    age_from_class = replace_na(
-      age_from_class,
-      "Age_unknown"
-    )
-  ) %>%
   group_by(age_from_class) %>%
   summarise(
     n_animals = n_distinct(tattoo),
@@ -696,6 +708,33 @@ age_summary <- traj %>%
     .groups = "drop"
   ) %>%
   arrange(desc(n_intervals))
+
+exact_age_summary <- traj %>%
+  filter(chronological_age_known) %>%
+  group_by(age_from_years) %>%
+  summarise(
+    n_animals = n_distinct(tattoo),
+    n_intervals = n(),
+    mean_p_high = mean(p_high_mean),
+    robust_high_prop = mean(robust_high),
+    median_disp_m = median(disp_median_consensus),
+    .groups = "drop"
+  ) %>%
+  arrange(age_from_years)
+
+age_support_summary <- traj %>%
+  summarise(
+    n_intervals = n(),
+    n_intervals_known_chronological_age =
+      sum(chronological_age_known),
+    prop_intervals_known_chronological_age =
+      mean(chronological_age_known),
+    n_animals = n_distinct(tattoo),
+    n_animals_with_known_chronological_age =
+      n_distinct(tattoo[chronological_age_known]),
+    prop_animals_with_known_chronological_age =
+      n_distinct(tattoo[chronological_age_known]) / n_distinct(tattoo)
+  )
 
 first_interval_summary <- traj %>%
   group_by(is_first_interval, age_entry_class, sex_class) %>%
@@ -1282,7 +1321,7 @@ sex_range <- if (nrow(sex_summary) > 1L) {
 }
 
 age_known <- age_summary %>%
-  filter(age_from_class %in% c("0-1", "2", "3-5", "6+"))
+  filter(age_from_class %in% c("0", "1", "2", "3-5", "6+"))
 
 age_range <- if (nrow(age_known) > 1L) {
   max(age_known$mean_p_high) - min(age_known$mean_p_high)
@@ -1312,7 +1351,7 @@ decision_inputs <- tibble(
     "retain_two_state_baseline",
     "iid_quarter_rho_zero_sensitivity",
     "signed_rho_sensitivity",
-    "age_effect_on_high_state_entry",
+    "chronological_age_effect_on_high_state_entry",
     "individual_mover_propensity_random_effect",
     "temporary_excursion_vs_relocation_extension",
     "recorded_social_group_overlay_then_dynamic_territory_model",
@@ -1323,7 +1362,7 @@ decision_inputs <- tibble(
     "late/current cross-chain state discordance",
     "mean rho from ridge-segment summaries",
     "current rho restricted to (0,1)",
-    "range in mean p(high) among exact-age classes",
+    "range in mean p(high) among current chronological-age classes",
     "top 10% share / Gini of expected high intervals",
     "return candidates among robust-high intervals",
     "P(SG change | robust high) vs P(SG change | robust local)",
@@ -1359,7 +1398,7 @@ decision_inputs <- tibble(
     "Baseline remains the reference model; do not replace it unless biology audit supports an extension.",
     "If rho remains near zero after continuation, compare against rho=0 model.",
     "Required prior/structural sensitivity before final production conclusions.",
-    "Use descriptive age pattern to decide whether cub/yearling/adult transition effects deserve a model.",
+    "Use current chronological age where known; age-at-first-capture class is provenance only. Adult entrants with unknown exact age should be retained with explicit missing-age handling.",
     "Strong concentration/recurrent movers would motivate persistent individual heterogeneity.",
     "A substantial return fraction would motivate separating excursion from permanent relocation.",
     "Recorded SG is an overlay/check only now; dynamic bait-marking territories are the later mechanistic layer.",
@@ -1376,6 +1415,8 @@ write_csv(individual_audit, paste0(out_prefix, "_individuals.csv"))
 write_csv(individual_concentration, paste0(out_prefix, "_individual_concentration.csv"))
 write_csv(sex_summary, paste0(out_prefix, "_sex.csv"))
 write_csv(age_summary, paste0(out_prefix, "_age.csv"))
+write_csv(exact_age_summary, paste0(out_prefix, "_exact_age_years.csv"))
+write_csv(age_support_summary, paste0(out_prefix, "_age_support.csv"))
 write_csv(first_interval_summary, paste0(out_prefix, "_first_interval.csv"))
 write_csv(sg_year, paste0(out_prefix, "_recorded_SG_by_year.csv"))
 write_csv(sg_summary, paste0(out_prefix, "_recorded_SG_movement.csv"))
@@ -1553,8 +1594,12 @@ cat("4. SEX / AGE / ENTRY BIOLOGY\n")
 cat("============================================================\n")
 cat("\nSex:\n")
 print(sex_summary, n = Inf, width = Inf)
-cat("\nAge at start of interval:\n")
+cat("\nChronological age support:\n")
+print(age_support_summary, n = Inf, width = Inf)
+cat("\nChronological age class at start of interval:\n")
 print(age_summary, n = Inf, width = Inf)
+cat("\nExact integer chronological age where known:\n")
+print(exact_age_summary, n = Inf, width = Inf)
 cat("\nFirst interval / entry class:\n")
 print(first_interval_summary, n = Inf, width = Inf)
 
