@@ -1872,9 +1872,6 @@ global_blocks <- list(
   c(
     "alpha_logsigma",
     "beta_sigma_sex"
-  ),
-  c(
-    "alpha_logomega"
   )
 )
 
@@ -1888,6 +1885,15 @@ for (b in global_blocks) {
     )
   )
 }
+
+# AF_slice requires at least two target nodes. With rho removed in V11,
+# alpha_logomega is now a scalar parameter and therefore uses a scalar slice
+# sampler rather than a one-node AF_slice block.
+config$removeSamplers("alpha_logomega", print = FALSE)
+config$addSampler(
+  target = "alpha_logomega",
+  type = "slice"
+)
 
 # The 300-badger continuation fit showed that the directly sampled
 # high-mobility scale mixes well, while beta_move_high (and therefore the
@@ -2016,7 +2022,7 @@ cat(
   median(trajectory_block_dimensions),
   ", max=", max(trajectory_block_dimensions), "\n",
   "  Quarterly iid qinnov vectors retain NIMBLE RW_block samplers.\n",
-  "  alpha_logomega is sampled without an AR(1) persistence parameter.\n",
+  "  alpha_logomega uses a scalar slice sampler (rho fixed to zero).\n",
   "  sigma_badger uses a scalar slice sampler; u_badger is non-centred.\n",
   "  alpha_logmove_high + beta_move_sex use a 2-D AF_slice block.\n",
   "  beta_move_high uses its own scalar slice sampler.\n",
