@@ -319,6 +319,26 @@ badger_effect_cols <- grep(
   value = TRUE
 )
 
+badger_effect_index <- as.integer(
+  str_match(
+    badger_effect_cols,
+    "^b_badger\\[([0-9]+)\\]$"
+  )[, 2]
+)
+
+if (
+  anyNA(badger_effect_index) ||
+  !identical(
+    sort(badger_effect_index),
+    seq_len(length(fits[[1]]$ids))
+  )
+) {
+  stop("b_badger monitor indices do not match fitted animal indices.")
+}
+
+badger_effect_cols <-
+  badger_effect_cols[order(badger_effect_index)]
+
 global_cols <- setdiff(
   all_cols,
   c(latent_cols, badger_effect_cols)
