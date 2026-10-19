@@ -2032,9 +2032,13 @@ cat(
   sep = ""
 )
 
-# Printing every sampler is useful for small validation fits but produces tens
-# of thousands of log lines for the full 1,932-badger production model.
-if (MAX_BADGERS <= 300L) {
+# Printing every sampler is useful only for tiny debugging fits and produces
+# very large logs even at moderate validation sizes. Enable explicitly when
+# needed rather than tying this to population size.
+PRINT_SAMPLERS <- tolower(Sys.getenv("PRINT_SAMPLERS", unset = "false")) %in%
+  c("1", "true", "yes", "y")
+
+if (PRINT_SAMPLERS) {
   config$printSamplers()
 }
 
