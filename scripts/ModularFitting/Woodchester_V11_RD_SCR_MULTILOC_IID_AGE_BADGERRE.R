@@ -172,16 +172,14 @@ full_pop <- pop_obj$population %>%
   transmute(
     tattoo = toupper(trimws(as.character(tattoo))),
     individual_id = as.integer(individual_id),
-    sex_class = as.character(sex_class),
-    age_entry_class = as.character(age_entry_class)
+    sex_class = as.character(sex_class)
   ) %>%
   mutate(
     sex_code = case_when(
       sex_class == "Female" ~ 0L,
       sex_class == "Male" ~ 1L,
       TRUE ~ NA_integer_
-    ),
-    adult_entry = as.integer(age_entry_class == "Adult_exact_age_unknown")
+    )
   ) %>%
   arrange(tattoo)
 
@@ -210,7 +208,6 @@ pop <- pop %>% arrange(tattoo)
 ids <- pop$tattoo
 individual_ids <- pop$individual_id
 sex_data <- as.integer(pop$sex_code)
-adult_entry <- as.integer(pop$adult_entry)
 nind <- nrow(pop)
 
 cat("Fitting", nind, "badgers (", fit_type, ")\n", sep = "")
@@ -856,8 +853,8 @@ code_V11_collapsed <- nimbleCode({
     # -------------------------------------------------------------------------
     # First-year quarterly spatial centres + observations
     #
-    # Stationary AR(1) deviations around the annual AC, expressed through
-    # iid innovations. This is distributionally identical to the centred reference model.
+    # Independent quarter-specific deviations around the annual activity
+    # centre. With rho fixed to zero, qeps equals the standard-normal qinnov.
     # -------------------------------------------------------------------------
     for (j in 1:J) {
 
@@ -1237,8 +1234,8 @@ code_V11_collapsed <- nimbleCode({
         dbern(valid_A[i, k])
 
       # -----------------------------------------------------------------------
-      # Four secondary quarterly centres in year k: stationary AR(1)
-      # deviations around annual AC A[i,,k].
+      # Four independent secondary quarterly centres in year k around
+      # annual activity centre A[i,,k].
       # -----------------------------------------------------------------------
       for (j in 1:J) {
 
