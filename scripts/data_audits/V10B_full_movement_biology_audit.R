@@ -14,8 +14,10 @@
 #     6. recorded historical social-group changes;
 #     7. temporal patterns around the 2018 cull;
 #     8. observed within-year capture spread around the cull;
-#     9. rho/omega/global-ridge outputs where available;
-#    10. annotation of the remaining computationally difficult intervals.
+#     9. calendar-time composition and observed sampling-footprint checks;
+#    10. whether within-year spread tracks annual relocation/recurrent movers;
+#    11. rho/omega/global-ridge outputs where available;
+#    12. annotation of the remaining computationally difficult intervals.
 #
 # IMPORTANT INTERPRETATION
 #   * "robust high" means ALL THREE chains have p(high) >= HIGH_CUT.
@@ -768,6 +770,7 @@ year_summary <- traj %>%
       ),
     median_disp_m = median(disp_median_consensus),
     p90_disp_m = safe_q(disp_median_consensus, 0.90),
+    sg_comparable_prop = mean(sg_comparable),
     sg_change_prop =
       if_else(sum(sg_comparable) > 0, mean(sg_changed, na.rm = TRUE), NA_real_),
     state_discordant_prop = mean(state_discordant),
@@ -809,6 +812,68 @@ cull_movement_summary <- traj %>%
       if_else(sum(sg_comparable) > 0, mean(sg_changed, na.rm = TRUE), NA_real_),
     .groups = "drop"
   )
+
+# -----------------------------------------------------------------------------
+# Temporal composition checks: distinguish calendar-time signal from changing
+# sex/age composition of the animals contributing movement intervals.
+# -----------------------------------------------------------------------------
+movement_by_year_sex <- traj %>%
+  group_by(to_year, sex_class) %>%
+  summarise(
+    n_intervals = n(),
+    n_animals = n_distinct(tattoo),
+    mean_p_high = mean(p_high_mean),
+    robust_high_prop = mean(robust_high),
+    last_interval_prop = mean(is_last_interval),
+    n_nonterminal = sum(!is_last_interval),
+    mean_p_high_nonterminal =
+      if_else(
+        sum(!is_last_interval) > 0,
+        mean(p_high_mean[!is_last_interval]),
+        NA_real_
+      ),
+    robust_high_prop_nonterminal =
+      if_else(
+        sum(!is_last_interval) > 0,
+        mean(robust_high[!is_last_interval]),
+        NA_real_
+      ),
+    .groups = "drop"
+  ) %>%
+  mutate(cull_event_time = to_year - CULL_YEAR)
+
+movement_by_year_age <- traj %>%
+  mutate(
+    age_from_class = replace_na(age_from_class, "Age_unknown")
+  ) %>%
+  group_by(to_year, age_from_class) %>%
+  summarise(
+    n_intervals = n(),
+    n_animals = n_distinct(tattoo),
+    mean_p_high = mean(p_high_mean),
+    robust_high_prop = mean(robust_high),
+    last_interval_prop = mean(is_last_interval),
+    .groups = "drop"
+  ) %>%
+  mutate(cull_event_time = to_year - CULL_YEAR)
+
+movement_year_composition <- traj %>%
+  group_by(to_year) %>%
+  summarise(
+    n_intervals = n(),
+    male_prop = mean(sex_class == "Male"),
+    exact_age_supported_prop = mean(exact_age_supported),
+    age_0_1_prop = mean(age_from_class == "0-1", na.rm = TRUE),
+    age_2_prop = mean(age_from_class == "2", na.rm = TRUE),
+    age_3_5_prop = mean(age_from_class == "3-5", na.rm = TRUE),
+    age_6plus_prop = mean(age_from_class == "6+", na.rm = TRUE),
+    adult_unknown_age_prop =
+      mean(age_entry_class == "Adult_exact_age_unknown"),
+    last_interval_prop = mean(is_last_interval),
+    sg_comparable_prop = mean(sg_comparable),
+    .groups = "drop"
+  ) %>%
+  mutate(cull_event_time = to_year - CULL_YEAR)
 
 # -----------------------------------------------------------------------------
 # Observed annual capture spread: descriptive ranging-breadth audit
@@ -859,7 +924,7 @@ sett_xy <- sett_xy %>%
 
 fit_ids <- unique(traj$tattoo)
 
-capture_spread <- enc %>%
+spatial_capture_rows <- enc %>%
   transmute(
     tattoo = toupper(trimws(as.character(tattoo))),
     primary_year = as.integer(primary_year),
@@ -873,7 +938,21 @@ capture_spread <- enc %>%
     !is.na(primary_year)
   ) %>%
   left_join(sett_xy, by = "Sett_Clean") %>%
-  filter(is.finite(x), is.finite(y)) %>%
+  filter(is.finite(x), is.finite(y))
+
+sampling_footprint_year <- spatial_capture_rows %>%
+  group_by(primary_year) %>%
+  summarise(
+    n_spatial_capture_records = n(),
+    n_animals = n_distinct(tattoo),
+    n_unique_setts = n_distinct(Sett_Clean),
+    n_quarters_with_any_capture = n_distinct(trap_season),
+    mean_spatial_captures_per_animal =
+      n_spatial_capture_records / n_animals,
+    .groups = "drop"
+  )
+
+capture_spread <- spatial_capture_rows %>%
   group_by(tattoo, primary_year) %>%
   summarise(
     n_spatial_captures = n(),
@@ -942,6 +1021,36 @@ capture_spread_year <- capture_spread %>%
     median_rms_radius_2plus_quarters = safe_median(
       rms_capture_radius_m[n_quarters >= 2L]
     ),
+    prop_any_span_2plus_quarters =
+      if_else(
+        sum(n_quarters >= 2L) > 0,
+        mean(max_capture_span_m[n_quarters >= 2L] > 0),
+        NA_real_
+      ),
+    prop_span_gt250_2plus_quarters =
+      if_else(
+        sum(n_quarters >= 2L) > 0,
+        mean(max_capture_span_m[n_quarters >= 2L] > 250),
+        NA_real_
+      ),
+    prop_span_gt500_2plus_quarters =
+      if_else(
+        sum(n_quarters >= 2L) > 0,
+        mean(max_capture_span_m[n_quarters >= 2L] > 500),
+        NA_real_
+      ),
+    prop_span_gt1000_2plus_quarters =
+      if_else(
+        sum(n_quarters >= 2L) > 0,
+        mean(max_capture_span_m[n_quarters >= 2L] > 1000),
+        NA_real_
+      ),
+    median_positive_span_2plus_quarters = safe_median(
+      max_capture_span_m[
+        n_quarters >= 2L &
+        max_capture_span_m > 0
+      ]
+    ),
     .groups = "drop"
   ) %>%
   mutate(
@@ -964,8 +1073,87 @@ cull_capture_spread <- capture_spread %>%
     median_max_capture_span_m = safe_median(max_capture_span_m),
     p90_max_capture_span_m = safe_q(max_capture_span_m, 0.90),
     median_rms_capture_radius_m = safe_median(rms_capture_radius_m),
+    prop_any_span = mean(max_capture_span_m > 0),
+    prop_span_gt250 = mean(max_capture_span_m > 250),
+    prop_span_gt500 = mean(max_capture_span_m > 500),
+    prop_span_gt1000 = mean(max_capture_span_m > 1000),
+    median_positive_span_m = safe_median(
+      max_capture_span_m[max_capture_span_m > 0]
+    ),
     .groups = "drop"
   )
+
+# -----------------------------------------------------------------------------
+# Link within-year observed spread to the annual movement state entering that
+# year. This tests whether range-breadth and annual relocation are the same
+# phenomenon or partly independent.
+# -----------------------------------------------------------------------------
+spread_movement_link <- capture_spread %>%
+  left_join(
+    traj %>%
+      select(
+        tattoo,
+        to_year,
+        state_audit_class,
+        p_high_mean,
+        robust_high,
+        robust_local,
+        is_last_interval
+      ),
+    by = c("tattoo", "primary_year" = "to_year")
+  ) %>%
+  left_join(
+    individual_audit %>%
+      select(
+        tattoo,
+        recurrent_robust_mover,
+        robust_mover_audit_class
+      ),
+    by = "tattoo"
+  )
+
+spread_by_entering_state <- spread_movement_link %>%
+  filter(n_quarters >= 2L, !is.na(state_audit_class)) %>%
+  group_by(state_audit_class) %>%
+  summarise(
+    n_animal_years = n(),
+    prop_any_span = mean(max_capture_span_m > 0),
+    prop_span_gt250 = mean(max_capture_span_m > 250),
+    prop_span_gt500 = mean(max_capture_span_m > 500),
+    prop_span_gt1000 = mean(max_capture_span_m > 1000),
+    median_span_m = safe_median(max_capture_span_m),
+    p90_span_m = safe_q(max_capture_span_m, 0.90),
+    .groups = "drop"
+  )
+
+spread_by_mover_history <- spread_movement_link %>%
+  filter(n_quarters >= 2L, !is.na(recurrent_robust_mover)) %>%
+  group_by(recurrent_robust_mover) %>%
+  summarise(
+    n_animal_years = n(),
+    prop_any_span = mean(max_capture_span_m > 0),
+    prop_span_gt500 = mean(max_capture_span_m > 500),
+    median_span_m = safe_median(max_capture_span_m),
+    p90_span_m = safe_q(max_capture_span_m, 0.90),
+    .groups = "drop"
+  )
+
+# Complete the observed sampling-footprint table with animal-year repeatability.
+sampling_footprint_year <- sampling_footprint_year %>%
+  left_join(
+    capture_spread %>%
+      group_by(primary_year) %>%
+      summarise(
+        n_animal_years = n(),
+        prop_animal_years_2plus_captures =
+          mean(n_spatial_captures >= 2L),
+        prop_animal_years_2plus_quarters =
+          mean(n_quarters >= 2L),
+        .groups = "drop"
+      ),
+    by = "primary_year"
+  ) %>%
+  mutate(cull_event_time = primary_year - CULL_YEAR)
 
 # -----------------------------------------------------------------------------
 # Movement sequence summary
@@ -1198,6 +1386,13 @@ write_csv(cull_movement_summary, paste0(out_prefix, "_cull_movement_summary.csv"
 write_csv(capture_spread, paste0(out_prefix, "_observed_capture_spread_animal_year.csv"))
 write_csv(capture_spread_year, paste0(out_prefix, "_observed_capture_spread_by_year.csv"))
 write_csv(cull_capture_spread, paste0(out_prefix, "_cull_capture_spread_summary.csv"))
+write_csv(movement_by_year_sex, paste0(out_prefix, "_movement_by_year_sex.csv"))
+write_csv(movement_by_year_age, paste0(out_prefix, "_movement_by_year_age.csv"))
+write_csv(movement_year_composition, paste0(out_prefix, "_movement_year_composition.csv"))
+write_csv(sampling_footprint_year, paste0(out_prefix, "_sampling_footprint_by_year.csv"))
+write_csv(spread_movement_link, paste0(out_prefix, "_spread_movement_link.csv"))
+write_csv(spread_by_entering_state, paste0(out_prefix, "_spread_by_entering_state.csv"))
+write_csv(spread_by_mover_history, paste0(out_prefix, "_spread_by_mover_history.csv"))
 write_csv(difficult, paste0(out_prefix, "_difficult_intervals_annotated.csv"))
 write_csv(difficult_summary, paste0(out_prefix, "_difficult_summary.csv"))
 write_csv(rho_omega_summary, paste0(out_prefix, "_rho_omega_chain_summary.csv"))
@@ -1382,6 +1577,22 @@ print(
 cat("\nPre/onset/post summary within event window:\n")
 print(cull_movement_summary, n = Inf, width = Inf)
 
+cat("\nCalendar-time composition around the cull (movement intervals):\n")
+print(
+  movement_year_composition %>%
+    filter(abs(cull_event_time) <= CULL_WINDOW),
+  n = Inf,
+  width = Inf
+)
+
+cat("\nSex-stratified movement signal around the cull:\n")
+print(
+  movement_by_year_sex %>%
+    filter(abs(cull_event_time) <= CULL_WINDOW),
+  n = Inf,
+  width = Inf
+)
+
 cat("\n============================================================\n")
 cat("7. 2018 CULL: OBSERVED WITHIN-YEAR CAPTURE SPREAD\n")
 cat("============================================================\n")
@@ -1393,6 +1604,20 @@ print(
 )
 cat("\nPre/onset/post observed-spread summary (>=2 quarters):\n")
 print(cull_capture_spread, n = Inf, width = Inf)
+
+cat("\nObserved sampling footprint around the cull:\n")
+print(
+  sampling_footprint_year %>%
+    filter(abs(cull_event_time) <= CULL_WINDOW),
+  n = Inf,
+  width = Inf
+)
+
+cat("\nObserved spread by annual movement state entering the year:\n")
+print(spread_by_entering_state, n = Inf, width = Inf)
+
+cat("\nObserved spread by recurrent-mover history:\n")
+print(spread_by_mover_history, n = Inf, width = Inf)
 
 cat("\n============================================================\n")
 cat("8. RHO / OMEGA CONTEXT\n")
