@@ -1497,3 +1497,51 @@ From this point forward:
 - movement-model development stops after the annual-scale mixing issue and this
   single transition-structure sensitivity are resolved.
 
+
+
+## V11 annual-scale chain-mode diagnostic — 20 October 2026
+
+The 300-badger chain-mode diagnostic showed that the remaining annual-scale
+problem is not well described as simple short-chain noise.
+
+Key findings:
+
+- chain 2 occupied a higher local-movement / lower high:local-contrast region;
+- chains 1 and 3 occupied a lower local-movement / higher contrast region;
+- female local movement medians were approximately 13.8, 22.3 and 13.3 m;
+- beta_move_high medians were approximately 4.01, 3.49 and 3.96;
+- alpha_logmove and beta_move_high were strongly negatively correlated
+  (approximately -0.61 to -0.90 across chains);
+- local-scale lag-1 autocorrelation was commonly about 0.96-0.99 and within-chain
+  ESS could be as low as 2-5;
+- the first and second halves of the chains did not show convincing movement
+  toward a common scale region;
+- disagreement remained localized rather than wholesale: 33/951 annual
+  intervals differed by >0.50 between chains, concentrated in a relatively
+  small number of animals.
+
+**Decision:** do not respond by changing movement biology or adding/removing
+covariates. Test a centred annual-activity-centre computational
+parameterisation of the exact same V11 posterior.
+
+Committed centred check:
+
+```
+scripts/ModularFitting/Woodchester_V11_centered_annual_sampler_check.R
+```
+
+The check changes only annual computational coordinates/samplers:
+
+- annual activity centres are stochastic directly;
+- the same local/high Gaussian mixture is evaluated on annual displacement;
+- whole-badger annual trajectories are updated in centred coordinates;
+- movement-scale updates remain interwoven.
+
+Sex, chronological age, badger random effect, transition equations, priors,
+iid-quarter structure and observation likelihood remain unchanged.
+
+If this centred check removes the chain separation, use the better computational
+parameterisation and proceed to the pre-specified balanced-persistence
+sensitivity. If the same modes persist, treat the annual local/high scale as a
+real identifiability/multimodality issue rather than continuing sampler
+engineering indefinitely.
