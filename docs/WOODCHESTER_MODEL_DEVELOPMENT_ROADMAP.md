@@ -1393,3 +1393,107 @@ the same commit or immediately afterwards with:
 
 Future ChatGPT sessions should read this file before recommending a new
 Woodchester model or re-running a previous biological analysis.
+
+
+---
+
+# 23. Movement-transition covariate logic and anti-fishing rule
+
+This section was added after the 300-badger V11 validation to make explicit
+which covariates act on which parts of the movement process and why.
+
+## The state process contains biologically different processes
+
+The model distinguishes:
+
+1. **Initial high-mobility state** — the first modelled annual movement interval;
+2. **Local -> high transition (RD)** — initiation of a new high-mobility episode;
+3. **High -> high transition (DD)** — persistence/continuation of an existing
+   high-mobility episode;
+4. **Movement magnitude conditional on state** — how far an animal moves once
+   it is local or high mobility.
+
+These are not assumed to require identical predictors.
+
+## Current V11 covariate map
+
+| Predictor | Initial high | Local -> high | High -> high | Movement magnitude |
+|---|---:|---:|---:|---:|
+| Sex | yes | yes | yes | yes |
+| Chronological age | yes | yes | no | no |
+| Individual badger effect | yes | yes | no | no |
+| Previous high state | n/a | defines transition | defines transition | state sets scale |
+
+Sex is therefore **not omitted from any movement-state transition in V11**.
+Separate sex coefficients allow sex to influence initiation and persistence
+differently.
+
+Chronological age and the individual random effect were deliberately defined as
+predictors of **high-mobility initiation propensity**. Their absence from DD was
+not selected after looking at the V11 result. It was specified before fitting
+V11 to avoid conflating:
+
+- propensity to start a high-mobility episode; and
+- persistence once an episode has started.
+
+The repeat-mover PPC was pre-specified as the decision test for whether the
+minimal individual-propensity formulation was sufficient. At both 50 and 300
+badgers it reproduced repeat-mover concentration and consecutive runs well.
+Therefore adding the badger effect to DD solely because it might improve fit
+would now be contrary to the pre-specified rule.
+
+## Remaining legitimate concern
+
+The biological assumption that age and individual heterogeneity affect
+initiation but not persistence is still an assumption. Good PPC does not prove
+that their true DD effects are exactly zero.
+
+Therefore one and only one pre-specified structural sensitivity is permitted
+before V11 is frozen:
+
+### Balanced-persistence sensitivity
+
+Add chronological-age effects and the same individual badger effect to the DD
+transition while leaving every other part of V11 unchanged.
+
+This sensitivity is not a search over models. Its purpose is to test whether
+the primary conclusions are materially dependent on the initiation-only
+assumption.
+
+### Decision rule defined before fitting
+
+Compare the primary V11 and balanced-persistence sensitivity on:
+
+- posterior annual high-state probabilities;
+- robust local/high classifications;
+- repeat-mover PPC;
+- sex effect on local -> high initiation;
+- age-effect conclusions;
+- `sigma_badger`;
+- annual local/high movement scales;
+- chain agreement.
+
+If the balanced sensitivity gives essentially the same biological conclusions,
+retain the simpler initiation-only V11 because it has the clearer mechanistic
+interpretation and fewer weakly identified effects.
+
+If adding age/badger effects to DD materially changes state classification or
+the central biological conclusions, do **not** select whichever model has the
+nicer coefficient significance or R-hat. Treat that as evidence that transition
+structure is not robustly identified, and either adopt the fuller model on
+biological grounds or report the sensitivity explicitly.
+
+## Anti-fishing rule
+
+From this point forward:
+
+- covariates are added because of a stated biological process, not because a
+  coefficient in another model was significant;
+- no term is removed simply because its posterior overlaps zero;
+- no new transition-specific interaction is added merely to improve convergence;
+- computational reparameterisation must preserve the same biological model;
+- structural sensitivities must have their question and decision rule written
+  down **before** fitting;
+- movement-model development stops after the annual-scale mixing issue and this
+  single transition-structure sensitivity are resolved.
+
