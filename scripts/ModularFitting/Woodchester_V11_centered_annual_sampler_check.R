@@ -947,24 +947,11 @@ code_V11_collapsed <- nimbleCode({
     }
 
     # -------------------------------------------------------------------------
-    # Subsequent annual states: exact collapsed two-state HMM in NON-CENTRED
-    # annual-movement coordinates.
+    # Subsequent annual states: exact collapsed two-state Gaussian HMM in
+    # CENTRED annual-activity-centre coordinates.
     #
-    # Define
-    #   A_k = A_(k-1) + sigma_local_eval * u_k.
-    #
-    # Under the original local state, u_k ~ N2(0, I). Under the high state,
-    # u_k ~ N2(0, r^2 I), where r = sigma_high_eval/sigma_local_eval.
-    # This is an exact change of variables. The Jacobian sigma_local_eval^2
-    # converts the original A-increment density to this mixture density in u.
-    #
-    # u_move itself receives a broad fixed Gaussian reference N2(0,R^2 I).
-    # move_zero contributes:
-    #   log target(u) - log reference(u) - 2*log(R),
-    # where R=5000 bounds every valid transformed component SD. Combined with
-    # the reference density this leaves log target(u) plus only a constant.
-    # Thus the posterior is identical to the centred reference model but the local movement
-    # scale no longer appears in the prior density of the sampled trajectory.
+    # This sampler check changes no biology. A[i,,k] is sampled directly and
+    # the same local/high Gaussian mixture is evaluated on A[k]-A[k-1].
     # -------------------------------------------------------------------------
     filtered_high[i, first[i]] <- 0
 
@@ -1400,7 +1387,6 @@ make_inits <- function(chain) {
     for (k in first[i]:K[i]) {
       A0[i, 1, k] <- target_A[i, 1, k]
       A0[i, 2, k] <- target_A[i, 2, k]
-    for (k in first[i]:K[i]) {
 
       for (j in seq_len(J)) {
         qeps_target0[i, 1, j, k] <-
