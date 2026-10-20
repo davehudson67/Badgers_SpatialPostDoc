@@ -1290,6 +1290,91 @@ For V13:
 
 ---
 
+
+## V11 300-badger validation — 20 October 2026
+
+The three-chain 300-badger validation completed successfully:
+
+- 300 badgers;
+- 951 annual movement intervals;
+- 500 retained draws per chain;
+- 1,500 retained draws total;
+- 300 individual mover-effect parameters.
+
+### Biological/structural result
+
+The repeat-mover posterior predictive check passed strongly.
+
+Posterior-state versus replicated means:
+
+- Gini of high events: 0.824 vs 0.828;
+- maximum consecutive high run: 2.74 vs 2.93;
+- maximum high count in one badger: 3.39 vs 3.68;
+- animals with any high event: 63.3 vs 62.9;
+- animals with >=2 high events: 13.8 vs 14.2;
+- top-10% share of high events: 0.585 vs 0.602;
+- total high events: 80.2 vs 81.6.
+
+Posterior-predictive tail probabilities were all approximately 0.51-0.79 rather
+than near zero.
+
+**Decision:** the V11 individual mover-propensity formulation is sufficient to
+reproduce repeat-mover concentration. Do not add the badger random effect to
+high->high persistence at this stage.
+
+### Age / sex / individual heterogeneity
+
+The 300-badger posterior suggests:
+
+- strong positive male effect on local->high entry (`beta_RD_sex` median ~1.57);
+- little evidence for a special age-2 increase in this subset (`beta_age_2`
+  median ~0.14, wide interval);
+- lower high-mobility entry among age 3-5 and especially age 6+ animals, with
+  the age-6+ interval below zero in this run;
+- persistent individual heterogeneity remains plausible
+  (`sigma_badger` median ~0.36), but convergence is not yet sufficient for a
+  final magnitude estimate.
+
+These are provisional because some new/global parameters still have R-hat >1.1.
+
+### Remaining computational issue
+
+V11 did **not** eliminate the annual movement-scale mixing problem.
+
+Worst global convergence:
+
+- mean annual male local movement: R-hat ~2.52;
+- mean annual female local movement: R-hat ~2.30;
+- `beta_move_high`: R-hat ~2.27;
+- `alpha_logmove`: R-hat ~2.16;
+- `beta_move_sex`: R-hat ~1.42.
+
+By contrast, `omega` itself was much better (R-hat ~1.05).
+
+Movement-state disagreement also remains non-negligible:
+
+- 77 / 951 intervals with max chain difference >0.25;
+- 33 / 951 >0.50;
+- 10 / 951 >0.80;
+- median max chain difference ~0.014;
+- 95th percentile ~0.363.
+
+**Interpretation:** V11's biological additions are supported, but the annual
+local/high movement-scale decomposition still needs one targeted computational
+fix or longer/alternative sampling before V11 is frozen for V12. Do not create
+new biological movement structure in response.
+
+### Updated gate
+
+The next step is **not** another new biological movement model.
+
+Use the existing V11 model and target only the annual movement-scale ridge /
+mixing problem. Once the annual movement scales and key movement-state
+probabilities show acceptable cross-chain agreement, freeze V11 and proceed
+directly to V12 entry/survival/apparent-emigration modelling.
+
+---
+
 # 22. Maintenance rule
 
 This file is the canonical modelling-development record.
