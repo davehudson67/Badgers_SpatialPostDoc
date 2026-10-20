@@ -1545,3 +1545,70 @@ parameterisation and proceed to the pre-specified balanced-persistence
 sensitivity. If the same modes persist, treat the annual local/high scale as a
 real identifiability/multimodality issue rather than continuing sampler
 engineering indefinitely.
+
+
+## V11 centred parameterisation race — pre-specified 20 October 2026
+
+Because spare CPU/RAM is available, four centred implementations of the same
+V11 biological posterior will be run in parallel on the same 300-badger subset.
+
+The comparison is computational, not biological.
+
+Variants:
+
+1. **Centred control**
+   - current high-scale primitive;
+   - scalar slice on high/local contrast.
+
+2. **Centred joint-high**
+   - same high-scale primitive;
+   - joint AF_slice block on high log-scale + high/local contrast + sex movement
+     effect.
+
+3. **Centred joint-local**
+   - original local log-scale is stochastic;
+   - high log-scale is deterministic local + positive contrast;
+   - joint AF_slice block on local log-scale + high/local contrast + sex
+     movement effect.
+
+4. **Centred mean-separation**
+   - stochastic mean log-scale and positive log separation;
+   - exact transform preserving the original
+     alpha_logmove ~ N(log(20),1), beta_move_high ~ Exp(1) prior;
+   - joint AF_slice block on mean log-scale + separation + sex movement effect.
+
+All variants retain:
+
+- identical V11 transition equations;
+- identical sex and age effects;
+- identical badger random effect;
+- identical priors after exact coordinate transformation;
+- identical iid quarterly model;
+- identical centred annual trajectory likelihood;
+- identical observation model;
+- analytically collapsed HMM.
+
+Selection rule:
+
+> Choose computational coordinates on convergence/mixing/state-agreement
+> grounds only. Do not use coefficient significance or biological effect size
+> to choose a parameterisation.
+
+Primary comparison metrics:
+
+- maximum and median R-hat across pre-specified key parameters;
+- minimum and median ESS;
+- movement-scale autocorrelation / chain separation;
+- smoothed-state cross-chain disagreement;
+- agreement of pooled posterior summaries across parameterisations.
+
+Scripts:
+
+```
+scripts/ModularFitting/run_V11_parameterisation_race.sh
+scripts/ModularFitting/postprocess_V11_parameterisation_race.sh
+scripts/ModularFitting/Woodchester_V11_compare_parameterisations.R
+```
+
+The parameterisation race must be resolved before fitting the separate
+pre-specified balanced-persistence biological sensitivity.
