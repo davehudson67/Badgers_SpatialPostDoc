@@ -106,8 +106,7 @@ v11 <- replace_between(
   "  qeps_target0 <-",
   paste0(
     "  # Every active annual activity centre is stochastic in the centred check.\n",
-    "  A0 <- array(NA_real_, c(nind, 2L, n_prim))\n",
-    "  qeps_target0 <-"
+    "  A0 <- array(NA_real_, c(nind, 2L, n_prim))\n"
   ),
   "centred A initial arrays"
 )
@@ -119,7 +118,7 @@ v11 <- replace_between(
   paste0(
     "    for (k in first[i]:K[i]) {\n",
     "      A0[i, 1, k] <- target_A[i, 1, k]\n",
-    "      A0[i, 2, k] <- target_A[i, 2, k]\n\n"
+    "      A0[i, 2, k] <- target_A[i, 2, k]\n"
   ),
   "centred A initial values"
 )
@@ -133,8 +132,7 @@ v11 <- replace_between(
   "# ---- build -------------------------------------------------------------------",
   paste0(
     "# Centred annual coordinates use the original displacement-space mixture ",
-    "directly; no annual change-of-variables identity is required.\n\n",
-    "# ---- build -------------------------------------------------------------------"
+    "directly; no annual change-of-variables identity is required.\n\n"
   ),
   "annual NC self-check"
 )
@@ -176,10 +174,7 @@ v11 <- replace_between(
   v11,
   "# Overlapping local non-centred annual trajectory blocks.",
   "# Printing every sampler is useful only for tiny debugging fits",
-  paste0(
-    centred_sampler_text,
-    "# Printing every sampler is useful only for tiny debugging fits"
-  ),
+  centred_sampler_text,
   "annual trajectory samplers"
 )
 
