@@ -115,10 +115,18 @@ v11 <- replace_between(
   v11,
   "    A0[i, 1, first[i]] <-",
   "    for (k in first[i]:K[i]) {",
+  "",
+  "remove non-centred A initial values"
+)
+
+v11 <- replace_once(
+  v11,
+  "    for (k in first[i]:K[i]) {\n\n      for (j in seq_len(J)) {",
   paste0(
     "    for (k in first[i]:K[i]) {\n",
     "      A0[i, 1, k] <- target_A[i, 1, k]\n",
-    "      A0[i, 2, k] <- target_A[i, 2, k]\n"
+    "      A0[i, 2, k] <- target_A[i, 2, k]\n\n",
+    "      for (j in seq_len(J)) {"
   ),
   "centred A initial values"
 )
