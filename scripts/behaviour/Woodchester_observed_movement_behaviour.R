@@ -1,25 +1,45 @@
 # =============================================================================
 # WOODCHESTER - OBSERVED BEHAVIOURAL MOVEMENT ANALYSIS
 #
-# PRE-SPECIFIED QUESTIONS
-# 1. Among badger-quarters with >=2 captures, what predicts being observed at
-#    >1 sett?  This is the sett-switching model and explicitly adjusts for
-#    observation opportunity.
-# 2. Among observed different-sett transitions, what predicts displacement
-#    magnitude?
-# 3. Among transitions with usable historical capture-level social groups, what
-#    predicts crossing a social-group boundary?
+# PRE-SPECIFIED QUESTIONS / TIME SCALES
+#
+# B1. WITHIN QUARTER
+#     Among badger-quarters with >=2 captures, what predicts being observed at
+#     >1 sett?  Explicitly adjust for opportunity (capture count and time span).
+#
+# B2. ADJACENT QUARTER -> QUARTER
+#     For consecutive trapping campaigns in which the badger was observed,
+#     what predicts whether its last observed sett in quarter q differs from
+#     its first observed sett in q+1?  What predicts cross-group movement?
+#
+# B3. OBSERVED DISPLACEMENT MAGNITUDE
+#     Among consecutive capture events at different mapped setts, what predicts
+#     straight-line displacement?  Distinguish within-quarter, adjacent-quarter
+#     and longer-gap observation windows.
+#
+# B4. SOCIAL-GROUP BRIDGING
+#     Where contemporaneous capture-level groups are resolved, what predicts a
+#     same-group versus cross-group transition, and how does that transition
+#     relate to the annual resident group?
 #
 # This script intentionally does NOT include disease status or V11S latent
 # movement state. Those are later, separately pre-specified extensions.
 #
+# IMPORTANT
+#   Quarter-to-quarter behaviour is based on observed capture endpoints, NOT a
+#   reconstructed quarterly activity centre.  For adjacent quarters, the
+#   relevant transition is the last capture in q -> first capture in q+1.
+#
 # OUTPUTS
 #   results/behaviour_repeat_capture_quarters.csv
+#   results/behaviour_all_consecutive_capture_transitions.csv
+#   results/behaviour_adjacent_quarter_transitions.csv
 #   results/behaviour_observed_sett_transitions.csv
 #   results/behaviour_sett_switching_parametric.csv
+#   results/behaviour_adjacent_quarter_sett_switching_parametric.csv
+#   results/behaviour_adjacent_quarter_cross_group_parametric.csv
 #   results/behaviour_distance_parametric.csv
-#   results/behaviour_cross_group_parametric.csv   (when supported)
-#   logs/behavioural_movement_models.txt
+#   results/behaviour_cross_group_parametric.csv
 # =============================================================================
 
 library(tidyverse)
@@ -199,9 +219,16 @@ cap <- enc %>%
   left_join(pop, by = "tattoo") %>%
   left_join(age, by = c("tattoo", "primary_year")) %>%
   left_join(resident, by = c("tattoo", "primary_year")) %>%
-  arrange(tattoo, primary_year, trap_season, capture_date, sett_clean)
+  left_join(sett_xy, by = "sett_clean") %>%
+  arrange(tattoo, capture_date, primary_year, trap_season, sett_clean) %>%
+  mutate(
+    quarter_index = primary_year * 4L + trap_season
+  )
 
-# ---- 1. repeat-capture quarter dataset --------------------------------------
+# =============================================================================
+# B1. WITHIN-QUARTER REPEAT-CAPTURE SETT SWITCHING
+# =============================================================================
+
 quarter <- cap %>%
   group_by(tattoo, primary_year, trap_season) %>%
   summarise(
@@ -212,6 +239,7 @@ quarter <- cap %>%
     n_capture_records = n(),
     n_capture_dates = n_distinct(capture_date),
     n_distinct_setts = n_distinct(sett_clean),
+    n_distinct_capture_groups = n_distinct(capture_group, na.rm = TRUE),
     first_capture = min(capture_date),
     last_capture = max(capture_date),
     quarter_span_days = as.integer(last_capture - first_capture),
@@ -229,14 +257,13 @@ quarter <- cap %>%
     n_capture_factor = factor(n_capture_records),
     year_factor = factor(primary_year),
     tattoo_factor = factor(tattoo),
-    resident_group_factor = factor(resident_group),
     log_span = log1p(quarter_span_days)
   )
 
 write_csv(quarter, "results/behaviour_repeat_capture_quarters.csv")
 
 cat("\n============================================================\n")
-cat("BEHAVIOUR MODEL 1: OBSERVED WITHIN-QUARTER SETT SWITCHING\n")
+cat("B1: OBSERVED WITHIN-QUARTER SETT SWITCHING\n")
 cat("============================================================\n")
 cat("Repeat-captured quarters:", nrow(quarter), "\n")
 cat("Multi-sett quarters:", sum(quarter$switched_sett), "\n")
@@ -245,8 +272,6 @@ cat(
   round(mean(quarter$switched_sett), 4), "\n"
 )
 
-# Primary model. The random badger effect asks whether persistent individual
-# switching propensity remains after correcting for observation opportunity.
 fit_switch <- gam(
   switched_sett ~
     sex +
@@ -265,96 +290,300 @@ print(summary(fit_switch))
 cat("\nVariance components:\n")
 print(gam.vcomp(fit_switch))
 
-switch_param <- as.data.frame(summary(fit_switch)$p.table) %>%
-  rownames_to_column("term") %>%
-  as_tibble()
-
 write_csv(
-  switch_param,
+  as.data.frame(summary(fit_switch)$p.table) %>%
+    rownames_to_column("term") %>%
+    as_tibble(),
   "results/behaviour_sett_switching_parametric.csv"
 )
 
-# ---- 2. observed consecutive different-sett transitions ---------------------
-transitions <- cap %>%
-  left_join(sett_xy, by = "sett_clean") %>%
-  filter(!is.na(x), !is.na(y)) %>%
-  group_by(tattoo, primary_year, trap_season) %>%
-  arrange(capture_date, sett_clean, .by_group = TRUE) %>%
+# =============================================================================
+# BUILD COMPLETE ORDERED CAPTURE-TO-CAPTURE TRANSITION HISTORY
+# =============================================================================
+#
+# This uses ALL consecutive usable live captures for each badger.
+#
+# quarter_gap = 0  : within the same trapping quarter
+# quarter_gap = 1  : adjacent trapping quarters, including Q4 -> next-year Q1
+# quarter_gap >= 2 : longer observational gap
+#
+# Hence adjacent-quarter transitions are naturally the last capture in quarter q
+# -> first capture in quarter q+1.  We do not invent a quarterly centroid.
+
+all_transitions <- cap %>%
+  group_by(tattoo) %>%
+  arrange(capture_date, quarter_index, sett_clean, .by_group = TRUE) %>%
   mutate(
     from_date = lag(capture_date),
+    from_year = lag(primary_year),
+    from_season = lag(trap_season),
+    from_quarter_index = lag(quarter_index),
     from_sett = lag(sett_clean),
     from_group = lag(capture_group),
+    from_resident_group = lag(resident_group),
+    from_resident_criterion = lag(resident_assignment_criterion),
     from_x = lag(x),
     from_y = lag(y),
+
     to_date = capture_date,
+    to_year = primary_year,
+    to_season = trap_season,
+    to_quarter_index = quarter_index,
     to_sett = sett_clean,
     to_group = capture_group,
+    to_resident_group = resident_group,
+    to_resident_criterion = resident_assignment_criterion,
     to_x = x,
     to_y = y,
+
     days_between = as.integer(to_date - from_date),
-    distance_m = sqrt((to_x - from_x)^2 + (to_y - from_y)^2),
-    changed_sett = !is.na(from_sett) & from_sett != to_sett
-  ) %>%
-  filter(!is.na(from_date), changed_sett) %>%
-  ungroup() %>%
-  mutate(
+    quarter_gap = to_quarter_index - from_quarter_index,
+
+    changed_sett = !is.na(from_sett) & from_sett != to_sett,
+
+    distance_m = case_when(
+      !is.na(from_x) & !is.na(from_y) & !is.na(to_x) & !is.na(to_y) ~
+        sqrt((to_x - from_x)^2 + (to_y - from_y)^2),
+      TRUE ~ NA_real_
+    ),
+
     cross_group = case_when(
       !is.na(from_group) & !is.na(to_group) ~ from_group != to_group,
       TRUE ~ NA
     ),
-    from_resident = case_when(
-      !is.na(from_group) & !is.na(resident_group) ~ from_group == resident_group,
+
+    temporal_scale = case_when(
+      quarter_gap == 0L ~ "within_quarter",
+      quarter_gap == 1L ~ "adjacent_quarter",
+      quarter_gap >= 2L ~ "longer_gap",
+      TRUE ~ "unresolved"
+    ),
+
+    from_is_resident = case_when(
+      !is.na(from_group) & !is.na(from_resident_group) ~
+        from_group == from_resident_group,
       TRUE ~ NA
     ),
-    to_resident = case_when(
-      !is.na(to_group) & !is.na(resident_group) ~ to_group == resident_group,
+
+    to_is_resident = case_when(
+      !is.na(to_group) & !is.na(to_resident_group) ~
+        to_group == to_resident_group,
       TRUE ~ NA
     ),
+
     transition_type = case_when(
-      is.na(from_group) | is.na(to_group) | is.na(resident_group) ~
+      is.na(from_group) | is.na(to_group) ~
         "group unresolved",
       from_group == to_group ~
-        "same-group sett switch",
-      from_group == resident_group & to_group != resident_group ~
+        "same-group",
+      !is.na(from_resident_group) &
+        from_group == from_resident_group &
+        to_group != from_resident_group ~
         "resident -> other group",
-      from_group != resident_group & to_group == resident_group ~
+      !is.na(to_resident_group) &
+        from_group != to_resident_group &
+        to_group == to_resident_group ~
         "other group -> resident",
-      from_group != resident_group & to_group != resident_group &
-        from_group != to_group ~
-        "nonresident group -> different nonresident group",
-      TRUE ~ "cross-group other"
-    ),
+      from_group != to_group ~
+        "cross-group other",
+      TRUE ~ "group unresolved"
+    )
+  ) %>%
+  filter(!is.na(from_date), days_between >= 0L, quarter_gap >= 0L) %>%
+  ungroup() %>%
+  mutate(
     sex = factor(sex, levels = c("Female", "Male")),
     age_class = factor(
       coalesce(age_class, "Unknown"),
       levels = c("0-1", "2", "3-5", "6+", "Unknown")
     ),
-    season = factor(trap_season),
-    year_factor = factor(primary_year),
+    season = factor(to_season),
+    year_factor = factor(to_year),
     tattoo_factor = factor(tattoo),
+    temporal_scale = factor(
+      temporal_scale,
+      levels = c("within_quarter", "adjacent_quarter", "longer_gap")
+    ),
     log_days = log1p(days_between),
-    log_distance = log(distance_m)
+    log_distance = if_else(distance_m > 0, log(distance_m), NA_real_)
   )
 
 write_csv(
-  transitions,
-  "results/behaviour_observed_sett_transitions.csv"
+  all_transitions,
+  "results/behaviour_all_consecutive_capture_transitions.csv"
 )
 
 cat("\n============================================================\n")
-cat("BEHAVIOUR MODEL 2: OBSERVED SETT-TO-SETT DISTANCE\n")
+cat("COMPLETE CONSECUTIVE CAPTURE TRANSITION HISTORY\n")
 cat("============================================================\n")
-cat("Observed different-sett transitions:", nrow(transitions), "\n")
+cat("All consecutive usable transitions:", nrow(all_transitions), "\n")
+print(all_transitions %>% count(temporal_scale, sort = FALSE), n = Inf)
 
-fit_distance <- gam(
-  log_distance ~
+cat("\nObserved sett-change proportion by temporal scale:\n")
+print(
+  all_transitions %>%
+    filter(!is.na(temporal_scale)) %>%
+    group_by(temporal_scale) %>%
+    summarise(
+      n = n(),
+      n_changed_sett = sum(changed_sett),
+      prop_changed_sett = mean(changed_sett),
+      median_days = median(days_between),
+      .groups = "drop"
+    ),
+  n = Inf
+)
+
+cat("\nObserved social-group-change proportion by temporal scale:\n")
+print(
+  all_transitions %>%
+    filter(!is.na(cross_group), !is.na(temporal_scale)) %>%
+    group_by(temporal_scale) %>%
+    summarise(
+      n_resolved = n(),
+      n_cross_group = sum(cross_group),
+      prop_cross_group = mean(cross_group),
+      .groups = "drop"
+    ),
+  n = Inf
+)
+
+# =============================================================================
+# B2. ADJACENT QUARTER -> QUARTER
+# =============================================================================
+
+adjacent_q <- all_transitions %>%
+  filter(quarter_gap == 1L) %>%
+  mutate(
+    changed_sett_int = as.integer(changed_sett)
+  )
+
+write_csv(
+  adjacent_q,
+  "results/behaviour_adjacent_quarter_transitions.csv"
+)
+
+cat("\n============================================================\n")
+cat("B2: ADJACENT QUARTER -> QUARTER OBSERVED MOVEMENT\n")
+cat("============================================================\n")
+cat("Adjacent-quarter observed transitions:", nrow(adjacent_q), "\n")
+cat("Different-sett transitions:", sum(adjacent_q$changed_sett), "\n")
+cat(
+  "Different-sett proportion:",
+  round(mean(adjacent_q$changed_sett), 4), "\n"
+)
+
+# This asks whether location changes between consecutive observed campaigns.
+# days_between is retained because trapping dates vary within campaigns.
+fit_adj_sett <- gam(
+  changed_sett_int ~
     sex +
     age_class +
     season +
     s(log_days, k = 5) +
     s(year_factor, bs = "re") +
     s(tattoo_factor, bs = "re"),
-  data = transitions,
+  data = adjacent_q,
+  family = binomial(link = "logit"),
+  method = "REML"
+)
+
+print(summary(fit_adj_sett))
+cat("\nVariance components:\n")
+print(gam.vcomp(fit_adj_sett))
+
+write_csv(
+  as.data.frame(summary(fit_adj_sett)$p.table) %>%
+    rownames_to_column("term") %>%
+    as_tibble(),
+  "results/behaviour_adjacent_quarter_sett_switching_parametric.csv"
+)
+
+adjacent_q_cross <- adjacent_q %>%
+  filter(!is.na(cross_group)) %>%
+  mutate(cross_group_int = as.integer(cross_group))
+
+cat("\nAdjacent-quarter transitions with both groups resolved:",
+    nrow(adjacent_q_cross), "\n")
+
+if (
+  nrow(adjacent_q_cross) >= 100L &&
+  length(unique(adjacent_q_cross$cross_group_int)) == 2L
+) {
+  cat("Adjacent-quarter cross-group transitions:",
+      sum(adjacent_q_cross$cross_group_int), "\n")
+  cat(
+    "Adjacent-quarter cross-group proportion:",
+    round(mean(adjacent_q_cross$cross_group_int), 4), "\n"
+  )
+
+  fit_adj_cross <- gam(
+    cross_group_int ~
+      sex +
+      age_class +
+      season +
+      s(log_days, k = 5) +
+      s(year_factor, bs = "re") +
+      s(tattoo_factor, bs = "re"),
+    data = adjacent_q_cross,
+    family = binomial(link = "logit"),
+    method = "REML"
+  )
+
+  print(summary(fit_adj_cross))
+  cat("\nVariance components:\n")
+  print(gam.vcomp(fit_adj_cross))
+
+  write_csv(
+    as.data.frame(summary(fit_adj_cross)$p.table) %>%
+      rownames_to_column("term") %>%
+      as_tibble(),
+    "results/behaviour_adjacent_quarter_cross_group_parametric.csv"
+  )
+} else {
+  cat("Insufficient resolved adjacent-quarter group transitions for B2 group model.\n")
+}
+
+# =============================================================================
+# B3. OBSERVED DIFFERENT-SETT DISPLACEMENT MAGNITUDE
+# =============================================================================
+
+sett_transitions <- all_transitions %>%
+  filter(changed_sett, !is.na(distance_m), distance_m > 0)
+
+write_csv(
+  sett_transitions,
+  "results/behaviour_observed_sett_transitions.csv"
+)
+
+cat("\n============================================================\n")
+cat("B3: OBSERVED SETT-TO-SETT DISTANCE\n")
+cat("============================================================\n")
+cat("Observed different-sett transitions:", nrow(sett_transitions), "\n")
+print(
+  sett_transitions %>%
+    group_by(temporal_scale) %>%
+    summarise(
+      n = n(),
+      median_distance_m = median(distance_m),
+      q25 = quantile(distance_m, .25),
+      q75 = quantile(distance_m, .75),
+      q95 = quantile(distance_m, .95),
+      .groups = "drop"
+    ),
+  n = Inf
+)
+
+fit_distance <- gam(
+  log_distance ~
+    sex +
+    age_class +
+    season +
+    temporal_scale +
+    s(log_days, k = 5) +
+    s(year_factor, bs = "re") +
+    s(tattoo_factor, bs = "re"),
+  data = sett_transitions,
   family = gaussian(),
   method = "REML"
 )
@@ -363,25 +592,25 @@ print(summary(fit_distance))
 cat("\nVariance components:\n")
 print(gam.vcomp(fit_distance))
 
-distance_param <- as.data.frame(summary(fit_distance)$p.table) %>%
-  rownames_to_column("term") %>%
-  as_tibble()
-
 write_csv(
-  distance_param,
+  as.data.frame(summary(fit_distance)$p.table) %>%
+    rownames_to_column("term") %>%
+    as_tibble(),
   "results/behaviour_distance_parametric.csv"
 )
 
-# ---- 3. historical capture-group crossing -----------------------------------
-cross_dat <- transitions %>%
+# =============================================================================
+# B4. OBSERVED SOCIAL-GROUP BRIDGING ACROSS ALL CONSECUTIVE CAPTURES
+# =============================================================================
+
+cross_dat <- all_transitions %>%
   filter(!is.na(cross_group)) %>%
   mutate(
-    cross_group_int = as.integer(cross_group),
-    resident_group_factor = factor(resident_group)
+    cross_group_int = as.integer(cross_group)
   )
 
 cat("\n============================================================\n")
-cat("BEHAVIOUR MODEL 3: OBSERVED SOCIAL-GROUP CROSSING\n")
+cat("B4: OBSERVED SOCIAL-GROUP CROSSING\n")
 cat("============================================================\n")
 cat("Transitions with both capture-level groups resolved:", nrow(cross_dat), "\n")
 
@@ -392,19 +621,22 @@ if (nrow(cross_dat) >= 100L && length(unique(cross_dat$cross_group_int)) == 2L) 
     round(mean(cross_dat$cross_group_int), 4), "\n"
   )
 
-  # Distance is included deliberately: this asks what predicts group crossing
-  # beyond the obvious geometric fact that farther sett pairs are more likely
-  # to belong to different groups.
+  # Include distance where spatially resolved. This asks whether sex/age/season
+  # predict crossing beyond the obvious geometry of farther sett pairs.
+  cross_spatial <- cross_dat %>%
+    filter(!is.na(log_distance))
+
   fit_cross <- gam(
     cross_group_int ~
       sex +
       age_class +
       season +
+      temporal_scale +
       s(log_days, k = 5) +
       s(log_distance, k = 5) +
       s(year_factor, bs = "re") +
       s(tattoo_factor, bs = "re"),
-    data = cross_dat,
+    data = cross_spatial,
     family = binomial(link = "logit"),
     method = "REML"
   )
@@ -413,26 +645,24 @@ if (nrow(cross_dat) >= 100L && length(unique(cross_dat$cross_group_int)) == 2L) 
   cat("\nVariance components:\n")
   print(gam.vcomp(fit_cross))
 
-  cross_param <- as.data.frame(summary(fit_cross)$p.table) %>%
-    rownames_to_column("term") %>%
-    as_tibble()
-
   write_csv(
-    cross_param,
+    as.data.frame(summary(fit_cross)$p.table) %>%
+      rownames_to_column("term") %>%
+      as_tibble(),
     "results/behaviour_cross_group_parametric.csv"
   )
 } else {
   cat(
-    "Insufficient resolved capture-level group information for the pre-specified ",
-    "cross-group model. No model fitted.\n",
+    "Insufficient resolved capture-level group information for B4. ",
+    "No cross-group model fitted.\n",
     sep = ""
   )
 }
 
-cat("\nTransition types relative to annual resident group:\n")
+cat("\nTransition types relative to annual resident-group histories:\n")
 print(
-  transitions %>%
-    count(transition_type, sort = TRUE),
+  all_transitions %>%
+    count(temporal_scale, transition_type, sort = TRUE),
   n = Inf
 )
 
