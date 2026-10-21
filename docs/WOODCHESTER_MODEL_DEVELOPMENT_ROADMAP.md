@@ -2788,3 +2788,65 @@ This provides an explicit distinction among:
 
 These observed behavioural states can later be compared with V11S high-mobility
 probabilities and, subsequently, infectiousness/shedding state.
+
+
+## Inter-group excursion analysis partial result — 21 October 2026
+
+The excursion/residency-change analysis completed E1 and the raw E2 summary
+before the R process terminated during the E2 adjusted mixed-model fit.
+
+### E1: quarter-level extra-group use
+
+Among 13,206 observed badger-quarters:
+
+- 750 contained at least one capture outside the annual resident social group;
+- quarter-level extra-group-use proportion = 5.68%.
+
+Across 14,409 usable captures:
+
+- 772 were extra-group captures;
+- capture-level extra-group proportion = 5.36%.
+
+Adjusted E1 results:
+
+- males had higher odds of observed extra-group use than females
+  (logit coefficient ~0.406);
+- age 2 (~0.888), age 3-5 (~0.793), age 6+ (~0.366), and unknown age (~0.465)
+  were all higher than age 0-1;
+- quarters 2-4 had lower extra-group detection than quarter 1;
+- greater capture opportunity strongly increased the probability of observing
+  extra-group use;
+- substantial year heterogeneity remained (RE SD ~0.535);
+- substantial persistent individual heterogeneity remained (badger RE SD
+  ~0.690).
+
+The observation-opportunity effect is expected and reinforces the need to adjust
+for capture count rather than interpret raw extra-group frequencies alone.
+
+### E2 raw result: extra-group use and next-year resident-group change
+
+There were 4,677 consecutive resident badger-years with an annual resident group
+available in both year y and y+1.
+
+Overall:
+
+- 493/4,677 = 10.54% changed resident group the following year.
+
+By observed extra-group use in year y:
+
+- no extra-group use: 368/4,204 = 8.75% changed resident group next year;
+- >=1 extra-group capture: 125/473 = 26.4% changed resident group next year.
+
+This raw association is large and biologically consistent with extra-group
+exploration/bridging preceding later relocation. It must not yet be treated as
+an adjusted effect because the mixed model controlling for sex, age, capture
+opportunity, year and individual identity did not complete.
+
+### Computational note
+
+The analysis script is now resumable using START_STAGE=E1/E2/E3 and saves fitted
+models as RDS files after successful completion. Completed E1 does not need to
+be rerun.
+
+Use START_STAGE=E2 to fit the adjusted next-year residency-change model and then
+continue directly into E3.
