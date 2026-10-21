@@ -2735,3 +2735,56 @@ This provenance result strengthens the distinction between:
 The next behavioural analyses should explicitly exploit this distinction,
 especially temporary excursions (resident A -> group B -> resident A) versus
 persistent group change and later annual relocation.
+
+
+### Inter-group excursion analysis unlocked by SOCG provenance result
+
+With the SOCG provenance gate passed, the next behavioural analysis can now
+distinguish capture location in social space from annual residency.
+
+A new script is available:
+
+```
+scripts/behaviour/Woodchester_intergroup_excursion_analysis.R
+```
+
+It defines a capture as extra-group when:
+
+[
+SOCG_{m capture} 
+e ResidentGroup_{i,y}.
+]
+
+It then addresses three pre-specified questions.
+
+1. **Quarter-level extra-group use**
+   - probability that a badger is observed outside its annual resident group;
+   - predictors: sex, current age, season, capture opportunity, year and
+     persistent badger identity.
+
+2. **Extra-group use as a precursor to relocation**
+   - among badger-years with a resident-group assignment in year y and y+1,
+     test whether any extra-group use in year y predicts:
+     [
+     ResidentGroup_{i,y+1} 
+e ResidentGroup_{i,y}.
+     ]
+   - adjust for capture opportunity, sex, age, year and individual identity.
+   - this is behavioural linkage, not independent validation, because annual
+     residency is itself derived from capture SOCG history.
+
+3. **Directly observed temporary excursions**
+   - identify observed sequences where a capture in the annual resident group
+     is followed by a capture in another group during the same year;
+   - where another same-year capture follows, classify whether the badger
+     returns immediately to its resident group or remains outside it.
+
+This provides an explicit distinction among:
+
+- resident use;
+- temporary extra-group excursion;
+- repeated extra-group / bridge behaviour;
+- annual resident-group change.
+
+These observed behavioural states can later be compared with V11S high-mobility
+probabilities and, subsequently, infectiousness/shedding state.
