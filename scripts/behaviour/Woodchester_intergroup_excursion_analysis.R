@@ -18,6 +18,18 @@
 # Annual resident group is derived from the same capture SOCG history, so these
 # are behavioural linkage analyses, not statistically independent validation.
 #
+# LOGIC SAFEGUARDS
+# - The main E2 model is retained for comparability, but annual residency
+#   criteria 2-5 can use adjacent-year information. A strict E2 sensitivity
+#   therefore requires criterion-1 residency with >=2 grouped captures in both
+#   y and y+1, removing cross-year assignment leakage and weak one-capture
+#   residency assignments.
+# - The original E3 sequence is explicitly descriptive because focal-year
+#   annual residency is estimated from the same year's captures. E3B therefore
+#   uses a PRIOR-YEAR, criterion-1, >=2-capture resident group as the baseline,
+#   collapses captures to unambiguous capture-days, and follows the next
+#   observed capture across calendar-year boundaries.
+#
 # OUTPUTS
 #   results/behaviour_extra_group_captures.csv
 #   results/behaviour_extra_group_quarters.csv
@@ -131,7 +143,9 @@ resident <- resident_raw %>%
     tattoo = toupper(trimws(as.character(tattoo))),
     primary_year = as.integer(primary_year),
     resident_group = clean_group(resident_group),
-    resident_assignment_criterion = as.integer(assignment_criterion)
+    resident_assignment_criterion = as.integer(assignment_criterion),
+    resident_n_grouped_captures = as.integer(n_grouped_captures),
+    resident_n_distinct_groups = as.integer(n_distinct_groups_current)
   )
 
 cap <- enc %>%
@@ -184,6 +198,8 @@ quarter <- cap %>%
     age_class = first(age_class),
     resident_group = first(resident_group),
     resident_assignment_criterion = first(resident_assignment_criterion),
+    resident_n_grouped_captures = first(resident_n_grouped_captures),
+    resident_n_distinct_groups = first(resident_n_distinct_groups),
     n_captures = n(),
     n_extra_captures = sum(extra_group),
     any_extra_group = as.integer(any(extra_group)),
@@ -283,7 +299,9 @@ next_resident <- resident %>%
     tattoo,
     next_year = primary_year,
     next_resident_group = resident_group,
-    next_resident_assignment_criterion = resident_assignment_criterion
+    next_resident_assignment_criterion = resident_assignment_criterion,
+    next_resident_n_grouped_captures = resident_n_grouped_captures,
+    next_resident_n_distinct_groups = resident_n_distinct_groups
   )
 
 next_year_dat <- year_behaviour %>%
@@ -362,14 +380,104 @@ if (START_STAGE %in% c("E1", "E2")) {
   cat("\nSkipping E2 adjusted model fit because START_STAGE = E3.\n")
 }
 
+
+# -----------------------------------------------------------------------------
+# E2S. STRICT RESIDENCY SENSITIVITY
+# -----------------------------------------------------------------------------
+# Criteria 2-5 in the annual resident-group reconstruction can use adjacent-year
+# information. That is appropriate for reconstructing residency, but it creates
+# possible information leakage when y residency is used to predict a y+1
+# outcome. Restricting both years to criterion 1 removes that leakage.
+#
+# Requiring >=2 grouped captures in each year also removes resident assignments
+# based on a single observed capture, which are too weak for a strong claim
+# about annual relocation.
+
+strict_next_year_dat <- next_year_dat %>%
+  filter(
+    resident_assignment_criterion == 1L,
+    next_resident_assignment_criterion == 1L,
+    resident_n_grouped_captures >= 2L,
+    next_resident_n_grouped_captures >= 2L
+  )
+
+cat("\n------------------------------------------------------------\n")
+cat("E2S: STRICT CRITERION-1 / >=2-CAPTURE SENSITIVITY\n")
+cat("------------------------------------------------------------\n")
+cat("Strict consecutive badger-years:", nrow(strict_next_year_dat), "\n")
+
+if (nrow(strict_next_year_dat) > 0L) {
+  strict_raw <- strict_next_year_dat %>%
+    group_by(any_extra_group) %>%
+    summarise(
+      n = n(),
+      changes = sum(resident_change_next),
+      prop_change = mean(resident_change_next),
+      .groups = "drop"
+    )
+
+  print(strict_raw, n = Inf)
+
+  write_csv(
+    strict_next_year_dat,
+    "results/behaviour_next_year_residency_change_STRICT.csv"
+  )
+  write_csv(
+    strict_raw,
+    "results/behaviour_next_year_residency_change_STRICT_raw.csv"
+  )
+}
+
+if (START_STAGE %in% c("E1", "E2") && nrow(strict_next_year_dat) > 0L) {
+  fit_next_strict <- bam(
+    resident_change_next ~
+      any_extra_group +
+      sex +
+      age_class +
+      s(capture_effort, k = 5) +
+      s(year_factor, bs = "re") +
+      s(tattoo_factor, bs = "re"),
+    data = strict_next_year_dat,
+    family = binomial(link = "logit"),
+    method = "fREML",
+    discrete = TRUE,
+    nthreads = BAM_THREADS
+  )
+
+  saveRDS(
+    fit_next_strict,
+    "results/behaviour_next_year_residency_change_STRICT_model.rds"
+  )
+
+  print(summary(fit_next_strict))
+  cat("\nStrict-model variance components:\n")
+  print(gam.vcomp(fit_next_strict))
+
+  write_csv(
+    as.data.frame(summary(fit_next_strict)$p.table) %>%
+      rownames_to_column("term") %>%
+      as_tibble(),
+    "results/behaviour_next_year_residency_change_STRICT_parametric.csv"
+  )
+} else if (START_STAGE == "E3") {
+  cat("\nSkipping E2S adjusted model fit because START_STAGE = E3.\n")
+}
+
 # =============================================================================
-# E3. DIRECTLY OBSERVED EXCURSION RETURN
+# E3A. DIRECTLY OBSERVED EXCURSION RETURN — DESCRIPTIVE / POST-HOC BASELINE
 # =============================================================================
 #
-# Define an observed outward excursion when a capture in the annual resident
-# group is followed by a capture in another group during the same calendar
-# year. If there is a subsequent capture that year, classify whether the next
-# observed group is back in the resident group.
+# Define an observed outward excursion when a capture in the focal year's
+# reconstructed annual resident group is followed by a capture in another group
+# during that same year. If there is a subsequent capture that year, classify
+# whether the next observed group is back in the annual resident group.
+#
+# IMPORTANT INTERPRETATION LIMIT:
+# the focal-year annual resident group is itself estimated from all captures in
+# that year. Therefore this analysis is useful descriptively, but its return
+# fraction is expected to be biased upward toward temporary departures. Do not
+# use the E3A return percentage as an unbiased population estimate of excursion
+# return probability. E3B below uses an independent prior-year baseline.
 
 seq_cap <- cap %>%
   group_by(tattoo, primary_year) %>%
@@ -417,7 +525,7 @@ write_csv(
 )
 
 cat("\n============================================================\n")
-cat("E3: DIRECTLY OBSERVED RESIDENT -> OTHER-GROUP EXCURSIONS\n")
+cat("E3A: FOCAL-YEAR-MODAL RESIDENT -> OTHER-GROUP EXCURSIONS\n")
 cat("============================================================\n")
 cat("Observed outward excursion events:", nrow(excursions), "\n")
 cat("With later same-year capture:", sum(excursions$observed_followup), "\n")
@@ -435,5 +543,205 @@ if (sum(excursions$observed_followup) > 0L) {
 }
 cat("\nReturn-status counts:\n")
 print(excursions %>% count(return_status, sort = TRUE), n = Inf)
+
+
+# =============================================================================
+# E3B. PROSPECTIVE OUTWARD EVENTS USING AN INDEPENDENT PRIOR-YEAR BASELINE
+# =============================================================================
+#
+# Baseline residency is taken only from y-1 and must be:
+#   - criterion 1 (current-year information only); and
+#   - supported by >=2 grouped captures.
+#
+# In focal year y, an outward event requires an unambiguous capture-day in the
+# prior resident group followed by an unambiguous capture-day in another group.
+# Capture-days with >1 recorded social group are retained as ambiguous breakers
+# rather than being alphabetically ordered. The next observed capture-day is
+# followed across year boundaries.
+#
+# A strict y+1 resident group is also attached where available, giving an
+# independent long-term relocation indicator relative to the y-1 baseline.
+
+strict_resident <- resident %>%
+  filter(
+    resident_assignment_criterion == 1L,
+    resident_n_grouped_captures >= 2L
+  )
+
+baseline_resident <- strict_resident %>%
+  transmute(
+    tattoo,
+    primary_year = primary_year + 1L,
+    baseline_year = primary_year - 1L,
+    baseline_group = resident_group,
+    baseline_n_grouped_captures = resident_n_grouped_captures
+  )
+
+future_resident <- strict_resident %>%
+  transmute(
+    tattoo,
+    primary_year = primary_year - 1L,
+    future_year = primary_year + 1L,
+    future_group = resident_group,
+    future_n_grouped_captures = resident_n_grouped_captures
+  )
+
+cap_day <- cap %>%
+  group_by(tattoo, primary_year, capture_date) %>%
+  summarise(
+    sex = first(sex),
+    age_class = first(age_class),
+    n_capture_records_day = n(),
+    n_groups_day = n_distinct(capture_socg),
+    day_group = if (n_distinct(capture_socg) == 1L) {
+      first(capture_socg)
+    } else {
+      NA_character_
+    },
+    .groups = "drop"
+  ) %>%
+  arrange(tattoo, capture_date) %>%
+  group_by(tattoo) %>%
+  mutate(
+    prev_day_group = lag(day_group),
+    prev_date = lag(capture_date),
+    prev_year = lag(primary_year),
+    next_day_group = lead(day_group),
+    next_date = lead(capture_date),
+    next_year_observed = lead(primary_year)
+  ) %>%
+  ungroup() %>%
+  left_join(
+    baseline_resident,
+    by = c("tattoo", "primary_year")
+  ) %>%
+  left_join(
+    future_resident,
+    by = c("tattoo", "primary_year")
+  ) %>%
+  mutate(
+    outward_from_prior_resident =
+      !is.na(baseline_group) &
+      !is.na(prev_day_group) &
+      !is.na(day_group) &
+      prev_year == primary_year &
+      prev_day_group == baseline_group &
+      day_group != baseline_group,
+    observed_followup_anytime = !is.na(next_day_group),
+    returned_prior_resident_next =
+      outward_from_prior_resident &
+      observed_followup_anytime &
+      next_day_group == baseline_group,
+    remained_outside_prior_next =
+      outward_from_prior_resident &
+      observed_followup_anytime &
+      next_day_group != baseline_group,
+    days_prior_resident_to_extra = as.integer(capture_date - prev_date),
+    days_extra_to_next = as.integer(next_date - capture_date),
+    future_residency_available = !is.na(future_group),
+    changed_residency_by_yplus1 = case_when(
+      is.na(future_group) ~ NA_integer_,
+      future_group != baseline_group ~ 1L,
+      TRUE ~ 0L
+    )
+  )
+
+excursions_prior_baseline <- cap_day %>%
+  filter(outward_from_prior_resident) %>%
+  mutate(
+    return_status = case_when(
+      !observed_followup_anytime ~ "no later unambiguous capture-day",
+      returned_prior_resident_next ~
+        "returned to prior-year resident group at next capture-day",
+      remained_outside_prior_next ~
+        "next capture-day still outside prior-year resident group",
+      TRUE ~ "unclassified"
+    )
+  )
+
+write_csv(
+  excursions_prior_baseline,
+  "results/behaviour_observed_excursion_returns_PRIOR_BASELINE.csv"
+)
+
+cat("\n============================================================\n")
+cat("E3B: PRIOR-YEAR BASELINE OUTWARD EVENTS\n")
+cat("============================================================\n")
+cat(
+  "Direct outward events from independently established prior residence:",
+  nrow(excursions_prior_baseline), "\n"
+)
+cat(
+  "With a later unambiguous capture-day:",
+  sum(excursions_prior_baseline$observed_followup_anytime), "\n"
+)
+
+e3b_follow <- excursions_prior_baseline %>%
+  filter(observed_followup_anytime)
+
+if (nrow(e3b_follow) > 0L) {
+  cat(
+    "Returned to prior resident group at next observed capture-day:",
+    sum(e3b_follow$returned_prior_resident_next),
+    "of", nrow(e3b_follow),
+    "(",
+    round(100 * mean(e3b_follow$returned_prior_resident_next), 2),
+    "%)\n"
+  )
+
+  e3b_365 <- e3b_follow %>%
+    filter(days_extra_to_next <= 365L)
+
+  if (nrow(e3b_365) > 0L) {
+    cat(
+      "Return among next captures observed within 365 days:",
+      sum(e3b_365$returned_prior_resident_next),
+      "of", nrow(e3b_365),
+      "(",
+      round(100 * mean(e3b_365$returned_prior_resident_next), 2),
+      "%)\n"
+    )
+  }
+}
+
+cat("\nE3B return-status counts:\n")
+print(
+  excursions_prior_baseline %>%
+    count(return_status, sort = TRUE),
+  n = Inf
+)
+
+e3b_future <- excursions_prior_baseline %>%
+  filter(future_residency_available)
+
+if (nrow(e3b_future) > 0L) {
+  cat(
+    "\nEvents with strict y+1 residency available:",
+    nrow(e3b_future), "\n"
+  )
+  cat(
+    "Changed resident group by y+1 relative to y-1 baseline:",
+    sum(e3b_future$changed_residency_by_yplus1),
+    "of", nrow(e3b_future),
+    "(",
+    round(100 * mean(e3b_future$changed_residency_by_yplus1), 2),
+    "%)\n"
+  )
+
+  cat("\nImmediate return versus confirmed y+1 residency change:\n")
+  print(
+    e3b_future %>%
+      filter(observed_followup_anytime) %>%
+      group_by(returned_prior_resident_next) %>%
+      summarise(
+        n = n(),
+        changed_by_yplus1 = sum(changed_residency_by_yplus1),
+        prop_changed_by_yplus1 = mean(changed_residency_by_yplus1),
+        .groups = "drop"
+      ),
+    n = Inf
+  )
+}
+
 
 cat("\nSaved excursion/residency-change outputs in results/.\n")
