@@ -3300,3 +3300,50 @@ candidate-set choice model.
 Only if prospecting predicts the eventual destination beyond spatial
 opportunity should it be interpreted as evidence for true destination
 prospecting before dispersal.
+
+
+## Destination-choice null test for small prospecting sample — 21 October 2026
+
+The closed-prospecting disperser sample is intentionally strict and small:
+11 movers, of which 9 settled in a previously prospected group.
+
+Observed destination-match proportion:
+
+- 9/11 = 81.8%;
+- exact Clopper-Pearson 95% CI approximately 48.2%-97.7%.
+
+Therefore the effect estimate is potentially large but imprecise. Do not fit a
+large multivariable model to these 11 focal events.
+
+A dedicated small-sample destination-choice analysis was added:
+
+```
+scripts/behaviour/Woodchester_prospecting_destination_null.R
+```
+
+For each focal mover, the null destination distribution is built from OTHER
+badgers that made the same two-year strict resident-group transition from the
+same source group. Several temporal matching windows are evaluated:
+
+- exact focal year;
+- +/-2 years;
+- +/-5 years;
+- all years.
+
+This conditions the null on empirically observed dispersal routes from the same
+source social group and therefore captures local accessibility / neighbouring
+group structure better than an equal-choice null.
+
+The test reports event-level null match probabilities and exact
+Poisson-binomial tail probabilities. Jeffreys-smoothed probabilities are also
+reported to prevent small reference sets with 0 or 100% observed matches from
+creating artificial certainty.
+
+Decision rule:
+
+- focus on effect size, exact interval and consistency across temporal windows;
+- if local reference support is weak, describe destination matching as
+  suggestive rather than definitive;
+- if the excess match rate survives +/-2y, +/-5y and all-years nulls, that is
+  substantially stronger evidence for destination-specific prospecting before
+  dispersal.
