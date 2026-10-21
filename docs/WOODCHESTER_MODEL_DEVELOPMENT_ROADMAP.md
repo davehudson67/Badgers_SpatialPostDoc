@@ -3147,3 +3147,70 @@ Also test destination matching:
 A strong destination-match signal would provide especially direct evidence that
 observed excursions can represent exploration of the eventual destination
 social group.
+
+
+## Prospecting / temporary bridging pathway analysis — 21 October 2026
+
+The behavioural programme now moves away from repeated generic mover/non-mover
+models. Existing movement, distance, SOCG provenance and excursion analyses are
+treated as groundwork.
+
+The next primary biological question is:
+
+> **Do badgers prospect future social groups before dispersing into them?**
+
+New script:
+
+```
+scripts/behaviour/Woodchester_prospecting_pathways.R
+```
+
+### Prospective design
+
+To avoid defining "home" using the same focal-year captures that are used to
+identify excursions:
+
+- baseline resident group A comes from year y-1 only;
+- baseline residency must be Vicente criterion 1 with >=2 grouped captures;
+- focal-year y capture-days are then followed chronologically;
+- future resident group comes from year y+1 only and must also be criterion 1
+  with >=2 grouped captures.
+
+The flagship observed sequence is therefore:
+
+[
+Resident_{y-1}=A
+ightarrow
+A ightarrow B ightarrow A; 	ext{during year } y
+ightarrow
+Resident_{y+1}=? 
+]
+
+A closed prospecting bout can contain multiple outside capture-days and more
+than one outside group, e.g. A->B->B->A or A->B->C->A.
+
+### Primary questions
+
+1. How often are closed prospecting bouts directly observed?
+2. Among closed prospecting years with strict y+1 residency, how often does the
+   future resident group match a group actually prospected in year y?
+3. In the clean single-target case A->B->A, what fraction later remain A,
+   settle in B, or move to a different C?
+4. How often do individuals make multiple separate A->B->A bouts to the same
+   outside group within a year?
+5. How many individuals show closed prospecting in multiple years?
+
+Unclosed A->B sequences are retained but are never called permanent dispersal:
+failure to observe a return may simply reflect incomplete capture history.
+
+### Decision rule
+
+Do not add another generic predictor model at this stage. First establish
+whether exact prospecting, repeated temporary bridging, and destination matching
+occur in sufficient numbers to support a distinct biological story.
+
+If destination matching is common, the next inferential target should be
+prospecting of a specific future destination, not generic mobility.
+
+If repeated temporary bridging is common, that phenotype becomes a candidate
+mechanism for linking social groups in later infection/shedding analyses.
