@@ -2635,3 +2635,63 @@ Wait for the 1,932-badger V11S result before deciding whether to:
 - regularize it more strongly;
 - or redefine the local state as effectively stable annual residency rather
   than trying to estimate a 5-10 m continuous annual movement scale.
+
+
+## SOCG provenance audit before boundary-crossing interpretation — 21 October 2026
+
+The current behavioural pipeline uses the legacy capture-level SOCG field as
+historically recorded social-group information. Before interpreting a change in
+SOCG as a physical territorial boundary crossing, the meaning of SOCG must be
+verified empirically.
+
+Current terminology until that audit is complete:
+
+> "capture-level recorded SOCG change"
+
+rather than:
+
+> "confirmed bait-marked territory-boundary crossing".
+
+A dedicated audit script has been added:
+
+```
+scripts/behaviour/Woodchester_SOCG_provenance_audit.R
+```
+
+The audit tests whether SOCG behaves primarily like:
+
+1. the contemporaneous social group associated with the capture sett/location;
+   or
+2. the individual's annual resident social-group membership.
+
+Key tests are:
+
+- SOCG purity within sett-year;
+- SOCG purity within sett-quarter;
+- frequency of SOCG changes while sett remains unchanged;
+- frequency of SOCG changes when sett changes;
+- historical changes in dominant sett->SOCG relationship;
+- a leave-focal-badger-out "visitor test".
+
+For the visitor test, the dominant SOCG of a sett-year is defined using
+**other badgers only**. For a focal badger whose reconstructed annual resident
+group differs from that independently estimated sett-year group, ask whether
+the focal capture SOCG follows:
+
+- the other-badger sett-year group, supporting SOCG as capture-location group;
+- or the focal annual resident group, supporting SOCG as individual membership.
+
+The annual resident-group product is itself derived from SOCG and is therefore
+not independent evidence; the other-badger visitor test is designed to reduce
+that circularity.
+
+If SOCG behaves consistently as a contemporaneous capture-location group, it can
+be used to reconstruct inter-group movement even where annual bait-marking
+polygons are unavailable, while retaining an evidence-source flag.
+
+If SOCG instead behaves like resident membership, or behaves inconsistently
+through time, the group-crossing analyses must be rebuilt from historical
+sett-year group relationships and/or original bait-marking territory products.
+
+No disease interpretation should be attached to recorded SOCG changes until
+this provenance gate is passed.
