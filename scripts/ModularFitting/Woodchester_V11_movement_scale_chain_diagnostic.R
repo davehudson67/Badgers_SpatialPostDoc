@@ -46,10 +46,13 @@ if (length(missing)) {
 fits <- lapply(chain_files, readRDS)
 states <- lapply(state_files, readRDS)
 
-expected_model <- "V11_RD_SCR_MULTILOC_IID_AGE_BADGERRE_COLLAPSED_HMM"
+accepted_models <- c(
+  "V11_RD_SCR_MULTILOC_IID_AGE_BADGERRE_COLLAPSED_HMM",
+  "V11_RD_SCR_ANNUALAC_MULTILOC_AGE_BADGERRE_COLLAPSED_HMM"
+)
 
-if (any(!vapply(fits, function(x) identical(x$model, expected_model), logical(1)))) {
-  stop("At least one input is not a V11 fit.")
+if (any(!vapply(fits, function(x) x$model %in% accepted_models, logical(1)))) {
+  stop("At least one input is not a supported V11/V11S fit.")
 }
 
 mats <- lapply(fits, function(x) as.matrix(x$samples))
