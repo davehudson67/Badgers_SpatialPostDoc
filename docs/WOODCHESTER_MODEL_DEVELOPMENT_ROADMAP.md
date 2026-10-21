@@ -3401,3 +3401,66 @@ of destination matching. The null script has therefore been extended to:
 
 The next interpretation should focus on whether the single-target result is
 consistent across +/-5, +/-10 and all-years reference sets.
+
+
+## Destination-null v2 result — single-target sensitivity — 21 October 2026
+
+The clean single-target prospecting sensitivity confirms that the destination
+signal is not driven by animals that prospected multiple outside groups.
+
+Clean focal set:
+
+- 10 strict movers with closed A->B->A-type prospecting involving one target
+  group B only;
+- 8/10 = 80% later became resident in B;
+- exact Clopper-Pearson 95% CI = approximately 44.4%-97.5%.
+
+Empirical same-source-group destination null:
+
+- all years:
+  - all 10 focal events supported;
+  - expected matches ~5.16 using Jeffreys-smoothed event probabilities;
+  - observed 8;
+  - upper-tail p ~0.0299;
+- +/-10 years:
+  - all 10 focal events supported;
+  - expected ~5.19;
+  - observed 8;
+  - upper-tail p ~0.0250;
+- +/-5 years:
+  - 9/10 focal events supported;
+  - expected ~5.65;
+  - observed 8;
+  - upper-tail p ~0.0475;
+- +/-2 years:
+  - 7/10 focal events supported;
+  - expected ~5.06;
+  - observed 7;
+  - upper-tail p ~0.0617;
+- exact-year comparisons remain too sparse to be useful.
+
+The consistency of the all-years, +/-10y and +/-5y nulls supports a real excess
+of settlement into the prospected destination beyond ordinary source-group
+connectivity. However, the sample remains small and the local +/-2y comparison
+is underpowered.
+
+Important replication caveat:
+
+- focal events are not equivalent to fully independent source-group replicates;
+- several focal animals share the same baseline group (notably BOXWOOD and
+  SEPTICTANK) and therefore share destination opportunity structure.
+
+The destination-null script now reports source-group replication explicitly.
+Do not present nominal focal n=10 as ten independent social-landscape
+replicates.
+
+Preferred current wording:
+
+> There is suggestive evidence that badgers which subsequently disperse are
+> disproportionately likely to settle in a social group that they previously
+> visited and returned from, beyond the destination frequencies expected from
+> other dispersers leaving the same source group.
+
+Avoid causal wording such as "prospecting determines destination choice" until
+the result is supported by more independent source-group/time replicates or a
+stronger spatially explicit destination-choice analysis.
