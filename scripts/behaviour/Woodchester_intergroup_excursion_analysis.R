@@ -42,11 +42,17 @@ BAM_THREADS <- as.integer(Sys.getenv("BAM_THREADS", unset = "4"))
 if (!is.finite(BAM_THREADS) || BAM_THREADS < 1L) BAM_THREADS <- 4L
 BAM_THREADS <- min(BAM_THREADS, 8L)
 
+START_STAGE <- toupper(Sys.getenv("START_STAGE", unset = "E1"))
+if (!START_STAGE %in% c("E1", "E2", "E3")) {
+  stop("START_STAGE must be one of E1, E2, E3.")
+}
+
 library(tidyverse)
 library(mgcv)
 
 cat("bam worker threads:", BAM_THREADS, "\n")
 cat("OPENBLAS_NUM_THREADS:", Sys.getenv("OPENBLAS_NUM_THREADS"), "\n")
+cat("Starting model stage:", START_STAGE, "\n")
 
 encounter_file <- "data/badger_encounters_useful.rds"
 population_file <- "results/V7_population_inclusion_audit.rds"
@@ -208,31 +214,41 @@ cat(
   round(mean(quarter$any_extra_group), 4), "\n"
 )
 
-fit_extra_q <- bam(
-  any_extra_group ~
-    sex +
-    age_class +
-    season +
-    n_capture_factor +
-    s(year_factor, bs = "re") +
-    s(tattoo_factor, bs = "re"),
-  data = quarter,
-  family = binomial(link = "logit"),
-  method = "fREML",
-  discrete = TRUE,
-  nthreads = BAM_THREADS
-)
+if (START_STAGE == "E1") {
+  fit_extra_q <- bam(
+    any_extra_group ~
+      sex +
+      age_class +
+      season +
+      n_capture_factor +
+      s(year_factor, bs = "re") +
+      s(tattoo_factor, bs = "re"),
+    data = quarter,
+    family = binomial(link = "logit"),
+    method = "fREML",
+    discrete = TRUE,
+    nthreads = BAM_THREADS
+  )
 
-print(summary(fit_extra_q))
-cat("\nVariance components:\n")
-print(gam.vcomp(fit_extra_q))
+  saveRDS(
+    fit_extra_q,
+    "results/behaviour_extra_group_quarter_model.rds"
+  )
 
-write_csv(
-  as.data.frame(summary(fit_extra_q)$p.table) %>%
-    rownames_to_column("term") %>%
-    as_tibble(),
-  "results/behaviour_extra_group_quarter_parametric.csv"
-)
+  print(summary(fit_extra_q))
+  cat("\nVariance components:\n")
+  print(gam.vcomp(fit_extra_q))
+
+  write_csv(
+    as.data.frame(summary(fit_extra_q)$p.table) %>%
+      rownames_to_column("term") %>%
+      as_tibble(),
+    "results/behaviour_extra_group_quarter_parametric.csv"
+  )
+} else {
+  cat("\nSkipping E1 model fit because START_STAGE =", START_STAGE, "\n")
+  cat("Existing E1 outputs are retained.\n")
+}
 
 # =============================================================================
 # YEAR-LEVEL EXTRA-GROUP USE
@@ -311,31 +327,40 @@ raw_next <- next_year_dat %>%
   )
 print(raw_next, n = Inf)
 
-fit_next <- bam(
-  resident_change_next ~
-    any_extra_group +
-    sex +
-    age_class +
-    s(capture_effort, k = 5) +
-    s(year_factor, bs = "re") +
-    s(tattoo_factor, bs = "re"),
-  data = next_year_dat,
-  family = binomial(link = "logit"),
-  method = "fREML",
-  discrete = TRUE,
-  nthreads = BAM_THREADS
-)
+if (START_STAGE %in% c("E1", "E2")) {
+  fit_next <- bam(
+    resident_change_next ~
+      any_extra_group +
+      sex +
+      age_class +
+      s(capture_effort, k = 5) +
+      s(year_factor, bs = "re") +
+      s(tattoo_factor, bs = "re"),
+    data = next_year_dat,
+    family = binomial(link = "logit"),
+    method = "fREML",
+    discrete = TRUE,
+    nthreads = BAM_THREADS
+  )
 
-print(summary(fit_next))
-cat("\nVariance components:\n")
-print(gam.vcomp(fit_next))
+  saveRDS(
+    fit_next,
+    "results/behaviour_next_year_residency_change_model.rds"
+  )
 
-write_csv(
-  as.data.frame(summary(fit_next)$p.table) %>%
-    rownames_to_column("term") %>%
-    as_tibble(),
-  "results/behaviour_next_year_residency_change_parametric.csv"
-)
+  print(summary(fit_next))
+  cat("\nVariance components:\n")
+  print(gam.vcomp(fit_next))
+
+  write_csv(
+    as.data.frame(summary(fit_next)$p.table) %>%
+      rownames_to_column("term") %>%
+      as_tibble(),
+    "results/behaviour_next_year_residency_change_parametric.csv"
+  )
+} else {
+  cat("\nSkipping E2 adjusted model fit because START_STAGE = E3.\n")
+}
 
 # =============================================================================
 # E3. DIRECTLY OBSERVED EXCURSION RETURN
