@@ -112,6 +112,46 @@ clean_group <- function(x) {
   z
 }
 
+clean_sett <- function(x) {
+  x %>%
+    as.character() %>%
+    toupper() %>%
+    str_replace_all("[[:punct:]]", " ") %>%
+    str_squish() %>%
+    str_remove_all("\\b(SETT|MAIN|OUTLIER)\\b") %>%
+    str_replace_all("\\s+", "")
+}
+
+sett_aliases <- c(
+  "CHESTNUT" = "CHESNUT",
+  "JACKS" = "JACKSMIREY",
+  "GRAVEL" = "GRAVELPIT",
+  "BUCKHOLE" = "BUCKHOLT",
+  "TOPSETT" = "TOP",
+  "FOXCUB" = "FOX",
+  "GULLEY" = "GULLY",
+  "BLACKBERRY" = "BRAMBLE",
+  "BOC" = "BOG",
+  "CEDARBANK" = "CEDAR",
+  "CLAYTRAP" = "CLAY",
+  "CLIFF" = "CLIFFFACE",
+  "DINGLEVALLEY" = "DINGLE"
+)
+
+clean_sett2 <- function(x) {
+  z <- clean_sett(x)
+  for (a in names(sett_aliases)) z[z == a] <- sett_aliases[[a]]
+  z
+}
+
+unique_mode_chr <- function(x) {
+  z <- x[!is.na(x) & x != ""]
+  if (!length(z)) return(NA_character_)
+  tt <- table(z)
+  best <- names(tt)[tt == max(tt)]
+  if (length(best) == 1L) best else NA_character_
+}
+
 pop <- pop_obj$population %>%
   filter(movement_eligible) %>%
   transmute(
@@ -155,6 +195,7 @@ cap <- enc %>%
     trap_season = as.integer(trap_season),
     capture_date = as.Date(capture_date),
     has_live_capture = as.logical(has_live_capture),
+    capture_sett = clean_sett2(sett),
     capture_socg = clean_group(.data[[group_col]])
   ) %>%
   filter(
@@ -285,6 +326,9 @@ year_behaviour <- cap %>%
     prop_extra_group = mean(extra_group),
     n_capture_groups = n_distinct(capture_socg),
     n_extra_groups = n_distinct(capture_socg[extra_group]),
+    resident_sett_mode = unique_mode_chr(capture_sett),
+    n_sett_captures = sum(!is.na(capture_sett) & capture_sett != ""),
+    n_distinct_setts = n_distinct(capture_sett[!is.na(capture_sett) & capture_sett != ""]),
     first_capture_group = first(capture_socg),
     last_capture_group = last(capture_socg),
     .groups = "drop"
@@ -306,18 +350,42 @@ next_resident <- resident %>%
     next_resident_n_distinct_groups = resident_n_distinct_groups
   )
 
+next_sett <- year_behaviour %>%
+  transmute(
+    tattoo,
+    next_year = primary_year,
+    next_resident_sett_mode = resident_sett_mode,
+    next_n_sett_captures = n_sett_captures,
+    next_n_distinct_setts = n_distinct_setts
+  )
+
 next_year_dat <- year_behaviour %>%
   mutate(next_year = primary_year + 1L) %>%
   left_join(next_resident, by = c("tattoo", "next_year")) %>%
+  left_join(next_sett, by = c("tattoo", "next_year")) %>%
   filter(!is.na(next_resident_group)) %>%
   mutate(
     resident_change_next = as.integer(next_resident_group != resident_group),
+    dominant_sett_change_next = case_when(
+      is.na(resident_sett_mode) | is.na(next_resident_sett_mode) ~ NA_integer_,
+      next_resident_sett_mode != resident_sett_mode ~ 1L,
+      TRUE ~ 0L
+    ),
+    resident_group_change_type = case_when(
+      resident_change_next == 0L ~ "no resident-group change",
+      is.na(dominant_sett_change_next) ~ "group change; dominant sett unresolved",
+      dominant_sett_change_next == 1L ~ "group change + dominant sett change",
+      TRUE ~ "group change with same dominant sett"
+    ),
     sex = factor(sex, levels = c("Female", "Male")),
     age_class = factor(
       coalesce(age_class, "Unknown"),
       levels = c("0-1", "2", "3-5", "6+", "Unknown")
     ),
-    capture_effort = log1p(n_captures),
+    # Number of observed captures is an observation-opportunity proxy, not
+    # measured trap-night effort. Trapping was historically intensive, but
+    # exact trap-night effort is unavailable here.
+    observation_opportunity = log1p(n_captures),
     year_factor = factor(primary_year),
     tattoo_factor = factor(tattoo)
   )
@@ -347,13 +415,22 @@ raw_next <- next_year_dat %>%
   )
 print(raw_next, n = Inf)
 
+cat("\nResident-group changes decomposed by dominant-sett change:\n")
+print(
+  next_year_dat %>%
+    filter(resident_change_next == 1L) %>%
+    count(resident_group_change_type, sort = TRUE) %>%
+    mutate(prop = n / sum(n)),
+  n = Inf
+)
+
 if (START_STAGE %in% c("E1", "E2")) {
   fit_next <- bam(
     resident_change_next ~
       any_extra_group +
       sex +
       age_class +
-      s(capture_effort, k = 5) +
+      s(observation_opportunity, k = 5) +
       s(year_factor, bs = "re") +
       s(tattoo_factor, bs = "re"),
     data = next_year_dat,
@@ -436,7 +513,7 @@ if (START_STAGE %in% c("E1", "E2") && nrow(strict_next_year_dat) > 0L) {
       any_extra_group +
       sex +
       age_class +
-      s(capture_effort, k = 5) +
+      s(observation_opportunity, k = 5) +
       s(year_factor, bs = "re") +
       s(tattoo_factor, bs = "re"),
     data = strict_next_year_dat,
