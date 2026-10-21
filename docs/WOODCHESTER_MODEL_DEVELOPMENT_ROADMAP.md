@@ -2695,3 +2695,43 @@ sett-year group relationships and/or original bait-marking territory products.
 
 No disease interpretation should be attached to recorded SOCG changes until
 this provenance gate is passed.
+
+
+## SOCG provenance gate passed — 21 October 2026
+
+The SOCG provenance audit strongly supports the legacy capture-level `socg`
+field as the contemporaneous social group associated with capture location,
+rather than annual individual residency.
+
+Evidence:
+
+- 1,363 eligible sett-years: 99.19% >=90% pure SOCG and 98.97% 100% pure;
+- 2,127 eligible sett-quarters: 99.81% >=90% pure;
+- only 1/4,563 (0.02%) same-sett consecutive capture transitions changed SOCG;
+- 915/2,536 (36.08%) different-sett transitions changed SOCG;
+- leave-one-badger-out visitor test: 562/571 (98.42%) focal SOCG values followed
+  the OTHER-badger sett-year group, while only 7/571 (1.23%) followed the
+  focal badger's annual resident group;
+- 15 high-purity sett-to-SOCG changes across successive observed years confirm
+  historical group structure changed through time.
+
+Conclusion:
+
+> The behavioural pipeline may now interpret capture-to-capture SOCG change as
+> observed inter-group movement.
+
+Do not overstate this as reconstruction of the exact bait-marked boundary-crossing
+path. The annual polygons are still needed if the exact boundary geometry,
+territory area or boundary location is itself the analysis target.
+
+This provenance result strengthens the distinction between:
+
+1. **capture-level social group** = where the badger was observed in social
+   space;
+2. **annual resident group** = where the badger primarily belonged that year;
+3. **inter-group excursion** = capture SOCG differs from annual resident group;
+4. **annual resident-group change** = longer-term relocation/dispersal signal.
+
+The next behavioural analyses should explicitly exploit this distinction,
+especially temporary excursions (resident A -> group B -> resident A) versus
+persistent group change and later annual relocation.
