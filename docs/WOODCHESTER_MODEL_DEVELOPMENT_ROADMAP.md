@@ -3347,3 +3347,57 @@ Decision rule:
 - if the excess match rate survives +/-2y, +/-5y and all-years nulls, that is
   substantially stronger evidence for destination-specific prospecting before
   dispersal.
+
+
+## Destination-null result — preliminary interpretation — 21 October 2026
+
+The first empirical destination-choice null test confirms that the prospecting
+signal is promising but partially explained by source-group connectivity.
+
+Observed focal result:
+
+- 11 strict closed-prospecting movers;
+- 9/11 = 81.8% settled in a previously prospected group.
+
+Empirical nulls built from other strict movers from the same source group gave:
+
+- all years:
+  - all 11 focal events supported;
+  - expected matches ~6.19 raw / 6.11 Jeffreys-smoothed;
+  - observed 9;
+  - Poisson-binomial upper-tail p ~0.0069 raw / 0.0286 smoothed;
+- +/-5 years:
+  - 9/11 focal events had comparator moves;
+  - 8/9 supported focal events matched;
+  - expected matches ~5.82 raw / 5.65 smoothed;
+  - smoothed upper-tail p ~0.0475;
+- +/-2 years:
+  - only 7/11 focal events had comparator moves;
+  - all 7 matched;
+  - expected matches ~5.06 smoothed;
+  - smoothed upper-tail p ~0.0617;
+- exact-year support was too sparse to be informative.
+
+Interpretation:
+
+> The high destination-match rate is not purely a trivial consequence of
+> generic mobility, but a substantial part of it is expected from repeated
+> source-group-to-destination connectivity.
+
+The local temporal nulls are underpowered, so the result should currently be
+described as suggestive rather than definitive evidence of destination-specific
+prospecting.
+
+Do not report raw empirical-zero p-values as decisive: some small reference sets
+contain 0 or 100% matching destinations. Prefer Jeffreys-smoothed probabilities
+and report comparator support explicitly.
+
+The clean single-target sequence A->B->A should be the primary biological
+sensitivity because multi-target prospectors have a mechanically larger chance
+of destination matching. The null script has therefore been extended to:
+
+- report a single-target analysis separately;
+- add a +/-10-year temporal window between +/-5 years and all-years.
+
+The next interpretation should focus on whether the single-target result is
+consistent across +/-5, +/-10 and all-years reference sets.
