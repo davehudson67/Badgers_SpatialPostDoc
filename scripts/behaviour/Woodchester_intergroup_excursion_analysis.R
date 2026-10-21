@@ -277,6 +277,8 @@ year_behaviour <- cap %>%
     age_class = first(age_class),
     resident_group = first(resident_group),
     resident_assignment_criterion = first(resident_assignment_criterion),
+    resident_n_grouped_captures = first(resident_n_grouped_captures),
+    resident_n_distinct_groups = first(resident_n_distinct_groups),
     n_captures = n(),
     n_extra_captures = sum(extra_group),
     any_extra_group = as.integer(any(extra_group)),
@@ -571,8 +573,9 @@ strict_resident <- resident %>%
 baseline_resident <- strict_resident %>%
   transmute(
     tattoo,
-    primary_year = primary_year + 1L,
-    baseline_year = primary_year - 1L,
+    source_resident_year = primary_year,
+    primary_year = source_resident_year + 1L,
+    baseline_year = source_resident_year,
     baseline_group = resident_group,
     baseline_n_grouped_captures = resident_n_grouped_captures
   )
@@ -580,8 +583,9 @@ baseline_resident <- strict_resident %>%
 future_resident <- strict_resident %>%
   transmute(
     tattoo,
-    primary_year = primary_year - 1L,
-    future_year = primary_year + 1L,
+    source_resident_year = primary_year,
+    primary_year = source_resident_year - 1L,
+    future_year = source_resident_year,
     future_group = resident_group,
     future_n_grouped_captures = resident_n_grouped_captures
   )
@@ -650,7 +654,7 @@ excursions_prior_baseline <- cap_day %>%
   filter(outward_from_prior_resident) %>%
   mutate(
     return_status = case_when(
-      !observed_followup_anytime ~ "no later unambiguous capture-day",
+      !observed_followup_anytime ~ "next observed capture-day absent or ambiguous",
       returned_prior_resident_next ~
         "returned to prior-year resident group at next capture-day",
       remained_outside_prior_next ~
@@ -672,7 +676,7 @@ cat(
   nrow(excursions_prior_baseline), "\n"
 )
 cat(
-  "With a later unambiguous capture-day:",
+  "With an interpretable next observed capture-day:",
   sum(excursions_prior_baseline$observed_followup_anytime), "\n"
 )
 
