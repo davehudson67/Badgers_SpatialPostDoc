@@ -196,14 +196,15 @@ sett_year <- sett_year_counts %>%
   group_by(sett, primary_year) %>%
   arrange(desc(n_captures), socg, .by_group = TRUE) %>%
   summarise(
-    n_captures = sum(n_captures),
-    n_groups = n(),
     dominant_socg = first(socg),
     dominant_n = first(n_captures),
-    socg_purity = dominant_n / n_captures,
+    total_captures = sum(n_captures),
+    n_groups = n(),
+    socg_purity = dominant_n / total_captures,
     group_counts = paste0(socg, ":", n_captures, collapse = " | "),
     .groups = "drop"
   ) %>%
+  rename(n_captures = total_captures) %>%
   left_join(
     cap %>%
       group_by(sett, primary_year) %>%
@@ -225,14 +226,15 @@ sett_quarter <- sett_quarter_counts %>%
   group_by(sett, primary_year, trap_season) %>%
   arrange(desc(n_captures), socg, .by_group = TRUE) %>%
   summarise(
-    n_captures = sum(n_captures),
-    n_groups = n(),
     dominant_socg = first(socg),
     dominant_n = first(n_captures),
-    socg_purity = dominant_n / n_captures,
+    total_captures = sum(n_captures),
+    n_groups = n(),
+    socg_purity = dominant_n / total_captures,
     group_counts = paste0(socg, ":", n_captures, collapse = " | "),
     .groups = "drop"
   ) %>%
+  rename(n_captures = total_captures) %>%
   left_join(
     cap %>%
       filter(trap_season %in% 1:4) %>%
