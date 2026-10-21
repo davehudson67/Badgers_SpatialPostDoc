@@ -214,6 +214,39 @@ sett_year <- sett_year_counts %>%
 
 write_csv(sett_year, "results/SOCG_audit_sett_year.csv")
 
+
+# Reusable historical sett-year -> social-group reference.
+# Evidence is capture-derived and explicitly contemporaneous. It does not
+# reconstruct an unobserved polygon or interpolate across missing years.
+historical_sett_group <- sett_year %>%
+  mutate(
+    evidence_class = case_when(
+      n_badgers >= 2L & n_captures >= 3L & socg_purity >= 0.95 ~ "strong",
+      n_badgers >= 2L & n_captures >= 3L & socg_purity >= 0.80 ~ "moderate",
+      TRUE ~ "limited"
+    ),
+    source = "capture_SOCG_dominant_sett_year",
+    exact_observed_year = TRUE
+  ) %>%
+  select(
+    sett,
+    primary_year,
+    historical_social_group = dominant_socg,
+    socg_purity,
+    n_badgers,
+    n_captures,
+    n_groups,
+    evidence_class,
+    source,
+    exact_observed_year,
+    group_counts
+  )
+
+write_csv(
+  historical_sett_group,
+  "results/historical_sett_social_group_reference.csv"
+)
+
 # -----------------------------------------------------------------------------
 # 2. Sett-quarter purity
 # -----------------------------------------------------------------------------
