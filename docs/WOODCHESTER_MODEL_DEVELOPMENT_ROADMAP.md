@@ -1993,6 +1993,15 @@ They should eventually be linked rather than forced into one latent hierarchy.
 ### Current live validation plan
 
 The 50-badger V11S smoke test was reported complete on 21 October 2026.
+The 300-badger V11S three-chain validation was subsequently reported complete
+the same day and is awaiting the pre-specified convergence/state-agreement
+diagnostics. A compact summary script is now available at:
+
+```
+scripts/ModularFitting/Woodchester_V11S_three_chain_summary.R
+```
+
+
 Its purpose is code/build/state-recovery validation rather than biological
 inference; no biological conclusion should be taken from a 50-badger smoke
 sample.
