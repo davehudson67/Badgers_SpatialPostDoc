@@ -320,3 +320,104 @@ Do not silently substitute a current sett/social-group relationship.
 
 Store the evidence source and an unresolved/conflict flag alongside every
 derived bridge classification.
+
+
+---
+
+## 13. SOCG provenance audit result — 21 October 2026
+
+A dedicated provenance audit tested whether the legacy capture-level `socg`
+field behaved primarily as:
+
+1. the contemporaneous social group associated with the capture location/sett;
+   or
+2. the annual resident social-group membership of the individual badger.
+
+The result strongly supports interpretation (1).
+
+### 13.1 Sett-year consistency
+
+Among 1,363 sett-years with at least 2 badgers and at least 3 captures:
+
+- 99.49% were at least 80% pure for one SOCG;
+- 99.19% were at least 90% pure;
+- 99.05% were at least 95% pure;
+- 98.97% were completely pure.
+
+At the finer sett-quarter scale, 99.81% of 2,127 eligible sett-quarters were at
+least 90% pure for one SOCG.
+
+### 13.2 Consecutive capture logic
+
+Among 7,099 within-year consecutive capture transitions:
+
+- when the sett did not change, SOCG changed only 1 time in 4,563 transitions
+  (0.02%);
+- when the sett changed, SOCG changed 915 times in 2,536 transitions (36.08%).
+
+This is inconsistent with SOCG acting mainly as a persistent individual
+membership label and strongly supports it being tied to capture location.
+
+### 13.3 Leave-one-badger-out visitor test
+
+For each focal badger-sett-year, the dominant sett-year SOCG was reconstructed
+using OTHER badgers only. Eligible visitor cases required:
+
+- focal annual resident group != other-badger sett-year group;
+- at least 2 other badgers;
+- at least 3 other captures;
+- other-badger sett-year SOCG purity >= 0.80.
+
+There were 571 eligible visitor cases.
+
+- 562/571 (98.42%) focal capture SOCG values followed the OTHER-badger
+  sett-year group;
+- only 7/571 (1.23%) followed the focal badger's annual resident group;
+- 2/571 followed neither.
+
+This is the strongest current evidence that capture-level SOCG identifies the
+contemporaneous social group associated with the capture location, including
+when the captured badger is visiting outside its annual resident group.
+
+### 13.4 Historical sett-to-group change
+
+The audit identified 15 high-purity cases where the dominant SOCG of a sett
+changed between successive observed sett-years. Examples include BOXWOOD,
+BRAMBLE, BREAKHEART, FORK, SCOTLANDBANK, TRACKSIDE and WOODRUSH.
+
+These are evidence that sett-to-social-group relationships are genuinely
+time-varying and confirm that current/static group assignments must not be
+backcast historically.
+
+Where there are multi-year gaps between successive observations, the audit only
+establishes that the dominant group differed between the two observed years; it
+does not identify the exact year in which the underlying boundary/group change
+occurred.
+
+### 13.5 Approved interpretation
+
+For behavioural analyses, a capture-to-capture change in legacy SOCG can now be
+interpreted as:
+
+> **observed movement between contemporaneously recorded social groups**
+
+or, more briefly:
+
+> **observed inter-group movement**.
+
+It is still preferable not to claim the exact physical point/path of a
+bait-marked territory-boundary crossing unless annual bait-marking polygons are
+available. SOCG identifies the social-group side of the movement, not the
+geometric boundary crossing path.
+
+Annual resident group remains a separate derived variable. Therefore retain:
+
+- capture sett;
+- capture-level contemporaneous SOCG;
+- annual resident group;
+- within-group sett switch;
+- inter-group visit/excursion;
+- annual resident-group change.
+
+This separation is now considered evidence-backed and should be used in all
+subsequent behavioural and disease analyses.
