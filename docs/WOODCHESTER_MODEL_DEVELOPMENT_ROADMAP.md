@@ -3214,3 +3214,89 @@ prospecting of a specific future destination, not generic mobility.
 
 If repeated temporary bridging is common, that phenotype becomes a candidate
 mechanism for linking social groups in later infection/shedding analyses.
+
+
+## Prospecting pathway result — 21 October 2026
+
+The prospective pathway analysis completed and provides a more specific result
+than generic mover/non-mover analyses.
+
+Design:
+
+- strict resident group A from year y-1;
+- focal-year y capture sequence observed independently;
+- strict future resident group from year y+1;
+- both annual resident assignments criterion 1 with >=2 grouped captures.
+
+### Observed closed prospecting
+
+Among 3,066 focal badger-years with focal-year capture data:
+
+- 581 had >=1 extra-group capture-day;
+- 88 had >=1 directly observed closed prospecting bout:
+  A -> outside group(s) -> A;
+- 93 closed prospecting bouts were observed in total;
+- only 5 badger-years had >=2 separate closed bouts to the same outside group;
+- 7 badgers showed closed prospecting in >=2 focal years.
+
+Thus repeated temporary bridging exists but is not yet common enough in the
+directly observed data to justify treating a stable "bridge badger" phenotype
+as the primary biological story.
+
+### Destination-specific later settlement
+
+Among 42 closed-prospecting badger-years with strict y+1 residency known:
+
+- 31/42 = 73.8% remained resident in baseline group A;
+- 9/42 = 21.4% became resident in a group actually prospected during year y;
+- 2/42 = 4.8% moved to an unvisited group.
+
+Among the 11 animals that changed resident group after closed prospecting:
+
+- 9/11 = 81.8% settled in a group they had directly prospected.
+
+For the clean single-target case in which all closed prospecting involved only
+one group B:
+
+- n = 40;
+- 30/40 = 75% remained resident A;
+- 8/40 = 20% became resident B;
+- 2/40 = 5% moved to another group C.
+
+Among the 10 single-target prospectors that later moved, 8/10 = 80% settled in
+the prospected group B.
+
+### Current biological interpretation
+
+The strongest current behavioural story is therefore not simply that "movers
+move more."
+
+Instead:
+
+> Badgers sometimes make temporary inter-group prospecting trips, return to
+> their established resident group, and, when they later disperse, frequently
+> settle in a group that they had previously prospected.
+
+Closed prospecting is not deterministic: most prospectors remain resident in
+their original group the following year. The interesting signal is destination
+specificity among subsequent dispersers.
+
+### Next inferential target
+
+The next test should be a destination-choice null rather than another generic
+movement model.
+
+Question:
+
+> Is 9/11 destination matching greater than expected simply because both
+> prospecting and later dispersal are directed toward nearby / accessible
+> neighbouring groups?
+
+Use a null that preserves contemporary social geography and movement
+opportunity, ideally by permuting y+1 destinations within appropriate
+baseline-group x year strata or by constructing a distance/adjacency-weighted
+candidate-set choice model.
+
+Only if prospecting predicts the eventual destination beyond spatial
+opportunity should it be interpreted as evidence for true destination
+prospecting before dispersal.
