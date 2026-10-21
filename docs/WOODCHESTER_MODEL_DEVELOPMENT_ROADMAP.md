@@ -2902,6 +2902,27 @@ residency assignments.
 not be treated as final until the strict sensitivity gives the same qualitative
 conclusion.
 
+A second interpretation gate is also required. A change in annual resident
+**social-group label** is not automatically an individual spatial relocation.
+Historical sett-to-group relationships themselves change as territories
+reconfigure, split, merge or are renamed. The analysis now therefore derives a
+unique annual modal sett and decomposes resident-group changes into:
+
+- group change + dominant-sett change: stronger evidence of individual spatial
+  relocation;
+- group change with the same dominant sett: compatible with social-territory
+  reconfiguration / relabelling rather than individual dispersal;
+- group change with unresolved dominant sett.
+
+Until that decomposition is inspected, use **resident-group identity change**
+rather than **dispersal** or **relocation** for the E2 endpoint.
+
+The covariate previously called `capture_effort` has also been renamed
+`observation_opportunity`. It is log(1 + number of observed captures), not
+measured trap-night effort. It is included because detecting an extra-group
+capture becomes easier with more observations; exact historical trap-night
+effort is not available.
+
 Outputs added:
 
 ```
@@ -3016,9 +3037,11 @@ Logic safeguards added to:
 scripts/behaviour/Woodchester_intergroup_excursion_analysis.R
 ```
 
-Commit:
+Commits:
 
 ```
 a093c83d6a3c79fbd126071e9ea17bdaf9bfb91e
+983d048d6cdfc5d32b7218487596dee3f6f0c33e
+60cecb7d858a8a61b9e6e37059765062e01700a0
 ```
 
