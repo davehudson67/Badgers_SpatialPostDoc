@@ -1612,3 +1612,97 @@ scripts/ModularFitting/Woodchester_V11_compare_parameterisations.R
 
 The parameterisation race must be resolved before fitting the separate
 pre-specified balanced-persistence biological sensitivity.
+
+
+## V11 full-population parameterisation race and observation-model simplification — 21 October 2026
+
+The four centred parameterisations were inadvertently run on the full
+movement-eligible population (n = 1,932) rather than the planned 300-badger
+validation subset. This yielded a useful full-population computational race.
+
+### Full-population race outcome
+
+No centred parameterisation converged adequately.
+
+Overall computational ranking was:
+
+1. **joint-local**: max key R-hat 2.60, median key R-hat 1.67;
+2. **joint-high**: max key R-hat 6.93, median key R-hat 1.85;
+3. **mean-separation**: max key R-hat 7.91, median key R-hat 3.15;
+4. **centred control**: max key R-hat 9.76, median key R-hat 4.17.
+
+Joint-local substantially improved state agreement relative to the centred
+control, but still failed the convergence gate. It remains the best
+movement-scale coordinate system tested, not a converged production model.
+
+The full-population chain-mode diagnostic also showed continued within-chain
+drift and strong annual local/high scale ridges. The poor mixing was therefore
+not eliminated by centring or scale reparameterisation alone.
+
+### Reassessment of the quarterly latent-centre layer
+
+The original multi-location observation architecture retained all captures by
+using:
+
+- one annual activity centre per badger-year;
+- one latent quarterly activity centre per badger-year-quarter;
+- capture locations around the quarterly centre.
+
+The quarterly layer was introduced primarily to retain repeat captures rather
+than because quarterly activity centres were themselves a central biological
+target.
+
+An explicit repeat-capture audit found:
+
+- 13,105 captured badger-quarters;
+- 1,116 (8.52%) with more than one capture record;
+- only 467 (3.56%) with more than one distinct sett;
+- 344/1,932 badgers ever observed at >1 sett within a quarter.
+
+Thus 96.44% of captured badger-quarters provide no observed within-quarter
+multi-sett information with which to identify a separate quarterly spatial
+centre.
+
+At the same time, the 467 multi-sett quarters are biologically valuable as
+direct observations of short-timescale sett switching / connectivity and should
+not be discarded.
+
+### Pre-specified V11S simplification
+
+Before further sampler engineering or the balanced-persistence sensitivity,
+fit one biologically simpler observation hierarchy:
+
+- retain one latent **annual activity centre** per badger-year;
+- retain the same annual local/high collapsed HMM;
+- retain the joint-local annual movement-scale parameterisation;
+- retain quarterly trapping campaigns as observation occasions;
+- retain season/period detection effects;
+- retain every observed capture location, including repeated locations within a
+  quarter;
+- evaluate those locations directly around the annual activity centre;
+- remove latent quarterly centres, omega, qinnov/qeps and quarterly-centre
+  samplers.
+
+This is a biological simplification, not merely a computational
+reparameterisation.
+
+Primary question:
+
+> Can the annual local/high movement process be identified cleanly when the
+> weakly informed quarterly latent-centre layer is removed, while preserving all
+> capture observations?
+
+The separate within-quarter multi-sett data should be treated as an observed
+behavioural/connectivity layer for later analyses of rapid sett switching,
+historical social-group crossing and disease-relevant contact.
+
+Scripts:
+
+```
+scripts/ModularFitting/Woodchester_V11S_annualAC_direct_multiloc.R
+scripts/ModularFitting/run_V11S_annualAC_direct_multiloc.sh
+scripts/ModularFitting/Woodchester_within_quarter_multisett_audit.R
+```
+
+Do not fit the balanced-persistence H->H sensitivity until this simplified
+observation architecture has passed its convergence/state-agreement gate.
