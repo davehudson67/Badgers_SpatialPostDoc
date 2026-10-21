@@ -172,7 +172,7 @@ multi <- multi %>%
     move_summary,
     by = c("tattoo", "primary_year", "trap_season")
   ) %>%
-  arrange(desc(max_distance_m), days_between = min_days_between)
+  arrange(desc(max_distance_m), min_days_between)
 
 dir.create("results", showWarnings = FALSE, recursive = TRUE)
 
