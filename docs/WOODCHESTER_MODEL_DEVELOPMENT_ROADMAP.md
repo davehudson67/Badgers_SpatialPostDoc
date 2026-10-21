@@ -2528,10 +2528,11 @@ Before conditioning on geometric distance:
 - no clear seasonal contrast remained;
 - badger identity and year both showed strong heterogeneity.
 
-Because the current adjacent-quarter crossing model does not condition on
+Because the first adjacent-quarter crossing model does not condition on
 sett-to-sett distance, these sex/age effects combine behavioural boundary
-crossing with differences in movement magnitude. A subsequent model should
-separate "moves farther" from "crosses boundaries more readily at a given
+crossing with differences in movement magnitude. A pre-specified secondary
+model has now been added that includes log1p sett-to-sett distance, allowing us
+to distinguish "moves farther" from "crosses boundaries more readily at a given
 distance".
 
 ### B3: observed movement magnitude
