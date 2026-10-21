@@ -69,7 +69,11 @@ pars <- c(
   "mean_annual_move_female_high",
   "mean_annual_move_male_high",
   "omega",
+  "sigma_female",
+  "sigma_male",
   "sigma_badger",
+  "alpha_disp_init",
+  "beta_disp_init_sex",
   "alpha_RD",
   "beta_RD_sex",
   "alpha_DD",
@@ -229,6 +233,54 @@ ridge_corr <- bind_rows(
   )
 )
 
+
+# Broader annual state-process geometry: identify tradeoffs between movement
+# scales, transition probabilities and persistent individual mover propensity.
+state_process_pars <- intersect(
+  c(
+    "alpha_logmove",
+    "alpha_logmove_high",
+    "beta_move_high",
+    "mean_annual_move_female_local",
+    "mean_annual_move_female_high",
+    "sigma_badger",
+    "alpha_disp_init",
+    "beta_disp_init_sex",
+    "alpha_RD",
+    "beta_RD_sex",
+    "alpha_DD",
+    "beta_DD_sex",
+    "beta_age_2",
+    "beta_age_3_5",
+    "beta_age_6plus",
+    "beta_age_unknown"
+  ),
+  common_cols
+)
+
+state_process_corr <- bind_rows(
+  lapply(
+    seq_along(mats),
+    function(cc) {
+      cm <- cor(mats[[cc]][, state_process_pars, drop = FALSE])
+      idx <- which(upper.tri(cm), arr.ind = TRUE)
+
+      tibble(
+        chain = cc,
+        parameter_1 = rownames(cm)[idx[, 1]],
+        parameter_2 = colnames(cm)[idx[, 2]],
+        correlation = cm[idx]
+      ) %>%
+        filter(
+          parameter_1 == "sigma_badger" |
+          parameter_2 == "sigma_badger" |
+          parameter_1 %in% c("alpha_RD", "alpha_disp_init") |
+          parameter_2 %in% c("alpha_RD", "alpha_disp_init")
+        )
+    }
+  )
+)
+
 # State disagreement and whether it is concentrated in the same animals.
 state_means <- lapply(
   states,
@@ -318,6 +370,32 @@ print(
   width = Inf
 )
 
+cat("\nSTATE-PROCESS / PERSISTENT-MOVER GEOMETRY\n")
+print(
+  state_process_corr %>%
+    arrange(desc(abs(correlation))) %>%
+    slice_head(n = 40),
+  n = 40,
+  width = Inf
+)
+
+cat("\nSTATE-PROCESS CHAIN SEPARATION / DRIFT\n")
+print(
+  chain_separation %>%
+    filter(parameter %in% state_process_pars) %>%
+    arrange(desc(median_range_over_pooled_sd)),
+  n = Inf,
+  width = Inf
+)
+print(
+  half_summary %>%
+    filter(parameter %in% state_process_pars) %>%
+    arrange(desc(abs(standardized_shift))) %>%
+    slice_head(n = 40),
+  n = 40,
+  width = Inf
+)
+
 cat("\nSTATE DISAGREEMENT SUMMARY\n")
 print(
   tibble(
@@ -352,6 +430,10 @@ write_csv(
   paste0(prefix, "_movement_scale_ridge_correlations.csv")
 )
 write_csv(
+  state_process_corr,
+  paste0(prefix, "_state_process_correlations.csv")
+)
+write_csv(
   state_diag,
   paste0(prefix, "_state_disagreement_by_chain_mode.csv")
 )
@@ -372,6 +454,10 @@ cat(
 cat(
   "- Strong alpha_logmove/beta_move_high correlations identify the remaining ",
   "annual local/high scale ridge.\n"
+)
+cat(
+  "- sigma_badger correlations with transition and movement-scale parameters ",
+  "identify tradeoffs between persistent mover propensity and state assignment.\n"
 )
 cat(
   "- State disagreement concentrated in a few animals/intervals suggests a ",
