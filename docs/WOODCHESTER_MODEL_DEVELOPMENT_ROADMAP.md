@@ -2050,3 +2050,174 @@ For each observed sett transition record:
 
 This creates a directly observed historical connectivity dataset that can later
 be related to annual movement state, immigration/emigration and infectiousness.
+
+
+## Behavioural movement programme and literature-backed social-group assignment — 21 October 2026
+
+The observed movement programme is now pre-specified separately from V11S.
+
+### Historical Woodchester social-group method
+
+The literature confirms that Woodchester social structure was handled in two
+stages:
+
+1. **Territory delineation.** Social-group territories were mapped annually in
+   spring using bait marking at main setts. Distinctive indigestible markers
+   recovered from latrines, together with boundary-run field observations, were
+   used to map neighbouring group boundaries. Territory geography is therefore
+   historical and time-varying.
+
+2. **Annual individual residency.** Vicente et al. (2007) assigned each badger
+   to one annual resident group using a five-step capture-history hierarchy:
+   current-year modal capture group; adjacent-year allocations; three-year
+   capture mode; nearest before/after-year capture among relevant candidates;
+   first relevant capture if still unresolved. Over 96% were assigned by the
+   current-year modal group alone.
+
+Project consequence:
+
+> Do not equate every capture group with residency. A capture outside the
+> annual resident group can be an excursion/bridge event and must remain
+> observable as such.
+
+The literature-backed rules are now recorded in:
+
+```
+docs/database/SETT_SOCIAL_GROUP_RULES.md
+```
+
+and the reproducible derived assignment script is:
+
+```
+scripts/behaviour/Woodchester_assign_annual_resident_social_group.R
+```
+
+### Relation to previous Woodchester movement analyses
+
+Rogers et al. (1998) used capture histories across social groups and described
+non-movers, occasional movers, permanent movers and frequent movers. Their
+1763-badger, 18-year analysis found that nearly half of classifiable animals had
+moved at least once; among movers, occasional movement predominated, permanent
+movement was less common, and frequent movement was rare. Males were much less
+likely than females to be non-movers.
+
+Vicente et al. (2007) subsequently defined annual movement from resident-group
+change and also built a group movement index from capture-to-capture changes in
+social group. This provides direct precedent for separating annual residency
+change from more transient capture-level movement.
+
+These historical classifications are biological reference points rather than
+hard states imposed on V11S.
+
+### Pre-specified observed-behaviour analyses
+
+The first behavioural script is:
+
+```
+scripts/behaviour/Woodchester_observed_movement_behaviour.R
+```
+
+It deliberately excludes disease and V11S state until the basic behaviour is
+described.
+
+#### B1. Sett-switching propensity
+
+Analysis population: badger-quarters with at least two observed captures.
+
+Response:
+
+[
+Y_{iqy}=1
+]
+
+if the repeated captures use more than one sett, otherwise 0.
+
+Primary explanatory structure:
+
+- sex;
+- current age class;
+- quarter/season;
+- number of captures in the quarter;
+- elapsed time between first and last capture;
+- year effect;
+- persistent badger random effect.
+
+This conditions on the opportunity to observe switching rather than comparing
+all captured quarters indiscriminately.
+
+Primary biological question:
+
+> Are some badgers persistently more likely to use multiple setts, after
+> accounting for how often and over what time window they were observed?
+
+#### B2. Magnitude of directly observed sett-to-sett movement
+
+Analysis population: consecutive captures at different mapped setts within the
+same quarter.
+
+Response:
+
+[
+log(d_{ab})
+]
+
+where (d_{ab}) is straight-line sett-to-sett distance.
+
+Predictors include sex, age, season and elapsed capture interval, with year and
+individual effects.
+
+Elapsed days is an observation-window adjustment, not an estimate of movement
+speed.
+
+#### B3. Direct social-group bridging
+
+Where contemporaneous capture-level social-group identities are resolved,
+classify a transition as same-group or cross-group.
+
+Model cross-group probability as a function of:
+
+- sex;
+- age;
+- season;
+- elapsed capture interval;
+- sett-to-sett distance;
+- year;
+- individual identity.
+
+Distance is included so sex/age/season effects are interpreted beyond the
+obvious geometry that farther sett pairs are more likely to be in different
+territories.
+
+Also retain each movement's relationship to annual residency:
+
+- same-group sett switch;
+- resident -> other group;
+- other group -> resident;
+- nonresident group -> another nonresident group;
+- unresolved.
+
+#### B4. Link observed bridging to V11S only after V11S is accepted
+
+After the full V11S movement fit passes convergence:
+
+- test whether badger-years with high posterior annual mobility also contain
+  more observed short-timescale bridge events;
+- test whether observed bridge behaviour during year y predicts high movement
+  / annual relocation from y to y+1;
+- estimate overlap between persistent V11S mover propensity and persistent
+  observed bridge propensity.
+
+Because V11S and observed movement share capture data, these are consistency
+and biological-linkage analyses, not independent validation.
+
+#### B5. Disease follows behaviour, not vice versa
+
+Do not immediately add infection status to B1-B4.
+
+After the behavioural architecture is understood, the disease extension should
+focus on infectiousness/shedding and transmission opportunity, especially
+whether infectious badgers directly bridge social groups and whether exposure
+after bridge events predicts subsequent acquisition.
+
+This is a distinct question from the earlier generic infected-to-movement
+analyses and therefore does not duplicate V7a-M/V7b-M.
