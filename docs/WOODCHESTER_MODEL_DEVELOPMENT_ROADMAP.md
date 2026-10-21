@@ -3464,3 +3464,89 @@ Preferred current wording:
 Avoid causal wording such as "prospecting determines destination choice" until
 the result is supported by more independent source-group/time replicates or a
 stronger spatially explicit destination-choice analysis.
+
+
+## V11S full-data three-chain convergence result — 21 October 2026
+
+Full V11S completed for all 1,932 movement-eligible badgers, with 750 retained
+draws per chain after burn-in.
+
+Formal three-chain scorecard:
+
+- 17 pre-specified key parameters;
+- max R-hat = 1.74;
+- median R-hat = 1.10;
+- minimum ESS = 17.7;
+- median ESS = 221;
+- 11/17 parameters have R-hat > 1.05;
+- 8/17 have R-hat > 1.10.
+
+Therefore the model is **not yet converged overall** and the full coefficient
+set must not be interpreted as final.
+
+### What improved strongly relative to the 300-badger V11S fit
+
+The broad resident/high-mobility state process is much more stable:
+
+- sigma_badger: R-hat 1.00, ESS 136; chain medians 0.177, 0.193, 0.170;
+- alpha_RD: R-hat 1.01, ESS 221;
+- beta_RD_sex: R-hat 1.02, ESS 797;
+- sigma_female: R-hat 1.01;
+- sigma_male: R-hat 1.08.
+
+Recovered annual state agreement also improved materially:
+
+- 6,316 annual movement intervals;
+- median cross-chain range in P(high) = 0.000047;
+- 95th percentile = 0.227;
+- 309/6316 = 4.89% have cross-chain range >0.25;
+- 227/6316 = 3.59% >0.50;
+- 157/6316 = 2.49% >0.80.
+
+Thus most annual intervals are now classified consistently across chains, with
+severe disagreement localized to a minority of intervals/animals.
+
+### What remains unresolved
+
+The local annual movement-scale decomposition is still poorly mixed:
+
+- female local mean:
+  - chain medians 12.4, 10.7, 11.6 m;
+  - R-hat 1.74;
+  - ESS 17.7;
+- male local mean:
+  - chain medians 8.71, 7.04, 7.50 m;
+  - R-hat 1.74;
+  - ESS 26.5.
+
+The high-movement scale is substantially better but not fully ideal:
+
+- female high mean ~1,024 m pooled, R-hat 1.10, ESS 54.8;
+- male high mean ~685 m pooled, R-hat 1.04, ESS 37.2.
+
+Several initiation/age/persistence parameters also remain unconverged:
+
+- beta_disp_init_sex R-hat 1.43;
+- beta_age_2 R-hat 1.39;
+- beta_age_6plus R-hat 1.19;
+- alpha_DD R-hat 1.19;
+- alpha_disp_init R-hat 1.17;
+- beta_DD_sex R-hat 1.15.
+
+Earlier half-chain diagnostics show substantial within-chain drift in the
+local-scale ridge, especially chains 1 and 2, rather than three completely
+stationary separated modes. Therefore one controlled chain-continuation attempt
+is justified before changing model biology.
+
+### Decision
+
+1. Do not report/interpret final V11S age, initial-state, DD persistence or
+   local-scale coefficients yet.
+2. Do not abandon V11S: the full dataset has substantially stabilized the
+   biologically important state classification and RD process.
+3. Attempt a genuine continuation of the three existing chains from their saved
+   terminal states, preserving the current model and sampler architecture.
+4. Re-run the same convergence/state scorecard after continuation.
+5. If local-scale R-hat/ESS and the remaining transition/age terms fail to
+   improve materially, stop sampler engineering and simplify/reparameterize the
+   annual movement estimand rather than repeatedly refitting the same biology.
