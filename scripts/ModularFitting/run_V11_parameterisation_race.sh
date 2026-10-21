@@ -7,13 +7,13 @@ mkdir -p logs results
 MODE="${MODE:-smoke}"
 
 if [[ "${MODE}" == "smoke" ]]; then
-  MAX_BADGERS="${MAX_BADGERS:-50}"
+  MAX_BADGERS="${RACE_MAX_BADGERS:-50}"
   NITER="${NITER:-500}"
   NBURN="${NBURN:-250}"
   THIN="${THIN:-2}"
   AF_ADAPT_MAX="${AF_ADAPT_MAX:-500}"
 elif [[ "${MODE}" == "full" ]]; then
-  MAX_BADGERS="${MAX_BADGERS:-300}"
+  MAX_BADGERS="${RACE_MAX_BADGERS:-300}"
   NITER="${NITER:-3000}"
   NBURN="${NBURN:-1500}"
   THIN="${THIN:-2}"
