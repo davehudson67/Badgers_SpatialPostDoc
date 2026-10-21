@@ -405,7 +405,8 @@ all_transitions <- cap %>%
       levels = c("within_quarter", "adjacent_quarter", "longer_gap")
     ),
     log_days = log1p(days_between),
-    log_distance = if_else(distance_m > 0, log(distance_m), NA_real_)
+    log_distance = if_else(distance_m > 0, log(distance_m), NA_real_),
+    log1p_distance = if_else(!is.na(distance_m), log1p(distance_m), NA_real_)
   )
 
 write_csv(
@@ -621,10 +622,11 @@ if (nrow(cross_dat) >= 100L && length(unique(cross_dat$cross_group_int)) == 2L) 
     round(mean(cross_dat$cross_group_int), 4), "\n"
   )
 
-  # Include distance where spatially resolved. This asks whether sex/age/season
-  # predict crossing beyond the obvious geometry of farther sett pairs.
+  # Include all spatially resolved transitions, including same-sett events.
+  # log1p(distance) is defined at zero, avoiding selection on different-sett
+  # transitions and keeping the model aligned with the printed denominator.
   cross_spatial <- cross_dat %>%
-    filter(!is.na(log_distance))
+    filter(!is.na(log1p_distance))
 
   fit_cross <- gam(
     cross_group_int ~
@@ -633,7 +635,7 @@ if (nrow(cross_dat) >= 100L && length(unique(cross_dat$cross_group_int)) == 2L) 
       season +
       temporal_scale +
       s(log_days, k = 5) +
-      s(log_distance, k = 5) +
+      s(log1p_distance, k = 5) +
       s(year_factor, bs = "re") +
       s(tattoo_factor, bs = "re"),
     data = cross_spatial,
@@ -641,6 +643,7 @@ if (nrow(cross_dat) >= 100L && length(unique(cross_dat$cross_group_int)) == 2L) 
     method = "REML"
   )
 
+  cat("Spatially resolved transitions used in B4:", nrow(cross_spatial), "\n")
   print(summary(fit_cross))
   cat("\nVariance components:\n")
   print(gam.vcomp(fit_cross))
