@@ -1146,7 +1146,7 @@ make_inits_from_fit <- function(path, chain) {
     stop("INIT_FROM_FIT population/order does not match current V11S population.")
   }
 
-  old_stem <- old$settings$output_stem %||% NA_character_
+  old_stem <- if (is.null(old$settings$output_stem)) NA_character_ else old$settings$output_stem
   if (!is.na(old_stem) && identical(OUTPUT_STEM, old_stem)) {
     stop(
       "Refusing to overwrite the source fit. Set OUTPUT_STEM to a new stem ",
@@ -1258,8 +1258,6 @@ make_inits_from_fit <- function(path, chain) {
 }
 
 if (nzchar(INIT_FROM_FIT)) {
-  # Local infix helper without adding a package dependency.
-  `%||%` <- function(x, y) if (is.null(x)) y else x
   inits <- make_inits_from_fit(INIT_FROM_FIT, CHAIN_ID)
 } else {
   inits <- make_inits(CHAIN_ID)
@@ -1664,7 +1662,6 @@ saveRDS(
       niter = NITER,
       nburn = NBURN,
       thin = THIN,
-      init_from_fit = if (nzchar(INIT_FROM_FIT)) INIT_FROM_FIT else NA_character_,
       init_from_fit = if (nzchar(INIT_FROM_FIT)) INIT_FROM_FIT else NA_character_
     ),
     ids = ids,
@@ -1877,6 +1874,7 @@ saveRDS(
       niter = NITER,
       nburn = NBURN,
       thin = THIN,
+      init_from_fit = if (nzchar(INIT_FROM_FIT)) INIT_FROM_FIT else NA_character_,
       primary_period = "year",
       secondary_occasions = "quarterly trapping campaigns",
       multiple_locations_per_quarter = TRUE,
@@ -1901,7 +1899,11 @@ saveRDS(
       annual_movement_scale_sampler =
         "interwoven twice-per-iteration updates: 3-D AF_slice on alpha_logmove + beta_move_high + beta_move_sex, before and after centred annual-A sweep",
       chain_initialisation =
-        "deliberately over-dispersed plausible starts across chains 1--3",
+        if (nzchar(INIT_FROM_FIT)) {
+          "terminal state from prior V11S fit; sampler adaptation reset and rerun during burn-in"
+        } else {
+          "deliberately over-dispersed plausible starts across chains 1--3"
+        },
       sampler_validation =
         "annual-AC simplification test; quarterly latent-centre layer removed after repeat-capture audit",
       landscape_resistance = FALSE
