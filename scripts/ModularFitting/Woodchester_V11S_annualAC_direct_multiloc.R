@@ -19,6 +19,8 @@
 #   THIN          default 2
 #   OUTPUT_STEM   default V11S_RD_ANNUALAC_DIRECT_MULTILOC_AGE_BADGERRE
 #   AF_ADAPT_MAX  AF_slice factor-adaptation iterations (default 5000)
+#   INIT_FROM_FIT optional prior V11S fit RDS; initialise from its terminal
+#                 parameter + latent state, then re-adapt during burn-in
 # =============================================================================
 
 library(tidyverse)
@@ -54,6 +56,8 @@ AF_ADAPT_MAX <- as.integer(Sys.getenv("AF_ADAPT_MAX", unset = "5000"))
 if (!is.finite(AF_ADAPT_MAX) || AF_ADAPT_MAX < 0L) {
   stop("AF_ADAPT_MAX must be >= 0.")
 }
+
+INIT_FROM_FIT <- Sys.getenv("INIT_FROM_FIT", unset = "")
 
 MOVE_MEAN_FACTOR <- sqrt(pi / 2)
 LOG_TWO_PI <- log(2 * pi)
@@ -1128,7 +1132,138 @@ make_inits <- function(chain) {
   )
 }
 
-inits <- make_inits(CHAIN_ID)
+make_inits_from_fit <- function(path, chain) {
+  if (!file.exists(path)) {
+    stop("INIT_FROM_FIT does not exist: ", path)
+  }
+
+  old <- readRDS(path)
+
+  if (is.null(old$samples)) {
+    stop("INIT_FROM_FIT does not contain $samples: ", path)
+  }
+  if (is.null(old$ids) || length(old$ids) != nind || !identical(as.character(old$ids), as.character(ids))) {
+    stop("INIT_FROM_FIT population/order does not match current V11S population.")
+  }
+
+  old_stem <- old$settings$output_stem %||% NA_character_
+  if (!is.na(old_stem) && identical(OUTPUT_STEM, old_stem)) {
+    stop(
+      "Refusing to overwrite the source fit. Set OUTPUT_STEM to a new stem ",
+      "when INIT_FROM_FIT is used."
+    )
+  }
+
+  sm <- as.matrix(old$samples)
+  if (!nrow(sm)) stop("INIT_FROM_FIT contains zero retained draws.")
+  last <- sm[nrow(sm), ]
+  nms <- names(last)
+
+  z <- make_inits(chain)
+
+  scalar_stoch <- c(
+    "alpha_p",
+    "beta_p_sex",
+    "alpha_logsigma",
+    "beta_sigma_sex",
+    "alpha_logmove",
+    "beta_move_sex",
+    "beta_move_high",
+    "alpha_disp_init",
+    "beta_disp_init_sex",
+    "alpha_RD",
+    "beta_RD_sex",
+    "beta_age_2",
+    "beta_age_3_5",
+    "beta_age_6plus",
+    "beta_age_unknown",
+    "sigma_badger",
+    "alpha_DD",
+    "beta_DD_sex"
+  )
+
+  missing_scalar <- setdiff(scalar_stoch, nms)
+  if (length(missing_scalar)) {
+    stop(
+      "INIT_FROM_FIT is missing stochastic scalar monitor(s): ",
+      paste(missing_scalar, collapse = ", ")
+    )
+  }
+
+  for (nm in scalar_stoch) {
+    z[[nm]] <- unname(last[[nm]])
+  }
+
+  season_cols <- paste0("beta_season_raw[", 1:3, "]")
+  if (!all(season_cols %in% nms)) {
+    stop("INIT_FROM_FIT is missing beta_season_raw monitors.")
+  }
+  z$beta_season_raw <- unname(last[season_cols])
+
+  period_cols <- grep("^beta_period_raw\\[", nms, value = TRUE)
+  period_index <- as.integer(str_match(period_cols, "\\[([0-9]+)\\]")[, 2])
+  period_cols <- period_cols[order(period_index)]
+  if (length(period_cols) != (n_periods - 1L)) {
+    stop(
+      "INIT_FROM_FIT beta_period_raw dimension mismatch: expected ",
+      n_periods - 1L, ", found ", length(period_cols)
+    )
+  }
+  z$beta_period_raw <- unname(last[period_cols])
+
+  # u_badger itself is not monitored, but b_badger = sigma_badger * u_badger
+  # is monitored. Reconstruct the non-centred stochastic effects exactly.
+  b_cols <- paste0("b_badger[", seq_len(nind), "]")
+  if (!all(b_cols %in% nms)) {
+    stop("INIT_FROM_FIT is missing one or more b_badger monitors.")
+  }
+  if (!is.finite(z$sigma_badger) || z$sigma_badger <= 0) {
+    stop("INIT_FROM_FIT terminal sigma_badger is invalid.")
+  }
+  z$u_badger <- unname(last[b_cols]) / z$sigma_badger
+
+  # Reconstruct every active annual activity centre from compact monitors.
+  x_cols <- paste0(
+    "A_x_active[",
+    annual_state_map$annual_active_index,
+    "]"
+  )
+  y_cols <- paste0(
+    "A_y_active[",
+    annual_state_map$annual_active_index,
+    "]"
+  )
+
+  if (!all(c(x_cols, y_cols) %in% nms)) {
+    stop("INIT_FROM_FIT is missing one or more annual activity-centre monitors.")
+  }
+
+  A0 <- z$A
+  for (aa in seq_len(nrow(annual_state_map))) {
+    ii <- annual_state_map$model_i[aa]
+    kk <- annual_state_map$state_k[aa]
+    A0[ii, 1, kk] <- unname(last[[x_cols[aa]]])
+    A0[ii, 2, kk] <- unname(last[[y_cols[aa]]])
+  }
+  z$A <- A0
+
+  cat(
+    "Initialising chain ", chain,
+    " from terminal retained state of:\n  ", path, "\n",
+    "Sampler adaptation state is NOT stored; AF_slice will re-adapt during burn-in.\n",
+    sep = ""
+  )
+
+  z
+}
+
+if (nzchar(INIT_FROM_FIT)) {
+  # Local infix helper without adding a package dependency.
+  `%||%` <- function(x, y) if (is.null(x)) y else x
+  inits <- make_inits_from_fit(INIT_FROM_FIT, CHAIN_ID)
+} else {
+  inits <- make_inits(CHAIN_ID)
+}
 
 # ---- collapsed-HMM algebra self-check ---------------------------------------
 # Verify the sequential forward factorisation against brute-force summation for
@@ -1528,7 +1663,9 @@ saveRDS(
       af_adapt_max = AF_ADAPT_MAX,
       niter = NITER,
       nburn = NBURN,
-      thin = THIN
+      thin = THIN,
+      init_from_fit = if (nzchar(INIT_FROM_FIT)) INIT_FROM_FIT else NA_character_,
+      init_from_fit = if (nzchar(INIT_FROM_FIT)) INIT_FROM_FIT else NA_character_
     ),
     ids = ids,
     individual_ids = individual_ids,
