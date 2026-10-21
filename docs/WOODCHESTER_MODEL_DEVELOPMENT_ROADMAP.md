@@ -2289,3 +2289,148 @@ Updated script:
 ```
 scripts/behaviour/Woodchester_observed_movement_behaviour.R
 ```
+
+
+## V11S 300-badger validation result — 21 October 2026
+
+The three-chain 300-badger V11S validation completed successfully, with 750
+retained draws per chain after burn-in/thinning.
+
+### Convergence result
+
+V11S did **not** pass the convergence gate.
+
+Key scorecard:
+
+- 17 pre-specified key parameters;
+- max R-hat = 2.64;
+- median R-hat = 1.42;
+- minimum ESS = 18.9;
+- 16/17 key parameters had R-hat > 1.05;
+- 14/17 had R-hat > 1.10.
+
+The worst-converged parameter remained the female local annual movement scale
+(R-hat 2.64, ESS 18.9). Persistent mover heterogeneity also showed strong chain
+separation (sigma_badger R-hat 2.08).
+
+### Movement-scale chain locations
+
+Female local annual movement medians:
+
+- chain 1: 4.75 m;
+- chain 2: 11.0 m;
+- chain 3: 6.44 m.
+
+Male local annual movement medians:
+
+- chain 1: 4.81 m;
+- chain 2: 8.13 m;
+- chain 3: 5.14 m.
+
+Female high-mobility medians:
+
+- chain 1: 632 m;
+- chain 2: 833 m;
+- chain 3: 874 m.
+
+Male high-mobility medians:
+
+- chain 1: 581 m;
+- chain 2: 630 m;
+- chain 3: 684 m.
+
+The annual local/high scale ridge remains strong. Within-chain ACF1 is
+approximately 0.95-0.99 for the local movement scale in all three chains, with
+very low within-chain ESS.
+
+### Persistent mover heterogeneity
+
+sigma_badger chain medians were strongly separated:
+
+- chain 1: 0.894;
+- chain 2: 0.231;
+- chain 3: 0.217.
+
+This indicates that at least one chain is allocating substantially more
+variation to persistent individual propensity than the other two. This tradeoff
+must be diagnosed explicitly before interpreting the biological random effect.
+
+### State agreement
+
+There were 951 annual movement intervals.
+
+Cross-chain high-state probability range:
+
+- >0.25 for 96 intervals (10.1%);
+- >0.50 for 60 intervals;
+- >0.80 for 35 intervals;
+- median range ~0.0002;
+- 95th percentile range 0.611;
+- maximum ~1.
+
+Thus most intervals are nearly identical across chains, but a localized subset
+has severe state ambiguity. The animals contributing most include 062W, N020,
+010Y, E068, W021, M059, K052 and U057.
+
+### Comparison with the previous 300-badger V11 model
+
+Removing latent quarterly centres did not remove the annual-scale chain-mode
+problem.
+
+Compared with the previous 300-badger V11 result, V11S shifts the inferred local
+movement scale lower (roughly 5-11 m across chains instead of roughly 10-22 m),
+but does not improve cross-chain identification sufficiently.
+
+State disagreement is not improved: the previous V11 300-badger diagnostic had
+76/951 intervals with chain differences >0.25 and 33 >0.50, whereas V11S has
+96/951 >0.25 and 60 >0.50.
+
+Therefore:
+
+> The quarterly latent-centre layer was not the principal cause of the annual
+> local/high movement identification problem.
+
+This is scientifically useful even though V11S did not converge. It rules out a
+major suspected source of confounding.
+
+### Current interpretation
+
+The remaining problem appears to lie in the annual movement model itself,
+particularly allocation among:
+
+- the very small local annual movement scale;
+- the high-mobility movement scale / local-high separation;
+- the probability of entering the high state;
+- persistent badger-level propensity to initiate high movement.
+
+The model can classify most annual intervals consistently, but a minority of
+ambiguous animals/intervals can be explained by markedly different combinations
+of movement scale and mover propensity.
+
+Do not interpret sex/age/persistent-mover coefficients biologically from this
+300-badger fit yet.
+
+Do not restore the quarterly-centre layer merely because V11S failed to solve
+convergence; the repeat-capture audit still provides little biological
+justification for that complexity.
+
+### Next diagnostic before further model alteration
+
+Before changing the biological model, quantify posterior correlations and
+within-chain drift involving:
+
+- sigma_badger;
+- alpha_RD;
+- beta_RD_sex;
+- alpha_disp_init;
+- age effects;
+- local movement scale;
+- high movement scale / separation.
+
+The purpose is to determine whether the second major ridge is between
+**movement-state assignment** and **persistent individual propensity**, rather
+than only between the two Gaussian movement scales.
+
+The full 1,932-badger V11S run remains especially informative: if the same
+tradeoff is present at full population scale, the next model-development step
+should target annual-state identifiability rather than additional sampling.
