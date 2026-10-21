@@ -204,11 +204,21 @@ cat(
   "%)\n"
 )
 
-ci <- cp_interval(sum(focal$observed_match), nrow(focal))
+ci_all <- cp_interval(sum(focal$observed_match), nrow(focal))
+ci_single <- cp_interval(
+  sum(focal_single$observed_match),
+  nrow(focal_single)
+)
+
 cat(
-  "Exact 95% CI for observed match proportion:",
-  round(ci["lower"], 4), "-",
-  round(ci["upper"], 4), "\n\n"
+  "Exact 95% CI for ALL-CLOSED observed match proportion:",
+  round(ci_all["lower"], 4), "-",
+  round(ci_all["upper"], 4), "\n"
+)
+cat(
+  "Exact 95% CI for SINGLE-TARGET observed match proportion:",
+  round(ci_single["lower"], 4), "-",
+  round(ci_single["upper"], 4), "\n\n"
 )
 
 # ---------------------------------------------------------------------------
@@ -368,6 +378,39 @@ print(
       .groups = "drop"
     ),
   n = Inf
+)
+
+# ---------------------------------------------------------------------------
+# Source-group replication diagnostic.
+# Multiple focal animals can share a baseline group and therefore share much
+# of the same destination opportunity structure. Report this explicitly so the
+# nominal focal-event count is not mistaken for the number of independent
+# source-group replicates.
+# ---------------------------------------------------------------------------
+
+cat("\nSource-group replication in the clean single-target focal set:\n")
+source_replication <- focal_single %>%
+  count(baseline_group, name = "n_focal_events", sort = TRUE) %>%
+  mutate(
+    n_matches = map_int(
+      baseline_group,
+      ~sum(
+        focal_single$observed_match[
+          focal_single$baseline_group == .x
+        ]
+      )
+    )
+  )
+
+print(source_replication, n = Inf)
+cat(
+  "Unique source groups represented:",
+  n_distinct(focal_single$baseline_group), "\n"
+)
+
+write_csv(
+  source_replication,
+  "results/prospecting_destination_null_source_group_replication.csv"
 )
 
 cat("\nPer-focal-event support at +/-5 years:\n")
