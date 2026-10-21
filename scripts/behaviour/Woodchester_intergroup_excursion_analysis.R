@@ -191,7 +191,7 @@ cat(
   round(mean(quarter$any_extra_group), 4), "\n"
 )
 
-fit_extra_q <- gam(
+fit_extra_q <- bam(
   any_extra_group ~
     sex +
     age_class +
@@ -201,7 +201,9 @@ fit_extra_q <- gam(
     s(tattoo_factor, bs = "re"),
   data = quarter,
   family = binomial(link = "logit"),
-  method = "REML"
+  method = "fREML",
+  discrete = TRUE,
+  nthreads = max(1L, parallel::detectCores(logical = FALSE) - 2L)
 )
 
 print(summary(fit_extra_q))
@@ -292,7 +294,7 @@ raw_next <- next_year_dat %>%
   )
 print(raw_next, n = Inf)
 
-fit_next <- gam(
+fit_next <- bam(
   resident_change_next ~
     any_extra_group +
     sex +
@@ -302,7 +304,9 @@ fit_next <- gam(
     s(tattoo_factor, bs = "re"),
   data = next_year_dat,
   family = binomial(link = "logit"),
-  method = "REML"
+  method = "fREML",
+  discrete = TRUE,
+  nthreads = max(1L, parallel::detectCores(logical = FALSE) - 2L)
 )
 
 print(summary(fit_next))
