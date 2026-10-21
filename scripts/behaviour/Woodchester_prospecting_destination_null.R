@@ -186,6 +186,24 @@ cat(
   round(mean(focal$observed_match), 4), "\n"
 )
 
+# Primary clean pathway sensitivity: exactly one closed-prospected destination.
+# This corresponds most directly to A -> B -> A -> later A/B/C and avoids
+# giving multi-target prospectors a mechanically larger chance of matching.
+focal_single <- focal %>%
+  filter(
+    !str_detect(closed_prospected_groups, fixed(";"))
+  )
+
+cat("\nClean single-target closed-prospecting movers:", nrow(focal_single), "\n")
+cat(
+  "Single-target observed destination matches:",
+  sum(focal_single$observed_match),
+  "of", nrow(focal_single),
+  "(",
+  round(100 * mean(focal_single$observed_match), 2),
+  "%)\n"
+)
+
 ci <- cp_interval(sum(focal$observed_match), nrow(focal))
 cat(
   "Exact 95% CI for observed match proportion:",
@@ -202,22 +220,32 @@ window_specs <- tibble(
     "exact_year",
     "plus_minus_2y",
     "plus_minus_5y",
+    "plus_minus_10y",
     "all_years"
   ),
-  half_window = c(0, 2, 5, Inf)
+  half_window = c(0, 2, 5, 10, Inf)
 )
 
 event_rows <- list()
 ii <- 0L
 
-for (w in seq_len(nrow(window_specs))) {
+analysis_sets <- list(
+  all_closed = focal,
+  single_target = focal_single
+)
 
-  label <- window_specs$window_label[w]
-  half_window <- window_specs$half_window[w]
+for (analysis_name in names(analysis_sets)) {
 
-  for (i in seq_len(nrow(focal))) {
+  focal_set <- analysis_sets[[analysis_name]]
 
-    fi <- focal[i, ]
+  for (w in seq_len(nrow(window_specs))) {
+
+    label <- window_specs$window_label[w]
+    half_window <- window_specs$half_window[w]
+
+    for (i in seq_len(nrow(focal_set))) {
+
+      fi <- focal_set[i, ]
     targets <- split_groups(fi$closed_prospected_groups)
 
     ref <- reference_moves %>%
@@ -239,8 +267,9 @@ for (w in seq_len(nrow(window_specs))) {
     p_jeffreys <- if (n_ref) (n_ref_match + 0.5) / (n_ref + 1) else NA_real_
 
     ii <- ii + 1L
-    event_rows[[ii]] <- tibble(
-      window_label = label,
+      event_rows[[ii]] <- tibble(
+        analysis_set = analysis_name,
+        window_label = label,
       half_window_years = half_window,
       tattoo = fi$tattoo,
       focal_year = fi$focal_year,
@@ -253,7 +282,8 @@ for (w in seq_len(nrow(window_specs))) {
       n_distinct_reference_destinations = n_ref_dest,
       null_match_probability_raw = p_raw,
       null_match_probability_jeffreys = p_jeffreys
-    )
+      )
+    }
   }
 }
 
@@ -269,7 +299,7 @@ write_csv(
 # ---------------------------------------------------------------------------
 
 summary_rows <- event_level %>%
-  group_by(window_label, half_window_years) %>%
+  group_by(analysis_set, window_label, half_window_years) %>%
   group_modify(~{
     d <- .x %>% filter(!is.na(null_match_probability_raw))
     dj <- .x %>% filter(!is.na(null_match_probability_jeffreys))
@@ -327,7 +357,7 @@ print(summary_rows, n = Inf, width = Inf)
 cat("\nReference support by temporal window:\n")
 print(
   event_level %>%
-    group_by(window_label) %>%
+    group_by(analysis_set, window_label) %>%
     summarise(
       focal_events = n(),
       with_any_reference = sum(n_reference_moves > 0L),
@@ -343,7 +373,10 @@ print(
 cat("\nPer-focal-event support at +/-5 years:\n")
 print(
   event_level %>%
-    filter(window_label == "plus_minus_5y") %>%
+    filter(
+      analysis_set == "single_target",
+      window_label == "plus_minus_5y"
+    ) %>%
     select(
       tattoo, focal_year, baseline_group, future_group, prospected_groups,
       observed_match, n_reference_moves, n_distinct_reference_destinations,
