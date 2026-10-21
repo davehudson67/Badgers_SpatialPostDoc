@@ -2790,16 +2790,16 @@ These observed behavioural states can later be compared with V11S high-mobility
 probabilities and, subsequently, infectiousness/shedding state.
 
 
-## Inter-group excursion analysis partial result — 21 October 2026
+## Inter-group excursion / residency-change analysis — 21 October 2026
 
-The excursion/residency-change analysis completed E1 and the raw E2 summary
-before the R process terminated during the E2 adjusted mixed-model fit.
+The first complete E1-E3A run has now finished successfully.
 
 ### E1: quarter-level extra-group use
 
 Among 13,206 observed badger-quarters:
 
-- 750 contained at least one capture outside the annual resident social group;
+- 750 contained at least one capture outside the reconstructed annual resident
+  social group;
 - quarter-level extra-group-use proportion = 5.68%.
 
 Across 14,409 usable captures:
@@ -2807,7 +2807,7 @@ Across 14,409 usable captures:
 - 772 were extra-group captures;
 - capture-level extra-group proportion = 5.36%.
 
-Adjusted E1 results:
+Adjusted E1 results from the earlier completed fit indicated:
 
 - males had higher odds of observed extra-group use than females
   (logit coefficient ~0.406);
@@ -2820,12 +2820,13 @@ Adjusted E1 results:
 - substantial persistent individual heterogeneity remained (badger RE SD
   ~0.690).
 
-The observation-opportunity effect is expected and reinforces the need to adjust
-for capture count rather than interpret raw extra-group frequencies alone.
+Interpret E1 as **extra-group use relative to reconstructed annual modal
+residency**, not as an independently observed latent behavioural state. Annual
+residency and extra-group use are derived from the same capture SOCG history.
 
-### E2 raw result: extra-group use and next-year resident-group change
+### E2: extra-group use and next-year resident-group change
 
-There were 4,677 consecutive resident badger-years with an annual resident group
+There were 4,677 consecutive resident badger-years with resident groups
 available in both year y and y+1.
 
 Overall:
@@ -2837,16 +2838,187 @@ By observed extra-group use in year y:
 - no extra-group use: 368/4,204 = 8.75% changed resident group next year;
 - >=1 extra-group capture: 125/473 = 26.4% changed resident group next year.
 
-This raw association is large and biologically consistent with extra-group
-exploration/bridging preceding later relocation. It must not yet be treated as
-an adjusted effect because the mixed model controlling for sex, age, capture
-opportunity, year and individual identity did not complete.
+The adjusted BAM was:
 
-### Computational note
+```
+resident_change_next ~
+    any_extra_group +
+    sex +
+    age_class +
+    s(capture_effort, k = 5) +
+    s(year_factor, bs = "re") +
+    s(tattoo_factor, bs = "re")
+```
 
-The analysis script is now resumable using START_STAGE=E1/E2/E3 and saves fitted
-models as RDS files after successful completion. Completed E1 does not need to
-be rerun.
+Main adjusted coefficients:
 
-Use START_STAGE=E2 to fit the adjusted next-year residency-change model and then
-continue directly into E3.
+- extra-group use: beta = 1.4159, SE = 0.1421, z = 9.97,
+  p < 2e-16;
+- male sex: beta = 0.8653, SE = 0.1062, z = 8.15,
+  p = 3.78e-16;
+- age 2, age 3-5 and age 6+ were not clearly different from age 0-1 in this
+  model;
+- unknown age was positive (beta = 0.443, p = 0.020).
+
+For extra-group use, exp(1.4159) = approximately **4.12**, with an approximate
+Wald 95% odds-ratio interval of **3.12 to 5.44**.
+
+The model also retained detectable variation with capture effort, year and
+individual identity. Adjusted R-squared was ~0.104 and deviance explained was
+16.2%.
+
+**Interpretation at this stage:**
+
+> Badger-years containing observed use of another social group were strongly
+> associated with a different reconstructed resident group in the following
+> year.
+
+Do not yet describe this as a causal effect of "excursion causing dispersal".
+It is a strong predictive/behavioural linkage.
+
+### Critical E2 logic audit
+
+The annual resident-group reconstruction has five criteria. Criterion 1 uses
+only the focal year's own capture-group mode, but criteria 2-5 can use
+adjacent-year information.
+
+This creates a potential information-leakage problem for E2 because, in a small
+minority of badger-years, the y resident-group assignment can itself be informed
+by y+1 data, and the y+1 assignment can be informed by y data.
+
+Although criterion 1 accounts for ~95.7% of annual assignments, ambiguous
+transition years may be disproportionately represented among criteria 2-5 and
+are exactly the years most relevant to this question.
+
+A strict E2 sensitivity has therefore been added requiring:
+
+- criterion-1 residency in both y and y+1; and
+- >=2 grouped captures in both years.
+
+This removes adjacent-year assignment leakage and weak one-capture annual
+residency assignments.
+
+**Project rule:** the current all-assignment E2 result is important but should
+not be treated as final until the strict sensitivity gives the same qualitative
+conclusion.
+
+Outputs added:
+
+```
+results/behaviour_next_year_residency_change_STRICT.csv
+results/behaviour_next_year_residency_change_STRICT_raw.csv
+results/behaviour_next_year_residency_change_STRICT_model.rds
+results/behaviour_next_year_residency_change_STRICT_parametric.csv
+```
+
+### E3A: focal-year-modal excursion sequence
+
+The first sequence analysis found:
+
+- 432 resident -> other-group events;
+- 190 had a later capture in the same year;
+- 164/190 = 86.32% were next observed back in the annual resident group;
+- 26/190 remained outside that resident group at the next capture;
+- 242/432 had no later capture in the same year.
+
+This 86.3% value must **not** be interpreted as an unbiased population return
+probability.
+
+The reason is structural: focal-year resident group is itself defined from the
+same year's capture history, primarily as the modal capture group. A temporary
+departure from the annual modal group is therefore more likely to be labelled an
+"excursion" than a persistent mid-year relocation that changes the annual modal
+group. The construction can consequently inflate the apparent return fraction.
+
+There are two additional observation issues:
+
+1. requiring another capture before the end of the same calendar year creates
+   right-censoring at 31 December and makes follow-up depend on event timing and
+   trapping opportunity;
+2. sequence analyses must not order multiple different social groups observed
+   on the same calendar day arbitrarily.
+
+Therefore E3A is retained as a useful descriptive diagnostic only.
+
+### E3B: leakage-safe prospective excursion analysis
+
+The behavioural script now contains a stronger E3B design.
+
+Baseline residence is defined **before** the focal year using the y-1 resident
+group, and that baseline must be:
+
+- criterion 1; and
+- supported by >=2 grouped captures.
+
+Within focal year y, a direct outward event requires:
+
+```
+prior-resident group A -> another group B
+```
+
+on consecutive unambiguous observed capture-days.
+
+Capture records are collapsed to the capture-day level so multiple records on
+the same date do not create artificial ordered transitions. Days containing
+more than one social group are treated as ambiguous rather than alphabetically
+ordered.
+
+The next observed capture-day is then followed across calendar-year boundaries
+rather than being administratively censored at 31 December.
+
+Where a strict criterion-1, >=2-capture resident group is also available in
+y+1, E3B additionally records whether the animal has changed long-term
+residency relative to the independently established y-1 baseline.
+
+This permits separation of:
+
+- immediate return after an outward event;
+- continued observed use outside the prior resident group;
+- later confirmed resident-group change.
+
+Output:
+
+```
+results/behaviour_observed_excursion_returns_PRIOR_BASELINE.csv
+```
+
+### Current biological conclusion
+
+The existing evidence already supports a real distinction between routine
+resident use and observed inter-group use, and the E2 association is large.
+
+However, the strongest defensible statement before the strict rerun is:
+
+> Observed use of another social group is strongly associated with subsequent
+> reconstructed residency change, but the magnitude and interpretation must be
+> checked in leakage-safe, independently baselined sensitivity analyses.
+
+If E2S remains strong and E3B shows that independently defined outward events
+often precede confirmed y+1 relocation, then the behavioural hierarchy becomes
+much more secure:
+
+```
+resident use
+    -> observed inter-group outward event
+    -> return / repeated bridging / persistence outside
+    -> confirmed resident-group relocation
+```
+
+That hierarchy can then be compared with V11/V11S annual high-mobility states
+and later with infectiousness/shedding without redefining the same behaviour
+multiple times.
+
+### Implementation commit
+
+Logic safeguards added to:
+
+```
+scripts/behaviour/Woodchester_intergroup_excursion_analysis.R
+```
+
+Commit:
+
+```
+a093c83d6a3c79fbd126071e9ea17bdaf9bfb91e
+```
+
