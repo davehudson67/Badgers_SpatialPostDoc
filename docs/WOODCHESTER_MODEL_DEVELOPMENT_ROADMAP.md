@@ -2434,3 +2434,203 @@ than only between the two Gaussian movement scales.
 The full 1,932-badger V11S run remains especially informative: if the same
 tradeoff is present at full population scale, the next model-development step
 should target annual-state identifiability rather than additional sampling.
+
+
+## Observed behavioural movement results and V11S state-process geometry — 21 October 2026
+
+### Annual resident social-group assignment validation
+
+The literature-backed Vicente-style annual resident social-group reconstruction
+resolved all 7,307 captured badger-years.
+
+Assignment criteria:
+
+- criterion 1 (unique modal capture group in focal year): 6,992 = 95.69%;
+- criterion 2 (adjacent-year residency resolves focal-year tie): 269 = 3.68%;
+- criterion 3 (current + adjacent-year capture mode): 20 = 0.27%;
+- criterion 4 (nearest relevant before/after-year capture): 21 = 0.29%;
+- criterion 5 (first relevant capture): 5 = 0.07%.
+
+The criterion-1 proportion is extremely close to the published Woodchester
+benchmark (>96%), supporting the reconstructed residency hierarchy while still
+requiring explicit retention of criteria 2-5 as lower-certainty assignments.
+
+### Complete observed transition history
+
+The behavioural pipeline yielded 12,356 consecutive usable capture transitions:
+
+- 1,183 within-quarter;
+- 6,059 adjacent-quarter;
+- 5,114 longer-gap.
+
+Observed sett-change proportions were:
+
+- within-quarter: 496/1,183 = 41.9%;
+- adjacent-quarter: 1,994/6,059 = 32.9%;
+- longer-gap: 1,957/5,114 = 38.3%.
+
+Observed capture-level social-group change proportions were:
+
+- within-quarter: 270/1,183 = 22.8%;
+- adjacent-quarter: 606/6,059 = 10.0%;
+- longer-gap: 825/5,114 = 16.1%.
+
+These raw proportions should **not** be interpreted as causal time-scale effects
+because observation opportunity differs strongly among the three subsets.
+Within-quarter transitions exist only for repeatedly captured animals and are
+therefore selected for high observation intensity.
+
+### B1: within-quarter sett switching
+
+Among 1,116 repeat-captured badger-quarters, 467 (41.85%) involved >1 sett.
+
+After accounting for capture count, elapsed observation window, year and
+individual identity:
+
+- no clear male/female difference in switch probability;
+- age 2, 3-5 and 6+ all showed higher switching probability than age 0-1;
+- three captures rather than two strongly increased the chance of observing a
+  switch, as expected from greater observation opportunity;
+- elapsed observation window was strongly associated with switch detection;
+- badger identity showed substantial persistent heterogeneity
+  (random-effect SD approximately 0.73 on the logit scale);
+- year also contributed detectable heterogeneity.
+
+The persistent individual effect is biologically important: some badgers appear
+to use multiple setts more often than expected from observation opportunity
+alone.
+
+### B2: adjacent-quarter sett switching
+
+Among 6,059 adjacent-quarter observed transitions:
+
+- 1,994 = 32.9% changed sett;
+- no clear overall male/female effect on whether sett changed;
+- age 2 and 3-5 had roughly twice the odds of sett change relative to age 0-1;
+- age 6+ also showed elevated, but smaller, sett-switching probability;
+- destination quarter 3 showed a modest increase;
+- elapsed time, year and badger identity all mattered;
+- persistent badger heterogeneity was large (random-effect SD approximately
+  1.20 on the logit scale).
+
+This strengthens the hypothesis of repeatable individual movement phenotype.
+
+### Adjacent-quarter social-group crossing
+
+Among the 6,059 adjacent-quarter transitions, 606 (10.0%) changed recorded
+social group.
+
+Before conditioning on geometric distance:
+
+- males had higher cross-group odds than females;
+- age 2 and age 3-5 had much higher cross-group odds than age 0-1;
+- age 6+ was also elevated;
+- no clear seasonal contrast remained;
+- badger identity and year both showed strong heterogeneity.
+
+Because the current adjacent-quarter crossing model does not condition on
+sett-to-sett distance, these sex/age effects combine behavioural boundary
+crossing with differences in movement magnitude. A subsequent model should
+separate "moves farther" from "crosses boundaries more readily at a given
+distance".
+
+### B3: observed movement magnitude
+
+Across 4,139 different-sett consecutive capture transitions:
+
+- within-quarter median displacement: 281 m (IQR 162-406 m; 95th 817 m);
+- adjacent-quarter median displacement: 191 m (IQR 127-335 m; 95th 671 m);
+- longer-gap median displacement: 264 m (IQR 168-402 m; 95th 874 m).
+
+After accounting for elapsed days, year, individual identity and temporal scale:
+
+- male observed sett-to-sett moves were approximately exp(0.180) = 1.20 times
+  the distance of female moves on average;
+- age-2 moves were approximately 14% longer than age 0-1;
+- age 3-5 moves were approximately 13% longer than age 0-1;
+- age 6+ was not clearly different;
+- temporal-scale indicators were weak once elapsed days and other covariates
+  were accounted for;
+- individual identity strongly affected movement magnitude.
+
+Thus males do not appear much more likely to switch sett per se, but when a
+different-sett movement is observed they tend to move farther.
+
+### B4 social-group model correction
+
+The first B4 run printed 12,356 group-resolved transitions but fitted the
+distance-adjusted model to only 4,139 transitions because the implementation
+used log(distance), making zero-distance same-sett transitions undefined and
+dropping them.
+
+This is a conditioning error for the intended all-transition cross-group model.
+
+The behavioural script has been corrected to use:
+
+[
+log(1+d)
+]
+
+so zero-distance transitions remain valid. The corrected B4 model must be
+rerun before interpreting its sex/age/temporal-scale coefficients.
+
+Commit implementing the correction:
+
+```
+1191599ae0c3511d240a660dd544c62f13d7e21a
+```
+
+### V11S annual state-process / persistent-mover geometry
+
+The extended 300-badger diagnostic confirms a second important posterior
+trade-off beyond the local/high movement-scale ridge.
+
+In chain 1:
+
+- cor(female high movement scale, alpha_RD) ~ -0.80;
+- cor(alpha_logmove_high, alpha_RD) ~ -0.80;
+- cor(beta_move_high, alpha_RD) ~ -0.73;
+- cor(sigma_badger, alpha_RD) ~ -0.64;
+- cor(sigma_badger, alpha_disp_init) ~ -0.57.
+
+Chain 1 also drifted during the run toward:
+
+- larger sigma_badger (mean ~0.74 -> 1.08);
+- lower alpha_RD (~ -2.22 -> -3.25);
+- larger high-movement scale (~469 -> 772 m).
+
+This is a coherent compensatory direction:
+
+> stronger persistent between-badger heterogeneity can be traded against a
+> lower baseline local->high transition rate and a broader high-movement scale.
+
+The sigma_badger chain medians remain strongly separated:
+
+- chain 1: ~0.894;
+- chain 2: ~0.231;
+- chain 3: ~0.217.
+
+Therefore the persistent-mover effect is not yet separately identified from the
+annual state-transition/movement-scale process in the 300-badger V11S fit.
+
+Do not interpret sigma_badger, age transition effects, or baseline RD/DD
+parameters biologically until the full-population run is diagnosed.
+
+### Behavioural implication for the annual model
+
+The observed behavioural analyses now provide a direct, independently
+interpretable measure of persistent movement phenotype at capture timescales.
+This may ultimately reduce the need for the annual latent model to carry all
+"persistent mover" biology through a weakly identified random effect.
+
+However, because the observed behavioural data and V11S share underlying
+captures, this should be used as biological triangulation / complementary
+description, not independent validation.
+
+Wait for the 1,932-badger V11S result before deciding whether to:
+
+- retain the annual persistent mover random effect;
+- remove it in a pre-specified sensitivity;
+- regularize it more strongly;
+- or redefine the local state as effectively stable annual residency rather
+  than trying to estimate a 5-10 m continuous annual movement scale.
