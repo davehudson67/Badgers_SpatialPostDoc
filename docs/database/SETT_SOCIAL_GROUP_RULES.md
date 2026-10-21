@@ -1,6 +1,6 @@
 # Woodchester Sett and Social-Group Assignment Rules
 
-**Updated:** 16 October 2026
+**Updated:** 21 October 2026
 
 ## Purpose
 
@@ -220,3 +220,103 @@ Some analyses may need to collapse multiple captures within a quarter, choose mo
 Those are **model/analysis decisions**, not canonical database cleaning.
 
 They belong in analysis code and should not be written back to the historical capture record unless they become a separately named derived product.
+
+
+---
+
+## 12. Literature-backed Woodchester territory and annual-residency rules
+
+The Woodchester literature distinguishes two related but different operations:
+
+### 12.1 Annual territory delineation
+
+Social-group territories were historically delineated in spring using bait
+marking. Distinctive indigestible plastic markers were fed with bait at the
+main sett of each social group. Markers recovered from latrines were used to
+identify which group used a given area; latrines containing markers from
+neighbouring groups, together with field observations of boundary runs, were
+used to define territory boundaries.
+
+This means that historical social-group geography is explicitly time-varying.
+A modern static social-group polygon must never be projected backwards as if it
+represented all historical years.
+
+Where annual bait-marking territory products are available, they are the
+preferred source for historical territory geography.
+
+### 12.2 Annual resident social-group assignment
+
+For analyses requiring one resident social group per badger per calendar year,
+Vicente et al. (2007) used the following hierarchy, in order:
+
+1. allocate the badger to the social group in which it was most frequently
+   captured during that year;
+2. if still unresolved, refer to allocation(s) in adjacent years and allocate
+   consistently with the group in which it was most frequently caught;
+3. consider captures in the current year and both adjacent years together and
+   allocate to the group in which it was most frequently trapped;
+4. consider the last capture before the year and first capture after the year,
+   compare their temporal proximity to the year in question, and use the nearer
+   candidate group, conditional on it being among the most frequent candidates
+   from step 3;
+5. if still indeterminate, allocate to the first relevant group in which the
+   badger was caught.
+
+Vicente et al. reported that over 96% of badger-years were assigned using
+criterion 1 alone.
+
+Project implementation rule:
+
+> Annual resident social-group assignment should reproduce this capture-history
+> hierarchy as closely and transparently as possible, with the criterion used
+> stored for every badger-year.
+
+Do not use a posterior activity-centre location or a static territory raster to
+replace this annual resident-group assignment.
+
+### 12.3 Excursions must remain separate from residency
+
+A badger may be captured outside its annual resident group without having
+permanently changed residency.
+
+Therefore retain separately:
+
+- annual resident social group;
+- capture-level recorded social group;
+- capture sett;
+- observed extra-group excursion / bridge events;
+- annual resident-group changes between years.
+
+This distinction is central to reproducing the movement concepts used in the
+Woodchester literature and to separating temporary extra-territorial movement
+from permanent dispersal.
+
+### 12.4 Relation to historical movement categories
+
+Rogers et al. (1998) analysed movement among Woodchester social groups and
+distinguished broad behavioural types including non-movers, occasional movers,
+permanent movers and frequent movers. Later Woodchester work retained the
+distinction between annual resident-group change and more transient movement.
+
+These historical categories should be used as biological reference points, not
+forced as hard thresholds into V11S. The current project can compare them with:
+
+- V11S annual local/high-mobility probabilities;
+- directly observed within-quarter sett/group switching;
+- persistent individual mover propensity;
+- future demographic states in V12.
+
+### 12.5 Evidence hierarchy for observed social-group bridging
+
+For a capture-to-capture movement event, classify origin/destination social
+group using the strongest contemporaneous evidence available:
+
+1. capture-level recorded historical social group;
+2. explicit historically valid sett-to-social-group relationship;
+3. annual bait-marking territory geography, if available and date appropriate;
+4. unresolved if none of the above is sufficiently supported.
+
+Do not silently substitute a current sett/social-group relationship.
+
+Store the evidence source and an unresolved/conflict flag alongside every
+derived bridge classification.
