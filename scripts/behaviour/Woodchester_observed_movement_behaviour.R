@@ -541,6 +541,39 @@ if (
       as_tibble(),
     "results/behaviour_adjacent_quarter_cross_group_parametric.csv"
   )
+
+  # Secondary geometric-adjusted model: among spatially resolved adjacent
+  # quarter transitions, ask whether sex/age/season predict crossing beyond
+  # the effect of movement distance itself.
+  adjacent_q_cross_spatial <- adjacent_q_cross %>%
+    filter(!is.na(log1p_distance))
+
+  fit_adj_cross_distance <- gam(
+    cross_group_int ~
+      sex +
+      age_class +
+      season +
+      s(log_days, k = 5) +
+      s(log1p_distance, k = 5) +
+      s(year_factor, bs = "re") +
+      s(tattoo_factor, bs = "re"),
+    data = adjacent_q_cross_spatial,
+    family = binomial(link = "logit"),
+    method = "REML"
+  )
+
+  cat("\nAdjacent-quarter cross-group model adjusted for movement distance:\n")
+  cat("Transitions used:", nrow(adjacent_q_cross_spatial), "\n")
+  print(summary(fit_adj_cross_distance))
+  cat("\nVariance components:\n")
+  print(gam.vcomp(fit_adj_cross_distance))
+
+  write_csv(
+    as.data.frame(summary(fit_adj_cross_distance)$p.table) %>%
+      rownames_to_column("term") %>%
+      as_tibble(),
+    "results/behaviour_adjacent_quarter_cross_group_distance_adjusted_parametric.csv"
+  )
 } else {
   cat("Insufficient resolved adjacent-quarter group transitions for B2 group model.\n")
 }
