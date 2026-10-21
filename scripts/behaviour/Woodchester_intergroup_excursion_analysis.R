@@ -28,8 +28,25 @@
 #   results/behaviour_next_year_residency_change_parametric.csv
 # =============================================================================
 
+# Prevent nested BLAS/OpenMP + mgcv threading from oversubscribing large servers.
+# bam() is parallelized explicitly below; BLAS should remain single-threaded.
+Sys.setenv(
+  OPENBLAS_NUM_THREADS = "1",
+  OMP_NUM_THREADS = "1",
+  MKL_NUM_THREADS = "1",
+  BLIS_NUM_THREADS = "1",
+  VECLIB_MAXIMUM_THREADS = "1"
+)
+
+BAM_THREADS <- as.integer(Sys.getenv("BAM_THREADS", unset = "4"))
+if (!is.finite(BAM_THREADS) || BAM_THREADS < 1L) BAM_THREADS <- 4L
+BAM_THREADS <- min(BAM_THREADS, 8L)
+
 library(tidyverse)
 library(mgcv)
+
+cat("bam worker threads:", BAM_THREADS, "\n")
+cat("OPENBLAS_NUM_THREADS:", Sys.getenv("OPENBLAS_NUM_THREADS"), "\n")
 
 encounter_file <- "data/badger_encounters_useful.rds"
 population_file <- "results/V7_population_inclusion_audit.rds"
@@ -203,7 +220,7 @@ fit_extra_q <- bam(
   family = binomial(link = "logit"),
   method = "fREML",
   discrete = TRUE,
-  nthreads = max(1L, parallel::detectCores(logical = FALSE) - 2L)
+  nthreads = BAM_THREADS
 )
 
 print(summary(fit_extra_q))
@@ -306,7 +323,7 @@ fit_next <- bam(
   family = binomial(link = "logit"),
   method = "fREML",
   discrete = TRUE,
-  nthreads = max(1L, parallel::detectCores(logical = FALSE) - 2L)
+  nthreads = BAM_THREADS
 )
 
 print(summary(fit_next))
