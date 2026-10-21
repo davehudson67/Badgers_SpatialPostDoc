@@ -1,7 +1,7 @@
 # Woodchester Badger Modelling Development Roadmap
 
 **Status:** Living project document  
-**Last updated:** 19 October 2026  
+**Last updated:** 21 October 2026  
 **Purpose:** Prevent duplicated modelling, preserve decisions across chat windows, and keep the route from movement modelling to demography, infectiousness and social structure explicit.
 
 ---
@@ -1706,3 +1706,347 @@ scripts/ModularFitting/Woodchester_within_quarter_multisett_audit.R
 
 Do not fit the balanced-persistence H->H sensitivity until this simplified
 observation architecture has passed its convergence/state-agreement gate.
+
+
+## V11S interpretation, observed short-timescale movement, and current live plan — 21 October 2026
+
+### Why V11S exists
+
+V11S is a biological simplification motivated by the observation hierarchy,
+not a return to an old model and not merely another computational
+reparameterisation.
+
+The key lineage is:
+
+```
+V10A/V10B
+  annual AC + quarterly latent ACs + multiple capture locations
+  V10B adds AR(1) persistence among quarterly centres
+          |
+          v
+V11
+  retains annual AC + quarterly latent ACs
+  fixes quarterly AR(1) rho = 0 after weak support
+  replaces adult-entry movement terms with chronological age effects
+  adds persistent individual mover propensity
+  retains local/high annual movement HMM
+          |
+          v
+V11S
+  retains V11 annual movement biology
+  retains age + individual mover propensity
+  retains local/high annual movement HMM
+  retains all quarterly capture/non-capture occasions
+  retains every observed capture location
+  REMOVES latent quarterly ACs and omega entirely
+```
+
+Thus V11S is simpler spatially than V10B/V11 but biologically richer than
+V10B in the annual movement process.
+
+### What V10B was estimating
+
+V10B had three spatial scales:
+
+1. annual activity centre (A_{iy});
+2. quarterly latent centre (Q_{iyq}) around the annual centre;
+3. observed capture locations around the quarterly centre.
+
+The quarterly deviation scale (omega) represented the extent to which a
+badger's latent spatial centre changed among quarters within the same year.
+V10B additionally estimated AR(1) persistence (ho), asking whether a
+quarterly displacement from the annual centre persisted into the next quarter.
+
+Annual centre-to-centre displacement was separately classified by a two-state
+local/high movement HMM.
+
+### What V11 added
+
+V11 retained the annual/quarterly spatial hierarchy but changed the annual
+movement biology:
+
+- quarterly AR(1) persistence was removed ((ho=0)); quarterly deviations
+  became iid around the annual centre;
+- chronological age at the start of each annual movement interval replaced the
+  cruder adult-entry formulation;
+- a persistent badger-level random effect was added to initial high-mobility
+  probability and local->high initiation probability;
+- H->H persistence remained sex-specific only in the primary model pending the
+  pre-specified balanced-persistence sensitivity.
+
+The full-population parameterisation race demonstrated that centring and
+movement-scale reparameterisation improved computation but did not resolve the
+underlying identification problem. Joint-local was best but still failed the
+convergence gate.
+
+### Why the quarterly latent-centre layer was reconsidered
+
+The quarterly-centre layer was originally introduced mainly so that multiple
+capture locations in the same quarter could all be retained. It was not itself
+a primary biological target.
+
+Two audits distinguish the complete repeat-capture information from the subset
+that can support explicit distance/timing calculations.
+
+Complete captured-quarter audit:
+
+- 13,105 captured badger-quarters;
+- 1,116 (8.52%) with >1 capture record;
+- 467 (3.56%) with >1 distinct sett;
+- 344/1,932 badgers ever observed at >1 sett within a quarter.
+
+Distance/timing-resolved audit (requires usable capture date and mapped sett
+coordinates):
+
+- 12,907 captured badger-quarters;
+- 443 (3.43%) multi-sett quarters;
+- 328 badgers represented;
+- 471 consecutive observed sett-change transitions.
+
+The difference between 467 and 443 multi-sett quarters is data resolution, not
+a contradiction. The 467 cases are the complete behavioural set; 443 have
+sufficient date/coordinate information for the current distance/timing audit.
+
+For the 471 resolved sett-change transitions:
+
+- time between captures: minimum 5 d, Q1 20 d, median 38 d, Q3 56 d,
+  90th percentile 64 d, 95th percentile 70 d, maximum 84 d;
+- straight-line sett-to-sett distance: minimum 32.6 m, Q1 162 m,
+  median 281 m, Q3 406 m, 90th percentile 602 m, 95th percentile 817 m,
+  maximum 3,139 m.
+
+These observations are sparse at the quarter level but biologically valuable.
+They should not be discarded or averaged away.
+
+### V11S observation model
+
+V11S retains one latent annual activity centre per badger-year and treats each
+quarter as an observation occasion rather than a separate latent biological
+location.
+
+For badger (i), year (y), quarter (q), and observed capture location
+(r), the conceptual structure is:
+
+[
+A_{iy}
+longrightarrow
+{H_{iyq1}, H_{iyq2}, ldots}
+]
+
+rather than:
+
+[
+A_{iy}
+longrightarrow
+Q_{iyq}
+longrightarrow
+{H_{iyq1}, H_{iyq2}, ldots}.
+]
+
+The quarterly campaign still contributes one capture/non-capture term. If the
+animal was captured multiple times, every observed detector location
+contributes conditionally on the observed number of captures.
+
+The spatial kernel is therefore now interpreted as the spread of observed
+within-year trapping locations around the annual centre. It should not be
+interpreted as directly equivalent to the old quarterly-centre detection scale
+without qualification.
+
+### Annual local/high movement model retained in V11S
+
+Let the annual activity centre be
+
+[
+A_{iy}=(A^x_{iy},A^y_{iy}).
+]
+
+Annual displacement is
+
+[
+Delta A_{iy}=A_{iy}-A_{i,y-1}.
+]
+
+Conditional on latent movement state (z_{iy}),
+
+[
+Delta A_{iy}mid z_{iy}=0
+sim N_2(0,sigma^2_{L,i}I)
+]
+
+for local movement and
+
+[
+Delta A_{iy}mid z_{iy}=1
+sim N_2(0,sigma^2_{H,i}I)
+]
+
+for high mobility, with (sigma_H>sigma_L).
+
+Sex affects movement scale. The state-transition model distinguishes:
+
+- initial high-mobility probability;
+- local->high initiation;
+- high->high persistence.
+
+Current age and the persistent badger random effect enter initial/high
+initiation in the primary V11/V11S formulation; H->H currently retains sex
+only.
+
+The HMM states are collapsed during MCMC and annual local/high probabilities
+are recovered afterwards by forward-backward smoothing / FFBS.
+
+### What V11S can tell us biologically if it passes convergence
+
+V11S targets long-timescale individual movement.
+
+It can estimate:
+
+- each badger's latent annual spatial centre;
+- annual displacement between successive centres;
+- probability that each annual interval represents local vs high mobility;
+- typical local and high movement scales;
+- male/female differences in movement scale;
+- sex differences in initiation and persistence of high movement;
+- age effects on initiating high movement;
+- persistent between-individual heterogeneity in propensity to initiate high
+  movement;
+- repeat high-mobility episodes / persistent movers;
+- posterior annual trajectories that can subsequently be overlaid with
+  historical social-group membership/boundaries;
+- movement histories that can feed the future entry/emigration/survival and
+  infectiousness models.
+
+V11S does **not** directly estimate:
+
+- a true home-range centre for each quarter;
+- continuous movement paths within a year;
+- exact time of movement between observed captures;
+- social-group crossing until historical group information is joined;
+- immigration/emigration as demographic states;
+- infectiousness or transmission.
+
+Those remain later layers.
+
+### Observed multi-sett movement is a complementary analysis, not a competing model
+
+The within-quarter multi-sett dataset is direct empirical movement evidence.
+
+For a pair of consecutive captures at setts (a) and (b),
+
+[
+d_{ab}=
+sqrt{(x_b-x_a)^2+(y_b-y_a)^2}.
+]
+
+The observed time window is
+
+[
+Delta t=t_b-t_a.
+]
+
+This means only that the animal changed from sett (a) to sett (b) sometime
+within the interval (Delta t); it does not imply that the journey itself took
+(Delta t), nor that (d_{ab}) is the route length.
+
+This observed layer can directly quantify:
+
+- rapid sett switching;
+- observed short-timescale displacement;
+- individuals repeatedly using multiple setts;
+- eventual same-social-group vs cross-social-group movements;
+- rapid inter-group bridge events;
+- overlap between direct short-timescale bridge behaviour and latent annual
+  high-mobility classifications;
+- later, whether infectious/shedding animals generate unusually important
+  inter-group connections.
+
+This layer is especially relevant to transmission because a modest Euclidean
+movement that crosses a social-group boundary may be more epidemiologically
+important than a longer movement remaining within one group.
+
+### Relationship between the two current spatial products
+
+The two products answer different questions and should be retained together.
+
+**V11S latent annual model**
+
+> What is the animal's underlying year-to-year movement history, including
+> movement when it is imperfectly observed?
+
+Strength: reconstructs latent annual behaviour across the entire capture
+history and all eligible animals.
+
+Weakness: inference is model-based and annual; it does not provide exact
+within-year paths.
+
+**Observed multi-sett movement layer**
+
+> What rapid movements between known setts did we actually witness?
+
+Strength: direct evidence with known capture dates and sett coordinates.
+
+Weakness: opportunistic and detection-limited; absence of an observed move is
+not evidence that no move occurred.
+
+They should eventually be linked rather than forced into one latent hierarchy.
+
+### Current live validation plan
+
+The 50-badger V11S smoke test was reported complete on 21 October 2026.
+Its purpose is code/build/state-recovery validation rather than biological
+inference; no biological conclusion should be taken from a 50-badger smoke
+sample.
+
+The next runs may proceed concurrently because their output/session namespaces
+are independent:
+
+- 300-badger validation, 3 chains: direct comparison with previous 300-badger
+  V11 behaviour;
+- 1,932-badger full-population validation, 3 chains: production-scale test of
+  whether removal of the quarterly latent layer resolves the full-data
+  identification problem.
+
+Use the existing joint-local annual movement-scale coordinates for V11S because
+they were the best computational representation in the full-population V11
+race. Do not choose or reject V11S because of coefficient significance.
+
+### V11S decision gate
+
+Evaluate V11S on:
+
+- cross-chain R-hat and ESS;
+- within-chain movement-scale autocorrelation/drift;
+- agreement of local/high annual movement scales;
+- cross-chain annual state-probability agreement;
+- repeat-mover PPC;
+- stability of sex, age and badger-propensity conclusions.
+
+If V11S converges substantially better while retaining sensible posterior
+predictive behaviour, prefer the simpler annual-AC observation architecture.
+
+If V11S remains seriously non-converged, the quarterly latent-centre layer has
+been ruled out as the main explanation and attention should move to
+identifiability of the annual local/high mixture itself rather than restoring
+quarterly complexity.
+
+Only after the observation architecture is frozen should the pre-specified
+balanced H->H persistence sensitivity be fitted, followed by V12
+entry/survival/emigration and then V13 infectiousness/transmission.
+
+### Immediate observed-movement extension
+
+Next, join the complete multi-sett-quarter dataset to the versioned historical
+sett/social-group history. Preserve uncertainty/conflict rather than assigning
+modern groups retrospectively.
+
+For each observed sett transition record:
+
+- origin sett and destination sett;
+- capture dates and elapsed days;
+- straight-line distance;
+- historical origin and destination social group;
+- same-group / cross-group / unresolved classification;
+- split/merge/conflict flags where relevant.
+
+This creates a directly observed historical connectivity dataset that can later
+be related to annual movement state, immigration/emigration and infectiousness.
