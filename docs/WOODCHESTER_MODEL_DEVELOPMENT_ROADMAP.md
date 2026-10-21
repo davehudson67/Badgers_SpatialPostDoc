@@ -3045,3 +3045,105 @@ a093c83d6a3c79fbd126071e9ea17bdaf9bfb91e
 60cecb7d858a8a61b9e6e37059765062e01700a0
 ```
 
+
+
+## Inter-group excursion analysis completed — 21 October 2026
+
+The resumed E2/E3 analysis completed successfully.
+
+### E2: observed extra-group use predicts next-year resident-group change
+
+There were 4,677 consecutive resident badger-years with annual resident-group
+assignments in both year y and y+1.
+
+Raw next-year resident-group change:
+
+- no observed extra-group use in year y:
+  368/4,204 = 8.75%;
+- >=1 observed extra-group capture in year y:
+  125/473 = 26.4%.
+
+The adjusted binomial BAM included:
+
+- any extra-group use;
+- sex;
+- age class;
+- smooth capture effort;
+- year random effect;
+- badger random effect.
+
+Adjusted extra-group coefficient:
+
+[
+\beta_{extra}=1.416,quad SE=0.142,quad p<2\times10^{-16}
+]
+
+corresponding to an odds ratio of approximately:
+
+[
+OR=4.12quad (95\%\ CI\ approximately\ 3.12-5.44).
+]
+
+Thus observed extra-group use in year y is strongly associated with resident
+social-group change in year y+1 even after accounting for observation effort,
+sex, age, year and persistent individual heterogeneity.
+
+Males also had higher odds of next-year resident-group change:
+
+[
+\beta_{male}=0.865
+]
+
+or approximately OR=2.38 (95% CI approximately 1.93-2.93).
+
+Age effects were weak after adjustment, except the unknown-age category.
+
+Badger identity remained significant (RE SD approximately 0.55), indicating
+persistent individual heterogeneity in relocation propensity.
+
+### E3: directly observed excursion returns
+
+There were 432 directly observed resident -> other-group excursion events.
+
+- 190 had a later capture in the same calendar year;
+- 164/190 = 86.32% were back in their annual resident group at the next observed
+  capture;
+- 26/190 = 13.68% were still outside the resident group at the next observed
+  capture;
+- 242 had no later same-year capture and therefore cannot be classified as
+  return/non-return.
+
+This strongly supports the biological interpretation that most observed
+inter-group movements are temporary excursions rather than immediate permanent
+relocations.
+
+### Combined interpretation
+
+The two results jointly support a useful distinction:
+
+1. most observed inter-group excursions are temporary;
+2. nevertheless, a year containing extra-group use identifies a substantially
+   elevated probability of resident-group change in the following year.
+
+This is consistent with exploratory / bridge behaviour sometimes preceding
+dispersal, while remaining common as temporary ranging behaviour.
+
+### Important prospective sensitivity
+
+Annual resident group in year y is reconstructed from the full year's capture
+SOCG history, so predictor and current-year residency are not fully independent.
+
+Before treating extra-group use as a directional precursor to dispersal, run a
+prospective sensitivity in which only early-year extra-group observations
+(e.g. Q1-Q3, and preferably Q1-Q2 as a stricter test) are used to predict
+resident-group change in y+1.
+
+Also test destination matching:
+
+> among badger-years with extra-group use and a later resident-group change,
+> how often is the year y+1 resident group one of the extra groups visited in
+> year y?
+
+A strong destination-match signal would provide especially direct evidence that
+observed excursions can represent exploration of the eventual destination
+social group.
