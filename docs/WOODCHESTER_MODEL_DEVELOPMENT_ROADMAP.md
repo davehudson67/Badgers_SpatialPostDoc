@@ -2230,3 +2230,62 @@ after bridge events predicts subsequent acquisition.
 
 This is a distinct question from the earlier generic infected-to-movement
 analyses and therefore does not duplicate V7a-M/V7b-M.
+
+
+### Behavioural time-scale expansion — adjacent quarter-to-quarter transitions
+
+The observed behavioural programme must not be restricted to repeat captures
+within the same quarter. The capture history supports three nested direct/latent
+movement scales:
+
+1. **Within-quarter observed movement**
+   - consecutive captures during the same trapping campaign;
+   - strongest evidence for rapid excursions / short-timescale sett switching.
+
+2. **Adjacent quarter-to-quarter observed movement**
+   - last observed capture in quarter q to first observed capture in q+1;
+   - includes Q4 -> Q1 of the next calendar year;
+   - retains actual endpoints and dates rather than inventing a quarterly
+     activity-centre estimate;
+   - can quantify sett change, social-group change and displacement between
+     successive observed trapping campaigns.
+
+3. **Annual latent/residency movement**
+   - annual resident social-group changes from the Vicente-style hierarchy;
+   - annual latent activity-centre local/high movement from V11S.
+
+Longer gaps (>=2 trapping quarters between observed captures) should be retained
+as descriptive capture-to-capture transitions but not pooled into the primary
+adjacent-quarter analysis because the movement timing becomes increasingly
+uncertain.
+
+The behavioural script now constructs the complete ordered capture-to-capture
+transition history and explicitly labels:
+
+- within-quarter;
+- adjacent-quarter;
+- longer observational gap.
+
+Primary adjacent-quarter outcomes are:
+
+[
+P(	ext{different sett at next observed quarter})
+]
+
+and, where capture-level group identities are available,
+
+[
+P(	ext{different social group at next observed quarter}).
+]
+
+Sex, current age, destination season, elapsed days, year and persistent
+individual identity are included in the pre-specified models.
+
+This extension is intentionally based on direct observed endpoints. It does not
+restore the discarded latent quarterly activity-centre layer.
+
+Updated script:
+
+```
+scripts/behaviour/Woodchester_observed_movement_behaviour.R
+```
