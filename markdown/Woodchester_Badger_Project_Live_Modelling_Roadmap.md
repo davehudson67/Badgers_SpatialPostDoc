@@ -1468,3 +1468,26 @@ That is the overarching modelling framework we should now work towards.
 **Model-development decision gate:** complete geometry/GIF audit and descriptive posterior overlay first; do not modify or refit V11S solely because polygons are now available. Consider a boundary-resistance movement-kernel extension only if spatial overlay provides a substantive new estimand, shows residual support beyond physical distance and territory geometry, and passes identifiability/robustness checks. If considered, compare movement-state-specific resistance rather than imposing impermeable territories.
 
 **Later workstreams:** connect territory contraction/loss and network connectivity to V12 apparent survival, immigration/emigration and establishment, then use changing territory membership/connectivity and source infectiousness in V13 force-of-infection and persistence analyses. Distinguish disease introductions from sustained establishment, and observed associations from causal effects of population decline or culling.
+
+
+---
+
+## 2026-10-22 — V11S annual-boundary overlay completed; historical capture-group validation next
+
+The full V11S overlay was executed over **1,932 animals, 8,248 badger-years and 6,316 annual transitions**, with 75 subsampled posterior draws (25 × 3 chains) per activity centre. The derived spatial membership and transitions are in `outputs/V11S_social_group_overlay/`. These are exploratory outputs, **not** a refitted movement model or validated social-group membership estimates.
+
+**Initial audit summary (conditional on sampled posterior draws):** approximately 76.8% of annual locations fall in a single polygon, 20.5% outside mapped polygons and 2.7% in overlapping polygons. The conservative strict-boundary-change flag is rare (about 1.1% of transition draws); approximately 33.8% are map-dependent and 32.4% have ambiguous classifications (flags overlap, so percentages do not sum to 100). Never equate strict crossing with the full dispersal rate. These numbers should be confirmed against generated CSVs when published.
+
+**Biological context:** marked population decline and social-group attrition are independently known. As density drops, territories may expand and become less well-defined. This is a testable interpretation, not grounds to erase overlapping polygons or impute group membership where annual maps disagree.
+
+**Immediate validation work (script `scripts/Spatial/03_validate_V11S_territories_against_capture_groups.R`):**
+- Join overlay `individual_id × year` to the audited `results/V7_population_inclusion_audit.rds` individual-ID/tattoo crosswalk, then to *live* `data/badger_encounters_useful.rds` records.
+- Use capture-level `recorded_social_group_name` (or documented field fallback); preserve original strings and use only transparent case/whitespace normalisation. Do not substitute present-day sett/group names, silently fuzzy-match historical/compound labels, or treat `CHESTNUT` and `HOLLOW TREE` legacy sett-as-group anomalies as valid historical group labels.
+- Report per badger-year unique modal captured group, capture-group counts and tie status, posterior probability that mapped polygons contain **any contemporaneously recorded group**, probability of agreement with the unique annual modal group, and capture-count-weighted agreement. Keep outside/overlapping/unmapped spatial classes distinct and retain disagreement/name audit rows.
+- Compare concordance by calendar year and population-decline period; report denominators of *observable* group records and territory coverage separately. Agreement is not independent validation of V11S ACs: V11S coordinates are themselves inferred using many of these same captures; this is a **cross-source spatial consistency check**.
+- Cross-check against the established Vicente-inspired annual resident-group algorithm in `scripts/behaviour/Woodchester_assign_annual_resident_social_group.R` if that output is available. Modal group within a year is an initial sensitivity, **not** an automatic replacement for the full five-criterion resident assignment.
+- Review major mismatches before using annual group assignments in mechanistic movement or epidemiological models. Consider capture-level observed SG switches and excursions separately from annual residency.
+
+**Decision gate:** Do not inject time-varying boundaries into NIMBLE yet. After reviewing validation and the spatial coverage trend, connect the overlay to **joint** V11S HMM high-mobility state draws/probabilities, taking care with posterior pairing. Only then assess density-dependent geography vs social-boundary crossing, and ultimately group loss, territory expansion/overlap, apparent survival/entry and infectious-source connectivity.
+
+**Known visualization issue:** the GIF renders, but its displayed year remains `NA` on the server. This is a display-only issue to revisit later; derive all analyses from explicit `year` columns in the GeoPackage/CSVs, never from GIF frame labels.
