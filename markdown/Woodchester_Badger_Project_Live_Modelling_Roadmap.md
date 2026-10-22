@@ -1491,3 +1491,16 @@ The full V11S overlay was executed over **1,932 animals, 8,248 badger-years and 
 **Decision gate:** Do not inject time-varying boundaries into NIMBLE yet. After reviewing validation and the spatial coverage trend, connect the overlay to **joint** V11S HMM high-mobility state draws/probabilities, taking care with posterior pairing. Only then assess density-dependent geography vs social-boundary crossing, and ultimately group loss, territory expansion/overlap, apparent survival/entry and infectious-source connectivity.
 
 **Known visualization issue:** the GIF renders, but its displayed year remains `NA` on the server. This is a display-only issue to revisit later; derive all analyses from explicit `year` columns in the GeoPackage/CSVs, never from GIF frame labels.
+
+
+---
+
+## 2026-10-22 — conservative historical SG name crosswalk and field-team verification
+
+**Decision:** distinguish deterministic typography reconciliation from biological identity claims. Formatting-only key uppercases and removes spaces/punctuation; it preserves all source strings, does *not* split compound polygon names and does *not* infer that similar distinct words are equivalent. Examples suitable for automatic text matching: WOODFARM/WOOD FARM, OLDOAK/OLD OAK, FIELDFARM/FIELD FARM, SEPTICTANK/SEPTIC TANK, HOLLYWOOD/HOLLY WOOD. This is an analytical matching key, not a write-back to canonical social-group IDs.
+
+Reanalysis of 542,400 posterior badger-year location draws with recorded capture groups (7,232 badger-years; 75 draws each) shows **any-recorded-name exact concordance ~43.1%**, increasing to **~57.8%** with formatting-only matching. This is a consistency metric, not independent validation, because AC locations use the same captures. Differences in polygon coverage and overlapping territory units still contribute to nonagreement.
+
+**Remain pending field-team confirmation:** JACKSMIREY/JACKS, COLLIERSWOOD/COLLIERS, original names paired with clearly different polygon names (e.g., ARTHURS/JUNCTION and LARCH/BOX), and hyphenated/compound historical territories (e.g. YEW-TOP and YEW-TAXUS-TOP-WYCH ELM). Never assume split/merger or membership merely from a string; ask what the mapped territorial units were intended to represent in each period, and whether name relationships are date-bounded. Capture-level anomalies CHESTNUT and HOLLOW TREE must remain excluded from inferred group IDs per database governance unless explicitly corrected by source evidence.
+
+**Next action:** run `scripts/Spatial/04_reconcile_historical_social_group_names.R` to generate (1) candidate pairs for field review with year and frequency, (2) source-string dictionary with formatting keys, (3) badger-year concordance comparison, (4) annual comparison and (5) ranked unresolved-pair queue. Keep any approved aliases in a separate, versioned crosswalk with source, reviewer, evidence, effective dates and relationship type (equivalent name vs merger/compound vs different social group). Do not recode raw data; rerun validation after approvals. Then inspect residual spatial mismatches before introducing group membership into V12/V13.
