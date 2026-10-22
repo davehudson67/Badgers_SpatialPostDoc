@@ -1446,3 +1446,25 @@ $$
 
 
 That is the overarching modelling framework we should now work towards.
+
+---
+
+## 2026-10-22 update — annual observed social-group territory polygons (1977–2025)
+
+**New available source:** 49 year-specific shapefiles (`data/spatial/social_group_boundaries/territories_YYYY.shp`) with named polygons. These are observed/reconstructed annual boundaries and should take precedence over constructing a new static Thiessen map for years with usable polygon data. Keep source files unchanged; record provenance and interpretation of polygon names, which may derive from principal setts.
+
+**Field/CRS audit:** the source name field alternates between `SocialName`, `Sett`, `SETT` and `Social_grp`; some years have original `Confidence` values; numerous 2011–2024 files lack CRS metadata. Where coordinates independently confirm British National Grid, assign EPSG:27700 with an explicit inference flag rather than silently projecting. Retain original name, field, source filename, confidence, polygon ID, geometry-validity flags and areas in a derived annual GeoPackage. Compound names must not be automatically split or reconciled.
+
+**Immediate diagnostic work (no refit of V11S):**
+1. Run `scripts/Spatial/01_audit_social_group_boundaries.R` to produce an annual polygon layer, field/CRS/geometry/name checks, year summaries, same-name intersection/Jaccard persistence and a discrete 1977–2025 GIF. The animation must show only observed years, without fabricated intermediate boundaries, using a common extent and stable name colours. Verify year labels and review the output/flags.
+2. Check per-year mapped spatial coverage, overlap, missing/duplicate names, mapped union area, and (where possible) distinguish true social-group loss from names, boundary changes or survey extent. The marked long-term population decline is independently known; fewer groups are biologically plausible, but polygon count alone is not a group-population estimate.
+3. Compare spatially and by name against capture-level recorded social groups, historical sett-to-group assignments and study-domain point data. Resolve what `Confidence` means from data provenance before weighting inference by it.
+4. Overlay posterior **draws** of annual activity centres from the current full 1,932-badger V11S movement fit against **year-specific** polygons; retain out-of-polygon and ambiguous assignments as uncertain rather than forcing a group. For transitions, classify both endpoint centres against both year's boundary layers to separate movement-induced reassignment from boundary change. Check robustness of the observed high-mobility state against between-group switching, without defining that state by switching.
+
+**Biological hypotheses to test, not assume:** (a) losses of occupied territories as population declines, (b) compensatory expansion or contraction of surviving named territories, (c) changing boundary-crossing probabilities and dispersal at lower density, (d) potentially longer within-territory movements even when social-group switching becomes rarer, and (e) changing spatial connectivity, arrival/establishment and turnover after social-group loss. The same 300 m displacement can have a different social consequence under different annual territory geometries.
+
+**Candidate derived measures:** mapped group count, total mapped union extent, per-territory area and annual intersection/retention, adjacent groups and contact edge-length, same-name continuity, probabilistic badger-to-territory assignment, posterior crossing probability by local/high movement state, origin/destination group, and network edge flows. Interpret named territory continuity separately from continuity of its social members. Account for time-varying capture effort, population density estimation and potential post-2018 cull effects when relating spatial change to demography.
+
+**Model-development decision gate:** complete geometry/GIF audit and descriptive posterior overlay first; do not modify or refit V11S solely because polygons are now available. Consider a boundary-resistance movement-kernel extension only if spatial overlay provides a substantive new estimand, shows residual support beyond physical distance and territory geometry, and passes identifiability/robustness checks. If considered, compare movement-state-specific resistance rather than imposing impermeable territories.
+
+**Later workstreams:** connect territory contraction/loss and network connectivity to V12 apparent survival, immigration/emigration and establishment, then use changing territory membership/connectivity and source infectiousness in V13 force-of-infection and persistence analyses. Distinguish disease introductions from sustained establishment, and observed associations from causal effects of population decline or culling.
