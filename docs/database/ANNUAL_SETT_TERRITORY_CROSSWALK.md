@@ -12,23 +12,29 @@
 
 Read-only SQL confirmed 178 canonical setts, 17,586 captures, 16,340 captures linked to `sett_id`, and 173 historical sett–SG relationship rows, as of 2026-10-23. The first join must establish how many canonical setts have unique clean-name matches to BNG coordinates; those numbers were **not** guessed or prematurely accepted.
 
-## Execution
+## Offline execution (no database connection)
+
+Script 09 now reads four local CSV files from `data/local_supabase_snapshots/`:
+
+- `setts.csv`: `sett_id,sett_name,notes` from canonical setts
+- `groups.csv`: `social_group_id,social_group_name`
+- `history.csv`: `sett_id,social_group_id,valid_from,valid_to,notes`
+- `captures_annual_aggregate.csv`: `year,sett_id,recorded_social_group_id,n_captures`, aggregated from non-postmortem captures during 1977–2025 by year, canonical sett ID and recorded SG ID. Retain NULL SG categories.
+
+Export these tables through Supabase SQL Editor using read-only SELECT queries and download each result as CSV. The capture aggregate must exclude captures with NULL sett_id. Keep local snapshot CSVs uncommitted and handle as restricted research data. They are **not** automatically refreshed.
 
 ```bash
 git pull --ff-only
-# Supply a securely held READ-ONLY PostgreSQL connection URI in this shell.
-# Do not paste it into scripts, logs, GitHub or ChatGPT.
-export DATABASE_URL='postgresql://<read-only-user>:<password>@<host>:5432/<db>?sslmode=require'
-Rscript -e 'install.packages(c("DBI","RPostgres","sf","dplyr","tidyr","readr","stringr","purrr"))' # only if absent
-Rscript scripts/Spatial/09_canonical_sett_id_territory_SG_audit.R \
+mkdir -p data/local_supabase_snapshots logs
+# Place the four exported CSV files in data/local_supabase_snapshots/
+Rscript scripts/Spatial/09_canonical_sett_id_territory_SG_audit.R \\
   2>&1 | tee logs/canonical_sett_territory_audit.log
 echo "EXIT STATUS: ${PIPESTATUS[0]}"
-unset DATABASE_URL
 ```
 
-The URI is a placeholder. If the Exeter environment already provides a protected database connection, use that rather than creating or sharing passwords.
+Review `00_source_audit_summary.csv`, `04_canonical_coordinate_match.csv`, `10_all_sett_year_status.csv`, `14_annual_polygon_review_worklist.csv` and `15_annual_observed_coverage.csv` in `outputs/canonical_sett_SG_territory_crosswalk/`.
 
-The new outputs go to `outputs/canonical_sett_SG_territory_crosswalk/`. Review `00_source_audit_summary.csv`, `04_canonical_coordinate_match.csv`, `05_coordinate_names_not_canonical.csv`, `06_unresolved_capture_sett_names.csv`, `10_all_sett_year_status.csv`, `14_annual_polygon_review_worklist.csv` and `15_annual_observed_coverage.csv`.
+The aggregate represents linked captures only. The summary cannot infer a full unmatched-capture count from it; missing-coordinate and missing-sett-ID cases remain separate.
 
 ## Interpretation safeguards
 
