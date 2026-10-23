@@ -595,3 +595,16 @@ A view recalculates when `research` changes, but **the import / reconciliation f
 **Next versioned ETL implementation needed:** inventory how the original Access .mdb is exported and where the existing importer script lives; implement batch ledger, staged source snapshot and row-level difference reports. Current migration v1 is a safe derived-view implementation, **not** a fully automated Access refresh pipeline.
 
 Future candidates, pending assay interpretation signoff: standard DPP, IFN-gamma, ELISA, Brock test status plus per-capture diagnostic pivot, explicitly preserving failed/untested/unknown categories; one-row-per-capture conveniences should be carefully aggregated to avoid multiplying multiple assays/sample records.
+
+
+## Additional standardisation migrations v2 and v3 — 23 October 2026
+
+Applied, versioned SQL migrations:
+- `sql/migrations/woodchester_diagnostic_interpretation_v2_20261023.sql`: DPP visual-line P/Px and N/Nx, IFN-gamma Positive/Negative with recorded test_failed as INVALID, ELISA P/N, Brock P/N with no_clotted invalid. Interpretations are nullable rather than assigning missing or invalid tests as negative. Creates `analysis.diagnostic_interpretation_standardised` and `analysis.capture_diagnostic_summary_standardised`.
+- `sql/migrations/woodchester_diagnostic_include_culture_v3_20261023.sql`: expands the unified diagnostic interpretation to include culture tests, reusing the v1 culture classification. The capture-level summary automatically includes these culture observations without joining multiple assay tables at capture grain.
+
+**Live verification:** `analysis.diagnostic_interpretation_standardised` returned **73,200** assay rows across culture (48,699), DPP (3,316), IFN-gamma (4,375), ELISA (15,162), and Brock (1,648). `analysis.capture_diagnostic_summary_standardised` returned **17,586** rows, equal to canonical captures, and its sum of `diagnostic_test_count` equalled 73,200. Capture-level flags are *descriptive recorded test evidence*, not a validated tuberculosis diagnosis or latent infection model. Stat-Pak is not included in these views yet because its result-code interpretation requires separate review; use `analysis.diagnostic_results` for the full original test inventory. The test-level base evidence is still preserved.
+
+**Repeatability:** both views are deterministic expressions over current canonical tables. New Access records will be interpreted automatically *once a separately audited source→research import has completed*. Neither migration currently performs Access ingestion or updates canonical research rows.
+
+**Unresolved scientific rule checks:** compare positivity semantics for DPP `Px`/`Nx` and missing second visual line, IFN `test_failed` text, ELISA `I`/`ITT`/`BIT`, and Brock `no_clotted`; maintain source codes for reviewer decisions. The present version documents practical explicit interpretations, not replacements for assay validation protocols.
