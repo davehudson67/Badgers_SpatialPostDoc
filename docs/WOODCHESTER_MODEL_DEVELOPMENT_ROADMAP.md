@@ -1,7 +1,7 @@
 # Woodchester Badger Modelling Development Roadmap
 
 **Status:** Living project document  
-**Last updated:** 21 October 2026  
+**Last updated:** 23 October 2026  
 **Purpose:** Prevent duplicated modelling, preserve decisions across chat windows, and keep the route from movement modelling to demography, infectiousness and social structure explicit.
 
 ---
@@ -3700,6 +3700,34 @@ Avoid a hard same-cell rule because an arbitrarily small displacement across a
 cell edge would be classified differently from the same displacement within a
 cell.
 
+### Grid-scale clarification
+
+The 50 m habitat raster matters because it defines the discretised habitat /
+state-space support used when evaluating whether a continuous annual activity
+centre lies in allowed habitat. It does **not** quantise the annual activity
+centre itself to 50 m coordinates.
+
+Therefore:
+
+- a finer raster could reduce habitat-edge discretisation;
+- it would not create new information in the capture data about whether a
+  resident annual centre moved 2 m versus 20 m;
+- re-gridding is not the primary remedy for the V11S ridge;
+- the resident-state scale should be treated as unresolved process noise and
+  assessed by a pre-specified sensitivity rather than defined by raster-cell
+  identity.
+
+Use 50 m as a biologically transparent central sensitivity because it matches
+the existing habitat raster scale, not because 50 m is assumed to be a true
+behavioural threshold. The 25/50/100 m mean-radial-displacement sensitivity
+brackets this unresolved scale.
+
+Where year-specific social-group polygons are available, retain them as vector
+geometry for posterior overlays rather than rasterising them to the 50 m
+habitat grid unless a later computational step explicitly requires a raster.
+This keeps territory-boundary precision conceptually separate from habitat-grid
+resolution.
+
 ### V11R architecture
 
 Preserve as much V11S biology as possible and change only the demonstrated
@@ -3733,9 +3761,16 @@ plausible unresolved resident-process scale.
 
 ### Dynamic social-group boundaries are now an explicit parallel state layer
 
-The available annual territory polygons (1977--2025) should **not** define the
-latent relocation state. Geographic movement must remain inferable without
+The annual territory archive now contains 49 year-specific polygon products
+covering 1977--2025 and has its own audit outputs under
+`outputs/social_group_boundary_audit/`. These polygons should **not** define
+the latent relocation state. Geographic movement must remain inferable without
 using group identity so that social consequences can be tested independently.
+
+The boundary audit and earlier posterior overlay also show why assignments must
+retain uncertainty: posterior annual centres can fall outside all mapped
+territories or within overlapping polygons. Do not force such locations into a
+group simply to obtain a complete categorical variable.
 
 For each posterior annual transition, derive at least four distinct concepts:
 
