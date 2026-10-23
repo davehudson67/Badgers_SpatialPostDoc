@@ -63,12 +63,13 @@ fit <- readRDS(chain_file)
 
 accepted_models <- c(
   "V11_RD_SCR_MULTILOC_IID_AGE_BADGERRE_COLLAPSED_HMM",
-  "V11_RD_SCR_ANNUALAC_MULTILOC_AGE_BADGERRE_COLLAPSED_HMM"
+  "V11_RD_SCR_ANNUALAC_MULTILOC_AGE_BADGERRE_COLLAPSED_HMM",
+  "V11R_RD_SCR_ANNUALAC_FIXEDRES_MULTILOC_AGE_BADGERRE_COLLAPSED_HMM"
 )
 
 if (!fit$model %in% accepted_models) {
   stop(
-    "Input is not a supported V11 age + badger-RE collapsed-HMM fit. Model: ",
+    "Input is not a supported V11/V11R age + badger-RE collapsed-HMM fit. Model: ",
     fit$model
   )
 }
