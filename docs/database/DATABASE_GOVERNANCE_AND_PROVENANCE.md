@@ -569,3 +569,29 @@ Reviewed code:
 Additional live checks: `research.captures` has 17,586 records; 1,246 have no sett ID (only 464 also contain a recorded nonblank sett), 685 have no recorded SG ID (only 3 also contain recorded nonblank SG). `research.captures` currently has 369 nonnull `location_cleaning_note` entries, so earlier documentation of only three exceptional changes is incomplete and needs a classified audit. `research.sett_social_group_history` still has zero rows with a nonnull historical validity bound.
 
 **Audit posture:** At this stage the exploratory queries above did *not* alter the primary `research` data. The required next database additions are versioned, reproducible source-to-canonical exception reports and explicitly defined derived columns/views; biological recodes must not be silently backfilled into source fields.
+
+
+## Repeatable canonical cleaning and refresh policy — migration v1, 23 October 2026
+
+**Applied live migration** `sql/migrations/woodchester_standardisation_v1_20261023.sql` (Supabase migration name `woodchester_standardisation_v1_20261023`). This adds two **non-destructive analysis views**:
+
+- `analysis.individual_traits_standardised`: 3,791 records; tattoo-first, source and standardised sex and first-capture age, `sex_missing` and `age_first_capture_missing`. Sex NULL vs literal UNKNOWN remains distinguishable. `067B` is still CUB, matching source; historical ADULT recode not automatically adopted.
+- `analysis.culture_results_standardised`: 48,699 records; source culture result, culture status, sample grouping, source capture ID and tattoo; nullable `is_m_bovis_detected` only true for M.BOVIS and false for NEGATIVE. Invalid, untested, missing, pending and other-organism results are **NULL evidence, not negatives**.
+
+Verified output categories: NEGATIVE 46,400; M_BOVIS_DETECTED 1,058; MISSING 1,218; INVALID 9; PENDING 6; NOT_TESTED 5; OTHER_ORGANISM 3. Total 48,699. These are deterministic views over current canonical tables and therefore automatically update when canonical tables receive new validated rows. Two new views have SELECT for both established read-only roles.
+
+### Critical: refreshed Access extracts are not automatically imported
+
+A view recalculates when `research` changes, but **the import / reconciliation from a newly updated Access database still needs a separate, version-controlled ETL**. Do not re-run a wholesale CSV import over edited `research` records or conflate SQL `raw_row_id` with stable Access source identity. A safe future refresh is:
+
+1. Record origin Access file version, export timestamp, SHA-256 checksums, table/field counts, and source identifier stability.
+2. Load a **new, immutable, version-tagged staging snapshot**, never blindly overwrite `access_raw` or `research`.
+3. Compare fresh source rows against prior source snapshot using stable natural/composite keys; flag new, changed, removed, duplicate or ambiguous rows.
+4. Apply **versioned canonical cleaning rules** to staged data; capture exceptions in a review log. Preserve original input text and previous canonical values; require explicit acceptance for disputed biological recodes.
+5. Upsert research entities and child records in an audited transaction, using stable canonical tattoo and `capture_id` mapping where demonstrated. Confirm identifier uniqueness and capture match cardinality; block ambiguous assay joins.
+6. Verify before/after totals, categorical frequency tables, source row fingerprints, nullness and key constraints, assay linkage and longitudinal model inputs.
+7. Record migration Git commit, database migration identifier, output counts, batch/source checksum, date and reviewer. Promote only a passing snapshot to collaborative use.
+
+**Next versioned ETL implementation needed:** inventory how the original Access .mdb is exported and where the existing importer script lives; implement batch ledger, staged source snapshot and row-level difference reports. Current migration v1 is a safe derived-view implementation, **not** a fully automated Access refresh pipeline.
+
+Future candidates, pending assay interpretation signoff: standard DPP, IFN-gamma, ELISA, Brock test status plus per-capture diagnostic pivot, explicitly preserving failed/untested/unknown categories; one-row-per-capture conveniences should be carefully aggregated to avoid multiplying multiple assays/sample records.
