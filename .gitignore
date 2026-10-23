@@ -87,3 +87,6 @@ results/
 outputs/
 *.html
 *.bak
+
+# Local canonical sett/SG snapshot exports (research data; keep outside Git)
+/data/local_supabase_snapshots/
