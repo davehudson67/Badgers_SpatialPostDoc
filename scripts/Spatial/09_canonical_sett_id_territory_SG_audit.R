@@ -7,35 +7,48 @@ suppressPackageStartupMessages({
  library(DBI); library(RPostgres); library(sf)
  library(dplyr); library(tidyr); library(readr); library(stringr); library(purrr)
 })
-db_url <- Sys.getenv("DATABASE_URL")
-if (!nzchar(db_url)) stop("Set DATABASE_URL to your existing read-only Supabase Postgres connection URI (do not commit credentials).")
+snapshot_dir <- Sys.getenv("SUPABASE_SNAPSHOT_DIR",file.path("data","local_supabase_snapshots"))
 root <- Sys.getenv("PROJECT_ROOT",".")
 coord_path <- Sys.getenv("SETT_FILE",file.path(root,"data/WoodchesterSettLocations.csv"))
 gpkg <- Sys.getenv("TERRITORY_FILE",file.path(root,"outputs/social_group_boundary_audit/annual_territories.gpkg"))
 out <- Sys.getenv("OUTPUT_DIR",file.path(root,"outputs/canonical_sett_SG_territory_crosswalk"))
 dir.create(out,recursive=TRUE,showWarnings=FALSE)
-for(p in c(coord_path,gpkg)) if (!file.exists(p)) stop("Missing source: ",p)
+for(p in c(coord_path,gpkg)) if (!file.exists(p)) stop("Missing spatial source: ",p)
 clean <- function(z) {
  z <- toupper(trimws(as.character(z)))
  z <- gsub("[^A-Z0-9]","",z)
  z[!nzchar(z)|is.na(z)] <- NA_character_
  z
 }
-con <- DBI::dbConnect(RPostgres::Postgres(), dbname=db_url)
-on.exit(DBI::dbDisconnect(con),add=TRUE)
-canonical <- DBI::dbGetQuery(con,"select sett_id,sett_name,notes from research.setts")
-captures <- DBI::dbGetQuery(con,"
- select c.capture_id,extract(year from c.capture_date)::integer as year,
- c.sett_id,c.recorded_sett_name,c.recorded_social_group_id,
- sg.social_group_name as captured_sg, c.is_pm
- from research.captures c
- left join research.social_groups sg on sg.social_group_id=c.recorded_social_group_id
- where c.capture_date >= date '1977-01-01' and c.capture_date < date '2026-01-01'")
-history <- DBI::dbGetQuery(con,"
- select h.sett_id,h.social_group_id,sg.social_group_name,
- h.valid_from,h.valid_to,h.notes
- from research.sett_social_group_history h
- join research.social_groups sg on sg.social_group_id=h.social_group_id")
+load_snapshot <- function(file,required) {
+ path <- file.path(snapshot_dir,file)
+ if(!file.exists(path)) stop("Missing snapshot ",path,
+   ". See docs/database/ANNUAL_SETT_TERRITORY_CROSSWALK.md")
+ x <- read_csv(path,show_col_types=FALSE)
+ if(!all(required %in% names(x))) stop("Snapshot ",path,
+  " missing columns: ",paste(setdiff(required,names(x)),collapse=", "))
+ x
+}
+canonical <- load_snapshot("setts.csv",c("sett_id","sett_name","notes"))
+groups <- load_snapshot("groups.csv",c("social_group_id","social_group_name"))
+history <- load_snapshot("history.csv",c("sett_id","social_group_id","valid_from","valid_to","notes"))
+agg <- load_snapshot("captures_annual_aggregate.csv",
+ c("year","sett_id","recorded_social_group_id","n_captures")) %>%
+ filter(year>=1977,year<=2025)
+# Snapshot contains aggregated non-PM capture counts by year, sett_id and recorded SG ID.
+# NULL social-group IDs are valid: they contribute to observed sett activity.
+captures <- agg %>% left_join(groups,by=c("recorded_social_group_id"="social_group_id")) %>%
+ transmute(year=as.integer(year),sett_id=as.integer(sett_id),
+  recorded_social_group_id=as.integer(recorded_social_group_id),
+  captured_sg=social_group_name,n_captures=as.integer(n_captures))
+if(anyNA(canonical$sett_id)||anyDuplicated(canonical$sett_id)) stop("Canonical sett_id missing/duplicated")
+if(anyDuplicated(groups$social_group_id)) stop("Social group IDs duplicated")
+if(any(is.na(captures$n_captures)|captures$n_captures<1)) stop("Invalid aggregate counts")
+if(any(!is.na(captures$sett_id)&!captures$sett_id %in% canonical$sett_id))
+ stop("Capture aggregate contains unknown sett IDs")
+if(any(!is.na(captures$recorded_social_group_id)&
+ !captures$recorded_social_group_id %in% groups$social_group_id))
+ stop("Capture aggregate contains unknown group IDs")
 write_csv(canonical,file.path(out,"01_canonical_setts.csv"))
 # Coordinate source contains historical names, not canonical IDs.
 co <- read_csv(coord_path,show_col_types=FALSE)
@@ -62,15 +75,15 @@ summary <- tibble(
  "n_captures_with_sett_id","n_captures_without_sett_id",
  "n_captures_with_sg_id"),
  value=c(nrow(canonical),sum(joined$coord_status=="EXACT_NORMALISED_NAME"),
- sum(joined$coord_status=="NO_COORDINATE"),nrow(captures),
- sum(!is.na(captures$sett_id)),sum(is.na(captures$sett_id)),
- sum(!is.na(captures$recorded_social_group_id))))
+ sum(joined$coord_status=="NO_COORDINATE"),sum(captures$n_captures),
+ sum(captures$n_captures[!is.na(captures$sett_id)]),NA_integer_,
+ sum(captures$n_captures[!is.na(captures$recorded_social_group_id)])))
 write_csv(summary,file.path(out,"00_source_audit_summary.csv"))
-capture_audit <- captures %>% filter(is.na(sett_id)) %>%
- count(recorded_sett_name,sort=TRUE,name="n_captures")
-write_csv(capture_audit,file.path(out,"06_unresolved_capture_sett_names.csv"))
-evidence <- captures %>% filter(!is.na(sett_id),!is.na(recorded_social_group_id),!is_pm) %>%
- count(year,sett_id,recorded_social_group_id,captured_sg,name="n_captures") %>%
+# The local annual aggregate includes only canonical-ID-linked captures.
+# Missing/unresolved capture locations are NOT represented in this snapshot.
+write_csv(tibble(metric="unresolved_capture_locations",status="NOT_IN_SNAPSHOT"),
+ file.path(out,"06_unresolved_capture_sett_names.csv"))
+evidence <- captures %>% filter(!is.na(sett_id),!is.na(recorded_social_group_id)) %>%
  group_by(year,sett_id) %>% mutate(total_captures=sum(n_captures),
  proportion=n_captures/total_captures,n_observed_sgs=n()) %>% ungroup()
 write_csv(evidence,file.path(out,"07_canonical_capture_SG_evidence.csv"))
@@ -104,7 +117,7 @@ status <- all_years %>% left_join(hits %>% count(year,sett_id,name="n_polygons")
  n_polygons==0~"OUTSIDE_ALL",n_polygons==1~"ONE_POLYGON",TRUE~"MULTIPLE_POLYGONS"))
 write_csv(status,file.path(out,"10_all_sett_year_status.csv"))
 # 'Observed' means captured at least once that year, NOT proof of biological occupancy.
-observed <- captures %>% filter(!is.na(sett_id),!is_pm) %>% distinct(year,sett_id)
+observed <- captures %>% filter(!is.na(sett_id)) %>% distinct(year,sett_id)
 obsstatus <- status %>% inner_join(observed,by=c("year","sett_id"))
 write_csv(obsstatus,file.path(out,"11_observed_canonical_sett_years.csv"))
 candidate <- hits %>% inner_join(observed,by=c("year","sett_id")) %>%
