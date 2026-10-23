@@ -299,3 +299,34 @@ If the original `.accdb` or an Access schema export is available, the next dicti
 - form labels/tooltips where scientifically informative.
 
 Those should be added as **source-derived descriptions**, rather than silently replacing this working interpretation.
+
+
+## Version 1.1 — comprehensive dictionary and valid-value policy (23 October 2026)
+
+The material above describes the original canonical research tables. The **authoritative inventory of every column** across `access_raw`, `research`, `analysis` and private `ingest` can be regenerated using [`sql/audit/Woodchester_v1_1_schema_and_value_dictionary.sql`](../../sql/audit/Woodchester_v1_1_schema_and_value_dictionary.sql). The live database is the authority for column existence and SQL type; this prose dictionary is the place for scientific meanings, measurement units, applicable periods and evidence notes.
+
+**Do not confuse observed values with allowed values.** Database `CHECK` constraints or lookup tables, where available, define allowed codes. For unconstrained free-text fields, report *observed distinct values and frequencies* rather than implying a closed valid-code list. The companion SQL provides examples and the full-column inventory. Distinguish SQL NULL, source literal UNKNOWN, invalid test, missing test and source NOT TESTED.
+
+### Additional V1 standardisation outputs
+
+- `analysis.individual_traits_standardised`: `tattoo`, recorded/standardised age-first-capture and sex, year first captured and corresponding `*_missing` flags.
+- `analysis.capture_traits_standardised`: one row per canonical capture, with `tattoo`, `capture_id`, date/year/quarter, original and standardised individual attributes, elapsed years since first capture, and a separately named approximate age only for first-capture CUB records.
+- `analysis.culture_results_standardised`: one sample/test row, original result text, standardised culture status, grouped sample type, nullable `is_m_bovis_detected`.
+- `analysis.stat_pak_results_standardised`: one row per Stat-Pak test; `original_result_code` has lookup-verified N=negative, P=positive and C=no clotted sample (invalid).
+- `analysis.diagnostic_interpretation_standardised`: one row per assay/sample across six test families. `test_family` distinguishes test domains; `source_record_id` identifies a record **within** its family; `interpreted_status` = POSITIVE/NEGATIVE/INVALID/INDETERMINATE, with nullable `test_positive`.
+- `analysis.capture_diagnostic_summary_standardised`: one row per capture, diagnostic counts and descriptive any-positive flag (not a latent infection diagnosis).
+- `analysis.sett_coordinates_approved`: one coordinate record per currently approved canonical sett; preserves provenance/precision.
+- `analysis.sett_field_team_review`: each canonical sett, frequency and last capture, and whether there is an approved coordinate.
+- `analysis.unresolved_recorded_sett_names`: distinct source location labels that have no verified canonical sett ID, with frequency and first/last dates.
+
+### Sett evidence table: `research.sett_location_evidence`
+
+Fields: `evidence_id` unique entry; `sett_id` canonical physical sett; `easting`/`northing` numeric coordinates **in `coordinate_system`**, default EPSG:27700; `accuracy_m` stated uncertainty (metres); `evidence_type` one of FIELD_TEAM, HISTORIC_MAP, GPS, OTHER; `source_reference` citation or field record; `observed_on` observation date; `recorded_by`, `notes`; `review_status` PROPOSED/APPROVED/REJECTED/SUPERSEDED; `reviewed_by`/`reviewed_at`; `created_at`. A partial unique index forbids two simultaneous APPROVED records for the same sett. The table starts empty; **no coordinates have been invented**.
+
+### Private refresh and decision tables
+
+`ingest.access_refresh_batches`: `batch_id`, source file name and SHA256, exported and registered dates, status (REGISTERED, STAGED, REVIEWED, APPLIED, REJECTED), Git commit, notes.
+`ingest.access_refresh_table_audits`: per-batch table counts and changed/new/missing/ambiguous rows, decision status (PENDING, PASS, REVIEW, FAIL), JSON audit evidence.
+`ingest.canonical_cleaning_decisions`: recorded and proposed canonical values, rule version, evidence/rationale, approval status (PROPOSED, APPROVED, REJECTED, SUPERSEDED), reviewer and Git commit.
+
+**Outstanding documentation gap:** some original Access field labels, units and validation-code meanings are not yet independently evidenced. Do not invent these. The SQL inventory is complete as a schema query, but a fully human-curated definition for *each* raw and derived field requires checking Access forms/lookup tables and the field team.
