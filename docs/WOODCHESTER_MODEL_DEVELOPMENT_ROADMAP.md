@@ -3855,3 +3855,71 @@ Do not repeat the already-completed generic infected -> movement or movement ->
 infection questions unchanged. Revisit disease only where the estimand changes
 to infectiousness, demography, importation/reseeding, dynamic exposure or a
 materially improved joint latent-state formulation.
+
+
+## V11R implementation and resolution-sensitivity launch — 23 October 2026
+
+V11R has now been implemented as the resolution-aware replacement for the
+unconverged V11S local-scale parameterisation.
+
+Script:
+
+`scripts/ModularFitting/Woodchester_V11R_resolution_aware_relocation.R`
+
+The change is deliberately narrow:
+
+- annual activity centres remain continuous;
+- the 50 m raster remains habitat/state-space support, not a movement lattice;
+- direct quarterly multi-location observations are unchanged;
+- the two-state annual collapsed HMM is retained;
+- initial relocation, resident->relocation and relocation->relocation
+  transition structure is retained;
+- current chronological age is retained;
+- sex effects are retained;
+- persistent individual mover propensity is retained;
+- the reference/female resident-state mean radial displacement is fixed rather
+  than freely estimated;
+- the positive relocation contrast remains estimated;
+- the existing movement-scale sex effect is retained, so the fixed sensitivity
+  value is the female/reference resident mean and the male resident scale is
+  implied by the estimated sex contrast.
+
+Pre-specified fixed reference/female resident mean-radial sensitivities:
+
+- 25 m;
+- 50 m (central);
+- 100 m.
+
+These are sensitivity assumptions, not competing biological hypotheses and not
+a model-selection exercise. The primary question is whether recovered
+relocation histories and biological coefficients are robust across the three
+resolution assumptions.
+
+A parallel launcher has been added:
+
+`scripts/ModularFitting/run_V11R_resolution_sensitivity.sh`
+
+Full mode launches 3 chains for each of the three resident-scale assumptions
+(9 independent full-data fits) with conservative BLAS/OpenMP thread caps.
+State recovery is run automatically after each completed chain.
+
+A V11R-specific convergence/state summary is available at:
+
+`scripts/ModularFitting/Woodchester_V11R_three_chain_summary.R`
+
+The existing FFBS state-recovery script now accepts V11R fits.
+
+Decision gate after the nine full fits:
+
+1. require acceptable within-scale three-chain convergence;
+2. compare posterior relocation histories across 25/50/100 m assumptions;
+3. compare sex, age, persistent individual heterogeneity and RD/DD transition
+   coefficients across the sensitivity;
+4. if relocation inference is robust, freeze V11R as the geographic movement
+   engine;
+5. then overlay the year-specific social-group polygons and capture-derived
+   resident-group histories before proceeding to V12 demography.
+
+Do not choose the resident scale merely because one sensitivity has a slightly
+better likelihood or posterior fit. The resident scale is intentionally treated
+as unresolved nuisance process noise.
