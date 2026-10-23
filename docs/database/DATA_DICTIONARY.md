@@ -1,6 +1,6 @@
 # Woodchester Badger Database — Data Dictionary
 
-**Updated:** 16 October 2026
+**Status:** Draft baseline Version 1 — reviewed by Dave Hudson
 
 This is a working key to the canonical `research` tables.
 
@@ -10,7 +10,7 @@ Where a description is based only on field naming/current structure rather than 
 
 - Fields ending `_id` are stable relational identifiers.
 - `capture_id` links a record to one capture event.
-- `individual_id` links a record to one canonical badger.
+- `individual_id` is an internal relational foreign key (not a scientific identifier); researchers use `tattoo` for individuals and `capture_id` for events.
 - `created_at` / `imported_at` are database provenance timestamps.
 - Recorded free text is retained where historically important.
 - Import/staging tables are not canonical research products.
@@ -330,3 +330,10 @@ Fields: `evidence_id` unique entry; `sett_id` canonical physical sett; `easting`
 `ingest.canonical_cleaning_decisions`: recorded and proposed canonical values, rule version, evidence/rationale, approval status (PROPOSED, APPROVED, REJECTED, SUPERSEDED), reviewer and Git commit.
 
 **Outstanding documentation gap:** some original Access field labels, units and validation-code meanings are not yet independently evidenced. Do not invent these. The SQL inventory is complete as a schema query, but a fully human-curated definition for *each* raw and derived field requires checking Access forms/lookup tables and the field team.
+
+
+## Canonical identifier and PM location conventions
+
+In researcher-facing data, `tattoo` identifies a badger and `capture_id` identifies a capture or post-mortem event. The internal `individual_id` remains documented where it genuinely occurs in the underlying relational schema, but is not a recommended scientific join key.
+
+For the 2021 BCP post-mortem records of `015S`, `053M`, and `026H`, `sett_id` is NULL because no actual physical sett was recorded. Recorded CHESTNUT/HOLLOW TREE text remains in `recorded_social_group_name`. Scientific decision reviewed by **Dave Hudson**.
