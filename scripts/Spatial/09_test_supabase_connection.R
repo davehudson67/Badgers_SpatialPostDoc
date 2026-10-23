@@ -1,7 +1,8 @@
 #!/usr/bin/env Rscript
-source("scripts/Spatial/woodchester_supabase_connection.R")
+source("scripts/BadgerDatabase.R")
 cat("Testing Woodchester Supabase PostgreSQL connection ...\n")
-con <- woodchester_supabase_connect()
+con <- badger_db_connect()
+DBI::dbExecute(con, "SET default_transaction_read_only = on")
 on.exit(if(DBI::dbIsValid(con)) DBI::dbDisconnect(con), add=TRUE)
 x <- DBI::dbGetQuery(con,
  "select current_database() as database_name,
