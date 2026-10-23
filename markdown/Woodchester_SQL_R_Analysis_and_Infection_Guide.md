@@ -38,7 +38,7 @@ This distinction is important:
 - the database should contain **shared, reusable cleaning and structure**;
 - analysis scripts should contain **analysis-specific biological decisions**.
 
-For example, the database can standardise a sett name once, but an individual analysis may still decide whether to exclude post-mortem records, collapse same-day encounters, define quarterly occasions or calculate a particular age variable.
+For example, the database can standardise a sett name once but an individual analysis may still decide whether to exclude post-mortem records, collapse same-day encounters, define quarterly occasions or calculate a particular age variable.
 
 ---
 
@@ -90,8 +90,6 @@ This account is used for:
 - creating database roles;
 - database administration.
 
-The `postgres` password must never be shared with ordinary collaborators.
-
 ## Researcher access
 
 A group role called:
@@ -112,39 +110,9 @@ It currently has:
 
 Each collaborator should receive an **individual PostgreSQL login role** that inherits `badger_readonly`.
 
-Do not create one shared researcher username for the whole project.
-
-A typical maintainer operation is:
-
-```sql
-create role researcher_name
-with login
-password '<long-random-password>';
-
-grant badger_readonly to researcher_name;
-```
-
-The password should be generated securely and supplied separately from the repository.
-
 ---
 
 # 4. Credential handling
-
-Real credentials are not stored in Git.
-
-The repository now contains:
-
-```text
-.Renviron.example
-```
-
-but the real:
-
-```text
-.Renviron
-```
-
-is ignored by Git and should exist only on the user's local machine or secure server environment.
 
 A local file should contain:
 
@@ -234,10 +202,8 @@ DBI::dbDisconnect(con)
 Using `dbplyr`, this:
 
 ```r
-captures <- tbl(
-  con,
-  in_schema("analysis", "capture_history")
-)
+captures <- tbl(con, in_schema("analysis", "capture_history"))
+
 ```
 
 does **not** immediately download the complete capture table.
@@ -454,7 +420,7 @@ supports review of historical location strings and candidate sett assignments.
 
 # 10. `analysis.diagnostic_results`
 
-## Grain
+## 
 
 One row per diagnostic result.
 
@@ -715,10 +681,6 @@ capture_with_inf <- captures |>
 
 # 14. Complete quarterly infection trajectory
 
-The earlier database documentation treated quarter-level completeness as unresolved.
-
-That is no longer the case.
-
 The database now contains:
 
 ```text
@@ -795,12 +757,11 @@ infection_quarterly <- tbl(
   ) |>
   collect()
 ```
-
-This should be the default quarterly infection source for the current movement/disease model development.
-
 ---
 
 # 15. Which infection object should I use?
+
+These are only suggestions!
 
 Use:
 
@@ -828,24 +789,6 @@ when:
 - modelling temporal disease history;
 - studying whether infection precedes movement/relocation or vice versa;
 - building quarter-level hidden-state or survival/movement models.
-
-For current model development, the primary infection series remains:
-
-```text
-all_tests_inferred
-```
-
-Do not automatically convert:
-
-```r
-p_infected > 0.5
-```
-
-into a hard infected/not-infected state unless a particular analysis explicitly requires such a threshold.
-
-The probability carries information about uncertainty.
-
-If posterior infection-state draws are available for a future analysis, they may preserve uncertainty more completely than posterior mean probabilities alone.
 
 ---
 
@@ -922,8 +865,6 @@ Analysis scripts should use the curated `analysis` views instead of relying dire
 ---
 
 # 17. Inspecting the live schema
-
-Because the schema can evolve, the live database should be treated as authoritative.
 
 List the current analysis views:
 
@@ -1002,19 +943,6 @@ dat <- captures |>
 
 dbDisconnect(con)
 ```
-
-At this point the analysis script can make its own decisions about:
-
-- same-day biological encounter fusion;
-- quarterly collapse;
-- defining age at time;
-- treatment of unknown location;
-- study-period restrictions;
-- censoring;
-- movement-state construction.
-
-Those are not necessarily database-level cleaning operations.
-
 ---
 
 # 19. Example: diagnostic extraction
@@ -1135,312 +1063,3 @@ This separates:
 It also makes multi-chain/HPC fitting reproducible.
 
 ---
-
-# 22. What belongs in the database versus the analysis
-
-## Good candidates for central database handling
-
-- canonical individual IDs;
-- capture IDs;
-- repaired historical names;
-- standardized sett names;
-- standardized social-group names;
-- shared diagnostic structure;
-- reusable joins;
-- centrally agreed data corrections;
-- reusable infection-model outputs;
-- common analysis views.
-
-## Usually analysis-specific
-
-- study-period filtering;
-- live/PM inclusion decisions;
-- same-day fusion rules;
-- quarter/occasion definitions;
-- age-at-time calculation;
-- modal location rules;
-- movement classification;
-- censoring decisions;
-- construction of model matrices/arrays;
-- model-specific derived covariates.
-
-If several analyses independently repeat the same complicated cleaning operation, that is a sign it may belong in a central database view instead.
-
----
-
-# 23. Adding a new analysis view
-
-A new view is preferable when a cleaned or derived object is:
-
-- needed repeatedly;
-- biologically well defined;
-- useful across several projects;
-- not specific to one model implementation.
-
-New views should normally be created by the maintainer and then explicitly granted to `badger_readonly`.
-
-For example:
-
-```sql
-grant select on analysis.new_view
-to badger_readonly;
-```
-
-Future views are **not automatically exposed** to collaborators. This is deliberate.
-
----
-
-# 24. Adding a new researcher
-
-Create an individual login:
-
-```sql
-create role researcher_name
-with login
-password '<secure-random-password>';
-```
-
-Then:
-
-```sql
-grant badger_readonly
-to researcher_name;
-```
-
-Verify effective access:
-
-```sql
-select
-  has_schema_privilege(
-    'researcher_name',
-    'analysis',
-    'usage'
-  ) as can_use_analysis,
-  has_schema_privilege(
-    'researcher_name',
-    'research',
-    'usage'
-  ) as can_use_research;
-```
-
-The expected result is:
-
-```text
-can_use_analysis = true
-can_use_research = false
-```
-
-The researcher should then receive:
-
-- the session-pooler host;
-- port `5432`;
-- database name `postgres`;
-- their own username;
-- their own password.
-
-Transfer the password securely.
-
----
-
-# 25. Removing researcher access
-
-Because users have individual logins, access can be revoked per person without changing everyone else's credentials.
-
-A maintainer can remove membership:
-
-```sql
-revoke badger_readonly
-from researcher_name;
-```
-
-or disable the login:
-
-```sql
-alter role researcher_name
-nologin;
-```
-
-If the account is no longer needed and owns no objects, it can later be dropped by the maintainer.
-
----
-
-# 26. Current security posture
-
-As of 14 October 2026:
-
-- the underlying `research` tables have RLS enabled;
-- ordinary researchers do not have access to the `research` schema;
-- approved collaborator access is through `analysis` views;
-- `badger_readonly` cannot write to the approved views;
-- the repository no longer tracks the real `.Renviron`;
-- `.Renviron` and `.env` files are now ignored;
-- `.Renviron.example` is the only credential template kept in Git.
-
-The Supabase security advisor reports the underlying protected tables as **RLS enabled with no policies**. For these private schemas that means ordinary roles are not granted a row-level route into those tables; access is intentionally provided through the curated analysis layer instead.
-
-The previous administrator database password should be rotated because a real `.Renviron` had previously been committed to the public GitHub repository. Removing it from the current branch prevents future exposure but does not erase it from historical commits.
-
----
-
-# 27. Current database facts at a glance
-
-```text
-Capture history
----------------
-Rows:              17,586
-Individuals:        3,791
-Date range:         1975-12-13 to 2026-08-11
-Live rows:          16,298
-PM rows:             1,288
-
-Diagnostics
------------
-Culture:            48,699
-ELISA:              15,162
-IFN-gamma ELISA:     4,375
-DPP:                  3,316
-Stat-Pak:             2,851
-Brock:                1,648
-Total:               76,051
-
-Capture-level infection probabilities
--------------------------------------
-Model run: infection_probabilities_2026_08_27
-Variants: 6
-Rows per variant:    16,255
-Badgers per variant:  3,214
-Date range:           1976-02-09 to 2025-12-10
-
-Quarterly infection trajectory
-------------------------------
-Model variant: all_tests_inferred
-Rows:                 29,737
-Badgers:               3,224
-Range:                 Q1 1976 to Q3 2026
-Complete first-to-last histories:
-                       3,224 / 3,224
-Missing internal quarters:
-                       0
-```
-
----
-
-# 28. Recommended starting points
-
-For most work:
-
-```text
-Capture/survival/movement:
-    analysis.capture_history
-
-Diagnostic test work:
-    analysis.diagnostic_results
-
-Capture-level infection:
-    analysis.capture_infection_probabilities
-or
-    analysis.infection_probabilities
-
-Quarterly disease trajectory:
-    analysis.infection_quarterly_probabilities
-
-Historical sett/social-group review:
-    analysis.sett_social_group_observed
-    analysis.historical_sett_candidates
-```
-
-Normal researchers should not need to start from `research` or `access_raw`.
-
----
-
-# 29. Minimal complete R example
-
-```r
-library(DBI)
-library(RPostgres)
-library(dplyr)
-library(dbplyr)
-
-badger_db_connect <- function() {
-  DBI::dbConnect(
-    RPostgres::Postgres(),
-    host = Sys.getenv("BADGER_DB_HOST"),
-    port = as.integer(
-      Sys.getenv("BADGER_DB_PORT", unset = "5432")
-    ),
-    dbname = Sys.getenv(
-      "BADGER_DB_NAME",
-      unset = "postgres"
-    ),
-    user = Sys.getenv("BADGER_DB_USER"),
-    password = Sys.getenv("BADGER_DB_PASSWORD"),
-    sslmode = "require"
-  )
-}
-
-con <- badger_db_connect()
-
-captures <- tbl(
-  con,
-  in_schema("analysis", "capture_history")
-)
-
-infection_q <- tbl(
-  con,
-  in_schema(
-    "analysis",
-    "infection_quarterly_probabilities"
-  )
-)
-
-capture_dat <- captures |>
-  filter(
-    !is_pm,
-    capture_year >= 2015
-  ) |>
-  collect()
-
-infection_dat <- infection_q |>
-  filter(
-    model_run ==
-      "infection_probabilities_2026_08_27",
-    model_variant ==
-      "all_tests_inferred"
-  ) |>
-  collect()
-
-DBI::dbDisconnect(con)
-```
-
-At this point both objects are ordinary local R data frames and can be prepared for the specific biological/model analysis.
-
----
-
-# 30. Summary
-
-The database now has a clear separation of responsibilities:
-
-```text
-access_raw
-    historical source archive
-
-research
-    canonical cleaned relational database
-    maintainer access
-
-analysis
-    curated research-ready views
-    read-only collaborator access
-
-R analysis
-    project-specific biological preparation
-
-model
-    survival / movement / disease / SCR / CMR etc.
-```
-
-The most important practical rule is:
-
-> **Use the central database for shared data cleaning and structure; use analysis scripts for decisions that are specific to the scientific question.**
-
-That should prevent the long-term Woodchester dataset from fragmenting again into many slightly different locally cleaned versions.

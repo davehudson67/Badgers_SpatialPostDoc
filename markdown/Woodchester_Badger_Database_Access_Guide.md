@@ -6,7 +6,7 @@ The historic Woodchester badger data are now stored in a PostgreSQL database hos
 
 The database is intended to be the **single cleaned source of the long-term badger data**. Historical Access conversion, identifier repair, and database-level cleaning are handled centrally rather than repeated in individual R projects.
 
-For normal research use, collaborators are given **individual read-only database accounts**. These accounts can query the prepared `analysis` views but cannot edit the underlying data.
+For normal research use, collaborators are given **individual read-only database accounts**. These accounts can query the prepared `analysis` views and, when authorised, canonical `research` tables, but cannot edit the underlying data.
 
 ---
 
@@ -14,7 +14,7 @@ For normal research use, collaborators are given **individual read-only database
 
 There are two important layers:
 
-- `research` — underlying cleaned relational tables. These are maintained centrally and are **not available to normal read-only users**.
+- `research` — underlying cleaned relational tables.
 - `analysis` — analysis-ready views. These are the normal starting point for R analyses.
 
 The read-only role currently has access to the following views:
@@ -29,7 +29,9 @@ The read-only role currently has access to the following views:
 | `analysis.historical_sett_candidates` | Summary used when reviewing historical sett/location assignments | 358 |
 | `analysis.sett_social_group_observed` | Observed sett/social-group relationships through time | 2,156 |
 
-\*Row counts checked 14 October 2026 and will change as the database is updated.
+\*Row counts originally checked 14 October 2026; capture (17,586) and diagnostic (76,051) counts rechecked 23 October 2026 and will change as the database is updated.
+
+**Tattoo is the scientific individual identifier.** In the five main capture, diagnostic, and infection views, the internal `individual_id` has been removed. Use `tattoo` for badger-level grouping and `capture_id` to join particular capture events to assay observations. Raw relational tables still retain the internal key as an implementation detail.
 
 For most biological analyses, start with:
 
@@ -46,15 +48,13 @@ For disease-state analyses, also use the infection-probability views.
 
 Ask the database maintainer for an individual read-only username and password.
 
-Researchers do **not** use the main `postgres` administrator account.
-
-Each researcher account inherits the `badger_readonly` role, which:
+Researchers can be assigned the standard `badger_readonly` role or the advanced `badger_research_readonly` role. The standard role:
 
 - can connect to the database;
 - can use the `analysis` schema;
 - can read the approved analysis views;
 - cannot insert, update or delete records;
-- cannot access the underlying `research` schema.
+- cannot access underlying `research` tables. The advanced role additionally receives read-only access to approved canonical `research` tables; import/staging tables remain restricted.
 
 Do not share accounts between researchers.
 
@@ -279,13 +279,3 @@ dbDisconnect(con)
 That is sufficient for most straightforward analyses.
 
 ---
-
-## For database maintainers
-
-The underlying `research` schema contains the cleaned relational source tables, including individuals, captures, wounds, diagnostic-test tables, setts, social groups, sampling/assessment records and model-derived infection outputs.
-
-Normal collaborators should not need direct access to these tables. If a commonly needed cleaned variable or derived dataset is missing, it is usually better to add or update an `analysis` view centrally rather than have multiple projects independently recreate the same cleaning.
-
-New researcher accounts should be individual PostgreSQL login roles that inherit `badger_readonly`. Passwords should be generated separately and transferred securely.
-
-No database passwords or administrator credentials should ever be committed to this repository.

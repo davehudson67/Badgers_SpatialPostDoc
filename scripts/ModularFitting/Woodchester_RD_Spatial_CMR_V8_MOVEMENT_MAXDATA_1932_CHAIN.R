@@ -5,6 +5,12 @@
 #   Run the established V7M/V6c movement model on EVERY badger with at least two
 #   spatially usable live years (expected n = 1,932 from the population audit).
 #
+#   Quarterly live-location rule:
+#   use the latest spatially usable live capture in each badger/year/quarter.
+#   The previous off-modal-sett priority is retained only as a documented
+#   sensitivity/legacy rule because audit results showed systematic inflation
+#   of apparent movement under that retrospective selection rule.
+#
 #   This deliberately removes the old restriction to animals that could also
 #   contribute to V7a/V7b. Disease analyses should subset the resulting movement
 #   histories downstream rather than restricting the movement fit itself.
@@ -73,39 +79,59 @@ src <- replace_section(
   "sett cleaning"
 )
 
-# ---- standardise first-capture age exactly as in the inclusive audit --------
+# ---- standardise individual traits exactly as in the inclusive audit --------
+# tattoo is the biological/model key; individual_id is retained as provenance.
 src <- replace_block(
   src,
   "demog <- individuals %>%",
   "            entry_group=case_when(age_fc %in% c(\"Cub\",\"Yearling\")~1L,age_fc==\"Adult\"~2L,TRUE~NA_integer_))",
   c(
     "demog <- individuals %>%",
-    "  transmute(individual_id=as.integer(individual_id),tattoo=as.character(tattoo),age_fc_raw=as.character(age_fc)) %>%",
+    "  transmute(individual_id=as.integer(individual_id),tattoo=toupper(trimws(as.character(tattoo))),age_fc_raw=as.character(age_fc)) %>%",
     "  mutate(age_fc=toupper(str_squish(age_fc_raw)),",
     "         entry_group=case_when(age_fc %in% c(\"CUB\",\"YEARLING\")~1L,age_fc==\"ADULT\"~2L,TRUE~NA_integer_))"
   ),
   "standardised demography"
 )
 
+src <- replace_block(
+  src,
+  "sex_lookup <- individuals %>%",
+  "                            sex_clean %in% c(\"M\",\"MALE\")~1L,TRUE~NA_integer_))",
+  c(
+    "sex_lookup <- individuals %>%",
+    "  transmute(individual_id=as.integer(individual_id),tattoo=toupper(trimws(as.character(tattoo))),sex_raw=as.character(sex)) %>%",
+    "  mutate(sex_clean=toupper(str_squish(sex_raw)),",
+    "         sex_code=case_when(sex_clean %in% c(\"F\",\"FEMALE\")~0L,",
+    "                            sex_clean %in% c(\"M\",\"MALE\")~1L,TRUE~NA_integer_))"
+  ),
+  "standardised sex lookup"
+)
+
 # ---- replace old 1,285 selection with maximum movement population -----------
-# Match the inclusive audit using individual_id as the canonical cross-snapshot
-# identifier. Historical tattoo text is not required to match between snapshots.
+# Match the inclusive audit using tattoo as the biological/model identifier.
+# Do not silently delete movement-informative animals for missing covariates.
 src <- replace_block(
   src,
   "live_year_counts <- live %>% distinct(individual_id,primary) %>% count(individual_id,name=\"n_live_years\")",
   "nind <- nrow(eligible)",
   c(
-    "live_year_counts <- live %>% distinct(individual_id,primary) %>% count(individual_id,name=\"n_live_years\")",
+    "live_year_counts <- live %>% distinct(tattoo,primary) %>% count(tattoo,name=\"n_live_years\")",
     "eligible <- live %>%",
-    "  distinct(individual_id) %>%",
-    "  inner_join(demog,by=\"individual_id\") %>%",
-    "  left_join(sex_lookup %>% select(individual_id,sex_code),by=\"individual_id\") %>%",
-    "  inner_join(live_year_counts,by=\"individual_id\") %>%",
-    "  filter(entry_group %in% 1:2,n_live_years>=MIN_LIVE_YEARS) %>%",
-    "  arrange(individual_id)",
+    "  distinct(tattoo) %>%",
+    "  inner_join(demog,by=\"tattoo\") %>%",
+    "  left_join(sex_lookup %>% select(tattoo,sex_code),by=\"tattoo\") %>%",
+    "  inner_join(live_year_counts,by=\"tattoo\") %>%",
+    "  filter(n_live_years>=MIN_LIVE_YEARS) %>%",
+    "  arrange(tattoo)",
     "",
     "if(nrow(eligible)!=EXPECTED_N)",
     "  stop(\"Expected \",EXPECTED_N,\" maximal-data movement badgers but reconstructed \",nrow(eligible),\". Re-run the population audit before fitting.\")",
+    "",
+    "if(anyNA(eligible$entry_group))",
+    "  stop(\"Movement-eligible animals with unknown entry-age class are present. Extend the model for unknown entry age rather than silently excluding them.\")",
+    "if(anyNA(eligible$sex_code))",
+    "  stop(\"Movement-eligible animals with unknown sex are present. Extend the model for unknown sex rather than silently excluding them.\")",
     "",
     "ids <- eligible$tattoo",
     "individual_ids <- eligible$individual_id",
@@ -114,6 +140,32 @@ src <- replace_block(
   "movement population"
 )
 
+# ---- biological observation indexing uses tattoo ----------------------------
+src <- replace_once(src,
+  "  arrange(individual_id,primary,trap_season,capture_date) %>%",
+  "  arrange(tattoo,primary,trap_season,capture_date) %>%",
+  "live-quarter ordering key")
+src <- replace_once(src,
+  "  group_by(individual_id,primary,trap_season) %>%",
+  "  group_by(tattoo,primary,trap_season) %>%",
+  "live-quarter grouping key")
+
+# Replace the frozen V7M off-modal-sett priority with the audited primary rule:
+# latest spatially usable LIVE capture within each quarter.
+src <- replace_once(src,
+  "  arrange(desc(coalesce(differs_from_modal,FALSE)),desc(capture_date),.by_group=TRUE) %>%",
+  "  arrange(desc(capture_date),.by_group=TRUE) %>%",
+  "latest-live quarterly location rule")
+
+src <- replace_once(src,
+  "if(nrow(live %>% count(individual_id,primary,trap_season) %>% filter(n>1))) stop(\"Duplicate live quarter rows remain.\")",
+  "if(nrow(live %>% count(tattoo,primary,trap_season) %>% filter(n>1))) stop(\"Duplicate live quarter rows remain.\")",
+  "live-quarter duplicate check")
+src <- replace_once(src,
+  "live <- live %>% filter(individual_id %in% individual_ids)",
+  "live <- live %>% filter(tattoo %in% ids)",
+  "selected-live population filter")
+
 src <- replace_once(src,"Directional population should have known sex for every badger.","Maximal movement population should have known sex for every badger under the current audited snapshot.","sex assertion text")
 
 # ---- metadata/output names ---------------------------------------------------
@@ -121,6 +173,9 @@ src <- gsub("1285","1932",src,fixed=TRUE)
 src <- gsub("all 1,932 badgers that can contribute to the directional V7 analyses","all 1,932 badgers with at least two spatially usable live years",src,fixed=TRUE)
 src <- gsub("exact directional-analysis population from the all-badger audit","maximum movement-informative population from the inclusive population audit",src,fixed=TRUE)
 src <- gsub("all_directional_badgers_from_V7_audit","all_badgers_with_at_least_2_usable_spatial_live_years",src,fixed=TRUE)
+src <- gsub('movement_endpoint="last_observed_live_year",',
+            'movement_endpoint="last_observed_live_year", quarterly_location_rule="latest_spatial_live_capture",',
+            src,fixed=TRUE)
 src <- gsub("audit_file=AUDIT_FILE","population_definition=\"results/V7_population_inclusion_audit.rds\"",src,fixed=TRUE)
 src <- append(src,values="",after=0L); src <- append(src,values=paste0("EXPECTED_N <- ",EXPECTED_N,"L"),after=0L)
 

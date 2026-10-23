@@ -54,11 +54,27 @@ diagnostics_db <- tbl(
 
 DBI::dbDisconnect(con)
 
+# ==============================================================================
+# Identifier policy: tattoo is the scientific individual identifier.
+# Only capture_id is used to associate same-encounter tests/measurements.
+# ==============================================================================
+identifier_map <- captures_db %>%
+  transmute(tattoo = toupper(trimws(as.character(tattoo)))) %>% distinct()
+if (anyNA(identifier_map$tattoo) || any(identifier_map$tattoo == "")) {
+  stop("Canonical captures contain missing tattoo identifiers.")
+}
+diagnostic_identifier_conflicts <- diagnostics_db %>%
+  transmute(tattoo = toupper(trimws(as.character(tattoo)))) %>%
+  distinct() %>% anti_join(identifier_map, by = "tattoo")
+if (nrow(diagnostic_identifier_conflicts)) {
+  stop("Diagnostic results contain tattoos absent from capture history.")
+}
+
 cat("\n============================================================\n")
 cat("DATABASE IMPORT\n")
 cat("============================================================\n")
 cat("Capture rows:", nrow(captures_db), "\n")
-cat("Individuals:", n_distinct(captures_db$individual_id), "\n")
+cat("Individuals:", n_distinct(captures_db$tattoo), "\n")
 cat("Diagnostic rows:", nrow(diagnostics_db), "\n")
 cat(
   "Capture date range:",
@@ -123,7 +139,6 @@ get_mode_character <- function(x) {
 
 individuals <- captures_db %>%
   transmute(
-    individual_id,
     tattoo = toupper(trimws(tattoo)),
     elect_tag,
     sex = str_to_title(trimws(sex)),
@@ -133,7 +148,7 @@ individuals <- captures_db %>%
     n_historical_names
   ) %>%
   filter(!is.na(tattoo), tattoo != "") %>%
-  distinct(individual_id, .keep_all = TRUE) %>%
+  distinct(tattoo, .keep_all = TRUE) %>%
   mutate(
     sex = case_when(
       sex %in% c("Male", "Female") ~ sex,
@@ -143,7 +158,7 @@ individuals <- captures_db %>%
   )
 
 stopifnot(
-  nrow(individuals) == n_distinct(captures_db$individual_id)
+  nrow(individuals) == n_distinct(identifier_map$tattoo)
 )
 
 
@@ -167,7 +182,6 @@ stopifnot(
 capture_records <- captures_db %>%
   transmute(
     capture_id,
-    individual_id,
     tattoo = toupper(trimws(tattoo)),
     capture_date,
     
@@ -207,7 +221,14 @@ capture_records <- captures_db %>%
   ) %>%
   mutate(
     sett = make_location_key(sett_name),
-    socg = make_location_key(socg_name)
+
+    # Historical social group recorded for THIS capture.
+    # Do not reconstruct this from a static sett->SG lookup: SG affiliations
+    # and territory boundaries changed through time.
+    recorded_socg = make_location_key(socg_name),
+
+    # Legacy alias retained for existing downstream scripts.
+    socg = recorded_socg
   )
 
 
@@ -224,8 +245,8 @@ capture_records <- captures_db %>%
 # ==============================================================================
 
 encounters <- capture_records %>%
-  arrange(individual_id, capture_date, pm_flag) %>%
-  group_by(individual_id, tattoo, capture_date) %>%
+  arrange(tattoo, capture_date, pm_flag) %>%
+  group_by(tattoo, capture_date) %>%
   summarise(
     primary_year = first(primary_year),
     trap_season = first(trap_season),
@@ -239,6 +260,7 @@ encounters <- capture_records %>%
     
     recorded_social_group_id = first_nonmissing(recorded_social_group_id),
     socg_name = first_nonmissing_text(socg_name),
+    recorded_socg = first_nonmissing_text(recorded_socg),
     socg = first_nonmissing_text(socg),
     
     recorded_sett_name = first_nonmissing_text(recorded_sett_name),
@@ -283,7 +305,7 @@ encounters_all <- encounters %>%
   left_join(
     individuals %>%
       select(
-        individual_id,
+        tattoo,
         sex,
         age_fc,
         year_fc,
@@ -291,9 +313,9 @@ encounters_all <- encounters %>%
         historical_names,
         n_historical_names
       ),
-    by = "individual_id"
+    by = "tattoo"
   ) %>%
-  arrange(individual_id, capture_date)
+  arrange(tattoo, capture_date)
 
 
 # ==============================================================================
@@ -330,7 +352,7 @@ cat(
 # ==============================================================================
 
 live_check <- encounters_all %>%
-  group_by(individual_id, tattoo) %>%
+  group_by(tattoo) %>%
   summarise(
     ever_live = any(has_live_capture),
     .groups = "drop"
@@ -338,10 +360,10 @@ live_check <- encounters_all %>%
 
 badgers_to_drop <- live_check %>%
   filter(!ever_live) %>%
-  pull(individual_id)
+  pull(tattoo)
 
 encounters_useful <- encounters_all %>%
-  filter(!(individual_id %in% badgers_to_drop))
+  filter(!(tattoo %in% badgers_to_drop))
 
 cat("\n============================================================\n")
 cat("CMR POPULATION FILTER\n")
@@ -350,7 +372,7 @@ cat("============================================================\n")
 cat("PM-only individuals dropped:", length(badgers_to_drop), "\n")
 cat(
   "Individuals retained:",
-  n_distinct(encounters_useful$individual_id),
+  n_distinct(encounters_useful$tattoo),
   "\n"
 )
 
@@ -363,31 +385,33 @@ cat(
 
 modal_setts <- encounters_useful %>%
   filter(!is.na(sett)) %>%
-  count(individual_id, sett, name = "n") %>%
-  arrange(individual_id, desc(n), sett) %>%
-  group_by(individual_id) %>%
+  count(tattoo, sett, name = "n") %>%
+  arrange(tattoo, desc(n), sett) %>%
+  group_by(tattoo) %>%
   slice(1) %>%
   transmute(
-    individual_id,
+    tattoo,
     modal_sett = sett
   ) %>%
   ungroup()
 
 
 # ==============================================================================
-# 10. Lifetime Modal Social Group
+# 10. Lifetime Modal Recorded Social Group
 #
-# Based on historical capture-level recorded SG.
+# Descriptive only: the most frequently recorded historical SG across the
+# animal's observed lifetime. This is NOT a fixed true SG identity because
+# social-group affiliations and territory boundaries changed through time.
 # ==============================================================================
 
 modal_social_groups <- encounters_useful %>%
   filter(!is.na(socg)) %>%
-  count(individual_id, socg, name = "n") %>%
-  arrange(individual_id, desc(n), socg) %>%
-  group_by(individual_id) %>%
+  count(tattoo, socg, name = "n") %>%
+  arrange(tattoo, desc(n), socg) %>%
+  group_by(tattoo) %>%
   slice(1) %>%
   transmute(
-    individual_id,
+    tattoo,
     modal_socg = socg
   ) %>%
   ungroup()
@@ -398,8 +422,8 @@ modal_social_groups <- encounters_useful %>%
 # ==============================================================================
 
 encounters_useful <- encounters_useful %>%
-  left_join(modal_setts, by = "individual_id") %>%
-  left_join(modal_social_groups, by = "individual_id") %>%
+  left_join(modal_setts, by = "tattoo") %>%
+  left_join(modal_social_groups, by = "tattoo") %>%
   mutate(
     differs_from_modal =
       !is.na(sett) &
@@ -422,7 +446,6 @@ encounters_useful <- encounters_useful %>%
 
 quarter_location_audit <- encounters_useful %>%
   group_by(
-    individual_id,
     tattoo,
     primary_year,
     trap_season
@@ -444,9 +467,13 @@ quarter_location_audit <- encounters_useful %>%
 #
 # Priority for representative location/record:
 #
-#   1. PM/death record
-#   2. sett differs from lifetime modal sett
+#   1. live encounter, whenever the quarter contains any live capture
+#   2. among eligible representative rows, sett differs from lifetime modal sett
 #   3. latest capture date
+#
+# PM/death occurrence is preserved separately at the quarter level. This avoids
+# a biologically incoherent row in which has_live_capture=TRUE but the retained
+# location came only from a PM/death encounter.
 #
 # IMPORTANT:
 # has_live_capture and has_pm_record in the final quarterly dataset describe
@@ -456,7 +483,7 @@ quarter_location_audit <- encounters_useful %>%
 
 encounters_cmr_ready <- encounters_useful %>%
   group_by(
-    individual_id,
+    tattoo,
     primary_year,
     trap_season
   ) %>%
@@ -464,17 +491,41 @@ encounters_cmr_ready <- encounters_useful %>%
   # Preserve quarter-level biological information BEFORE selecting one row
   mutate(
     quarter_has_live_capture = any(has_live_capture),
-    quarter_has_pm_record = any(has_pm_record)
+    quarter_has_pm_record = any(has_pm_record),
+
+    quarter_first_pm_date = if (
+      any(has_pm_record)
+    ) {
+      min(capture_date[has_pm_record])
+    } else {
+      as.Date(NA)
+    },
+
+    quarter_last_pm_date = if (
+      any(has_pm_record)
+    ) {
+      max(capture_date[has_pm_record])
+    } else {
+      as.Date(NA)
+    }
   ) %>%
   
   arrange(
-    desc(has_pm_record),
+    desc(has_live_capture),
     desc(differs_from_modal),
     desc(capture_date),
     .by_group = TRUE
   ) %>%
   
   slice(1) %>%
+
+  # Preserve the provenance of the row supplying the representative location.
+  # These are encounter-level flags and differ from the quarter-wide flags below.
+  mutate(
+    representative_has_live_capture = has_live_capture,
+    representative_has_pm_record = has_pm_record,
+    representative_capture_date = capture_date
+  ) %>%
   
   # After collapse these flags now refer to the whole primary occasion
   mutate(
@@ -496,9 +547,9 @@ encounters_cmr_ready <- encounters_useful %>%
 dropped_observations <- encounters_useful %>%
   anti_join(
     encounters_cmr_ready,
-    by = c("individual_id", "capture_date")
+    by = c("tattoo", "capture_date")
   ) %>%
-  arrange(individual_id, capture_date)
+  arrange(tattoo, capture_date)
 
 cat("\n============================================================\n")
 cat("QUARTERLY COLLAPSE\n")
@@ -520,6 +571,26 @@ cat(
   "\n"
 )
 
+# A potentially important edge case: the quarter contains a live capture, but
+# the representative row/location came from a PM-only encounter because PM rows
+# are intentionally prioritised by the historical collapse rule.
+pm_location_for_live_quarter <- encounters_cmr_ready %>%
+  filter(
+    has_live_capture,
+    representative_has_pm_record,
+    !representative_has_live_capture
+  )
+
+cat(
+  "Live-capture quarters represented by a PM-only row/location:",
+  nrow(pm_location_for_live_quarter),
+  "\n"
+)
+
+stopifnot(
+  nrow(pm_location_for_live_quarter) == 0L
+)
+
 
 # ==============================================================================
 # 15. Prepare Diagnostic Database
@@ -539,27 +610,31 @@ diagnostics <- diagnostics_db %>%
 # ==============================================================================
 # 16. Culture
 #
-# Preserve the previous analytical definition:
-# M. BOVIS = culture positive.
+# Historical binary M. bovis culture definition:
+#   M.BOVIS   -> positive
+#   NEGATIVE  -> negative
+#   all other result labels -> no interpretable binary M. bovis result
+#
+# culture_tested means that a Culture source/test record exists in the quarter.
+# culture_result_available means at least one interpretable M.BOVIS/NEGATIVE
+# result exists. These must not be treated as synonymous.
 # ==============================================================================
 
 culture_clean <- diagnostics %>%
   filter(test_family == "Culture") %>%
   mutate(
     sample_type = toupper(trimws(sample_type)),
-    is_pos = str_detect(
-      result_upper,
-      "M\\.BOVIS|M BOVIS"
-    )
+    is_pos = result_upper == "M.BOVIS",
+    result_available = result_upper %in% c("M.BOVIS", "NEGATIVE")
   ) %>%
   group_by(
-    individual_id,
     tattoo,
     primary_year,
     trap_season
   ) %>%
   summarise(
     culture_tested = TRUE,
+    culture_result_available = any(result_available, na.rm = TRUE),
     culture_positive = any(is_pos, na.rm = TRUE),
     
     culture_samples = paste(
@@ -575,24 +650,30 @@ culture_clean <- diagnostics %>%
 # 17. IFN-Gamma ELISA
 #
 # The historical 2919 -> 2019 typo is already corrected upstream in PostgreSQL.
+#
+# Historical binary interpretation:
+#   POSITIVE -> positive
+#   NEGATIVE -> negative
+#   missing/other -> no interpretable binary result
+#
+# Keep test-record existence separate from result availability so an all-missing
+# quarter cannot silently become an IFN-negative quarter.
 # ==============================================================================
 
 ifn_clean <- diagnostics %>%
   filter(test_family == "IFN-gamma ELISA") %>%
   mutate(
-    is_pos = str_detect(
-      result_upper,
-      "POSITIVE"
-    )
+    is_pos = result_upper == "POSITIVE",
+    result_available = result_upper %in% c("POSITIVE", "NEGATIVE")
   ) %>%
   group_by(
-    individual_id,
     tattoo,
     primary_year,
     trap_season
   ) %>%
   summarise(
     ifn_tested = TRUE,
+    ifn_result_available = any(result_available, na.rm = TRUE),
     ifn_positive = any(is_pos, na.rm = TRUE),
     .groups = "drop"
   )
@@ -603,8 +684,15 @@ ifn_clean <- diagnostics %>%
 #
 # There is deliberately NO database-derived overall DPP result.
 #
-# Preserve the previous analytical rule:
-# either visual line P or Px => DPP positive.
+# Historical interpretation of each visual line:
+#   N / NX -> negative
+#   P / PX -> positive
+#   missing/other -> uninterpretable
+#
+# A quarter is DPP-positive if either line is P/PX on any DPP record.
+# Keep result availability explicit so future missing/novel codes cannot be
+# silently treated as negative. In the current database line 1 is always one
+# of N/NX/P/PX, so every present DPP record is currently interpretable.
 # ==============================================================================
 
 dpp_clean <- diagnostics %>%
@@ -612,19 +700,24 @@ dpp_clean <- diagnostics %>%
   mutate(
     line1 = toupper(trimws(visual_line_1)),
     line2 = toupper(trimws(visual_line_2)),
+
+    line1_available = line1 %in% c("N", "NX", "P", "PX"),
+    line2_available = line2 %in% c("N", "NX", "P", "PX"),
     
     is_pos =
       line1 %in% c("P", "PX") |
-      line2 %in% c("P", "PX")
+      line2 %in% c("P", "PX"),
+
+    result_available = line1_available | line2_available
   ) %>%
   group_by(
-    individual_id,
     tattoo,
     primary_year,
     trap_season
   ) %>%
   summarise(
     dpp_tested = TRUE,
+    dpp_result_available = any(result_available, na.rm = TRUE),
     dpp_positive = any(is_pos, na.rm = TRUE),
     .groups = "drop"
   )
@@ -637,12 +730,12 @@ dpp_clean <- diagnostics %>%
 #
 # VALIDATED CODES
 #
-# Stat-Pak:
+# Stat-Pak (verified in current database):
 #   N = Negative
 #   P = Positive
 #   C = No Clotted Sample
 #
-# Brock:
+# Brock (verified in current database):
 #   N    = Negative
 #   P    = Positive
 #   NULL = no recorded result
@@ -675,7 +768,6 @@ hist_diag_clean <- diagnostics %>%
     )
   ) %>%
   group_by(
-    individual_id,
     tattoo,
     primary_year,
     trap_season
@@ -733,7 +825,6 @@ encounters_final_with_disease <- encounters_cmr_ready %>%
   left_join(
     culture_clean,
     by = c(
-      "individual_id",
       "tattoo",
       "primary_year",
       "trap_season"
@@ -742,7 +833,6 @@ encounters_final_with_disease <- encounters_cmr_ready %>%
   left_join(
     ifn_clean,
     by = c(
-      "individual_id",
       "tattoo",
       "primary_year",
       "trap_season"
@@ -751,7 +841,6 @@ encounters_final_with_disease <- encounters_cmr_ready %>%
   left_join(
     dpp_clean,
     by = c(
-      "individual_id",
       "tattoo",
       "primary_year",
       "trap_season"
@@ -760,7 +849,6 @@ encounters_final_with_disease <- encounters_cmr_ready %>%
   left_join(
     hist_diag_clean,
     by = c(
-      "individual_id",
       "tattoo",
       "primary_year",
       "trap_season"
@@ -786,16 +874,30 @@ encounters_final_with_disease <- encounters_cmr_ready %>%
       replace_na(hist_test_record, FALSE),
     
     # ----------------------------------------------------------
-    # Compatibility-style flag:
-    # Was there a disease-test record in this quarter?
+    # Did any diagnostic TEST RECORD exist in this quarter?
+    # This is not the same as having an interpretable result.
     # ----------------------------------------------------------
     
-    tested_this_season =
+    any_test_record =
       culture_tested |
       ifn_tested |
       dpp_tested |
       statpak_tested |
       brock_tested,
+
+    # Legacy alias retained for compatibility with older code.
+    tested_this_season = any_test_record,
+
+    # ----------------------------------------------------------
+    # Did any assay return an interpretable binary result?
+    # ----------------------------------------------------------
+
+    any_result_available =
+      culture_result_available |
+      ifn_result_available |
+      dpp_result_available |
+      statpak_result_available |
+      brock_result_available,
     
     # ----------------------------------------------------------
     # Did any diagnostic assay return a positive result?
@@ -834,7 +936,13 @@ cat(
 
 cat(
   "Records with ANY disease-test record:",
-  sum(encounters_final_with_disease$tested_this_season),
+  sum(encounters_final_with_disease$any_test_record),
+  "\n"
+)
+
+cat(
+  "Records with ANY interpretable diagnostic result:",
+  sum(encounters_final_with_disease$any_result_available),
   "\n"
 )
 
@@ -847,12 +955,15 @@ cat(
 diagnostic_summary <- encounters_final_with_disease %>%
   summarise(
     Culture_Tested = sum(culture_tested),
+    Culture_Result = sum(culture_result_available),
     Culture_Pos = sum(culture_positive),
     
     IFN_Tested = sum(ifn_tested),
+    IFN_Result = sum(ifn_result_available),
     IFN_Pos = sum(ifn_positive),
     
     DPP_Tested = sum(dpp_tested),
+    DPP_Result = sum(dpp_result_available),
     DPP_Pos = sum(dpp_positive),
     
     StatPak_Tested = sum(statpak_tested),
@@ -872,39 +983,29 @@ print(diagnostic_summary)
 
 # ==============================================================================
 # 22. Additional Individual-Level Summary
+#
+# IMPORTANT:
+# Event-history dates are derived from encounters_useful (the same-day fused,
+# pre-quarter-collapse data), NOT from encounters_cmr_ready. A quarterly
+# representative row may be later than the first event in that quarter or may
+# be PM-derived, so it must not be used to reconstruct exact encounter dates.
 # ==============================================================================
 
-individual_summary <- encounters_final_with_disease %>%
-  group_by(
-    individual_id,
-    tattoo
-  ) %>%
+individual_encounter_summary <- encounters_useful %>%
+  group_by(tattoo) %>%
   summarise(
     sex = first(sex),
     age_fc = first(age_fc),
     year_fc = first(year_fc),
-    
+
     first_encounter = min(capture_date),
     last_encounter = max(capture_date),
-    
-    first_live_capture = if (
-      any(has_live_capture)
-    ) {
-      min(capture_date[has_live_capture])
-    } else {
-      as.Date(NA)
-    },
-    
-    last_live_capture = if (
-      any(has_live_capture)
-    ) {
-      max(capture_date[has_live_capture])
-    } else {
-      as.Date(NA)
-    },
-    
+
+    first_live_capture = min(capture_date[has_live_capture]),
+    last_live_capture = max(capture_date[has_live_capture]),
+
     has_pm = any(has_pm_record),
-    
+
     first_pm_date = if (
       any(has_pm_record)
     ) {
@@ -912,19 +1013,42 @@ individual_summary <- encounters_final_with_disease %>%
     } else {
       as.Date(NA)
     },
-    
-    n_primary_occasions = n(),
-    
+
+    n_same_day_encounters = n(),
+    n_observed_primary_occasions =
+      n_distinct(primary_year, trap_season),
+    n_live_primary_occasions =
+      n_distinct(
+        primary_year[has_live_capture],
+        trap_season[has_live_capture]
+      ),
+
     modal_sett = first(modal_sett),
     modal_socg = first(modal_socg),
-    
-    ever_disease_tested =
-      any(tested_this_season),
-    
-    ever_positive =
-      any(any_positive_test),
-    
+
     .groups = "drop"
+  )
+
+individual_disease_summary <- encounters_final_with_disease %>%
+  group_by(tattoo) %>%
+  summarise(
+    ever_test_record = any(any_test_record),
+    ever_interpretable_result = any(any_result_available),
+
+    # Legacy compatibility name: this means a test record existed, not
+    # necessarily that an interpretable diagnostic result was returned.
+    ever_disease_tested = any(any_test_record),
+
+    ever_positive = any(any_positive_test),
+
+    .groups = "drop"
+  )
+
+individual_summary <- individual_encounter_summary %>%
+  left_join(individual_disease_summary, by = "tattoo") %>%
+  mutate(
+    # Legacy alias retained for downstream code that expects this name.
+    n_primary_occasions = n_observed_primary_occasions
   )
 
 
@@ -944,7 +1068,7 @@ cat(
 
 cat(
   "Database individuals:",
-  n_distinct(captures_db$individual_id),
+  n_distinct(identifier_map$tattoo),
   "\n"
 )
 
@@ -962,7 +1086,7 @@ cat(
 
 cat(
   "Individuals retained for CMR:",
-  n_distinct(encounters_cmr_ready$individual_id),
+  n_distinct(encounters_cmr_ready$tattoo),
   "\n"
 )
 
@@ -976,7 +1100,7 @@ cat(
   "Unique individual-quarter combinations:",
   n_distinct(
     paste(
-      encounters_cmr_ready$individual_id,
+      encounters_cmr_ready$tattoo,
       encounters_cmr_ready$primary_year,
       encounters_cmr_ready$trap_season,
       sep = "_"
@@ -1033,7 +1157,7 @@ cat("============================================================\n")
 
 quarter_duplicates <- encounters_cmr_ready %>%
   count(
-    individual_id,
+    tattoo,
     primary_year,
     trap_season
   ) %>%
@@ -1046,7 +1170,7 @@ stopifnot(
 # Every retained individual must genuinely have had at least one live capture.
 
 retained_live_check <- encounters_cmr_ready %>%
-  group_by(individual_id) %>%
+  group_by(tattoo) %>%
   summarise(
     ever_live = any(has_live_capture),
     .groups = "drop"
@@ -1056,21 +1180,59 @@ stopifnot(
   all(retained_live_check$ever_live)
 )
 
+# Quarterly diagnostic joins must not duplicate or remove quarterly CMR rows.
+stopifnot(
+  nrow(encounters_final_with_disease) == nrow(encounters_cmr_ready)
+)
+
+final_quarter_duplicates <- encounters_final_with_disease %>%
+  count(tattoo, primary_year, trap_season) %>%
+  filter(n > 1)
+
+stopifnot(
+  nrow(final_quarter_duplicates) == 0
+)
+
+# Calendar occasion fields must be complete and valid.
+stopifnot(
+  !anyNA(encounters_useful$capture_date),
+  !anyNA(encounters_useful$primary_year),
+  all(encounters_useful$trap_season %in% 1:4)
+)
+
+# Relational provenance must remain one-to-one after all analytical transforms.
+final_identifier_check <- encounters_final_with_disease %>% distinct(tattoo)
+stopifnot(!anyNA(final_identifier_check$tattoo),
+          !any(final_identifier_check$tattoo == ""))
+
 
 # ==============================================================================
 # 25. Save Reproducible Analysis Snapshots
 #
 # PostgreSQL remains the canonical source.
-# These RDS files are model-input snapshots only.
-# ==============================================================================
-
-saveRDS(
-  encounters_final_with_disease,
-  "data/badger_final_CMRready_wDisease.rds"
-)
-
-# ==============================================================================
-# Save analysis objects
+#
+# badger_encounters_useful.rds
+#   Same-day fused encounter history for animals ever observed alive.
+#   Pre-quarter-collapse; includes live and PM encounters. This is the current
+#   preferred starting point for movement-model-specific observation selection.
+#
+# badger_CMRready.rds
+#   One representative row per observed badger-quarter. Useful for legacy/
+#   descriptive quarterly CMR work; representative-row provenance is retained.
+#
+# badger_final_CMRready_wDisease.rds
+#   The quarterly CMR table plus quarterly diagnostic summaries. This is a
+#   descriptive/compatibility disease table, not the latent infection trajectory
+#   used for directional infection<->movement inference.
+#
+# badger_individuals.rds
+#   One row per canonical tattoo with individual traits and database key.
+#
+# badger_individual_summary.rds
+#   Individual-level summary using exact pre-collapse encounter dates.
+#
+# badger_quarter_location_audit.rds
+#   Pre-collapse counts of encounters/setts/recorded SGs within each quarter.
 # ==============================================================================
 
 dir.create("data", showWarnings = FALSE)
@@ -1093,6 +1255,11 @@ saveRDS(
 saveRDS(
   individuals,
   "data/badger_individuals.rds"
+)
+
+saveRDS(
+  individual_summary,
+  "data/badger_individual_summary.rds"
 )
 
 saveRDS(

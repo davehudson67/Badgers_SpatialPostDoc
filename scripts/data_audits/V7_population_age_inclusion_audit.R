@@ -58,10 +58,25 @@ name_col <- intersect(c("Sett_Clean","Sett","sett","SettName","Sett_Upper","Name
 x_col <- intersect(c("SettX","sett_x","X","x","Easting","easting"),names(sett_raw))[1]
 y_col <- intersect(c("SettY","sett_y","Y","y","Northing","northing"),names(sett_raw))[1]
 if(any(is.na(c(name_col,x_col,y_col)))) stop("Could not identify sett name/X/Y columns.")
-sett_xy <- sett_raw %>%
-  transmute(Sett_Clean=clean_sett2(.data[[name_col]]),x=as.numeric(.data[[x_col]]),y=as.numeric(.data[[y_col]])) %>%
-  filter(!is.na(Sett_Clean),Sett_Clean!="",!is.na(x),!is.na(y)) %>%
-  distinct(Sett_Clean,.keep_all=TRUE)
+sett_xy_all <- sett_raw %>%
+  transmute(
+    Sett_Clean = clean_sett2(.data[[name_col]]),
+    x = as.numeric(.data[[x_col]]),
+    y = as.numeric(.data[[y_col]])
+  ) %>%
+  filter(!is.na(Sett_Clean), Sett_Clean != "", !is.na(x), !is.na(y))
+
+sett_xy_conflicts <- sett_xy_all %>%
+  distinct(Sett_Clean, x, y) %>%
+  count(Sett_Clean, name = "n_coordinate_pairs") %>%
+  filter(n_coordinate_pairs > 1L)
+
+if(nrow(sett_xy_conflicts)) {
+  stop("One or more cleaned sett names map to multiple coordinate pairs.")
+}
+
+sett_xy <- sett_xy_all %>%
+  distinct(Sett_Clean, .keep_all = TRUE)
 
 # ---- canonical individual table ---------------------------------------------
 # year_fc is the year of first capture. For animals first caught as cub/yearling
@@ -69,11 +84,11 @@ sett_xy <- sett_raw %>%
 # with exact age unknown.
 individuals <- ind %>%
   transmute(
-    individual_id=as.integer(individual_id),
-    tattoo=trimws(as.character(tattoo)),
-    sex_raw=as.character(sex),
-    age_fc_raw=as.character(age_fc),
-    year_fc=as.integer(year_fc)
+    individual_id = as.integer(individual_id),
+    tattoo = toupper(trimws(as.character(tattoo))),
+    sex_raw = as.character(sex),
+    age_fc_raw = as.character(age_fc),
+    year_fc = as.integer(year_fc)
   ) %>%
   mutate(
     sex_clean=toupper(str_squish(sex_raw)),
@@ -90,26 +105,40 @@ individuals <- ind %>%
                                   age_entry_class=="Yearling" & !is.na(year_fc)~year_fc-1L,
                                   TRUE~NA_integer_)
   ) %>%
-  distinct(individual_id,.keep_all=TRUE)
+  distinct(tattoo, .keep_all = TRUE)
+
+stopifnot(
+  !anyNA(individuals$tattoo),
+  !any(individuals$tattoo == ""),
+  nrow(individuals) == n_distinct(individuals$individual_id)
+)
 
 # ---- all live encounters with and without usable spatial coordinates ---------
 live_all <- enc %>%
-  mutate(individual_id=as.integer(individual_id),tattoo=trimws(as.character(tattoo)),
+  mutate(individual_id=as.integer(individual_id),tattoo=toupper(trimws(as.character(tattoo))),
          primary_year=as.integer(primary_year),trap_season=as.integer(trap_season),
          Sett_Clean=clean_sett2(sett)) %>%
   filter(has_live_capture,!is.na(primary_year),primary_year<=MAX_YEAR,trap_season %in% 1:4)
+
+stopifnot(
+  nrow(anti_join(
+    live_all %>% distinct(tattoo, individual_id),
+    individuals %>% distinct(tattoo, individual_id),
+    by = c("tattoo", "individual_id")
+  )) == 0L
+)
 
 live_spatial <- live_all %>%
   left_join(sett_xy,by="Sett_Clean") %>%
   filter(!is.na(x),!is.na(y))
 
 live_stats <- live_all %>%
-  group_by(individual_id) %>%
+  group_by(tattoo) %>%
   summarise(n_live_encounters=n(),n_live_years_any=n_distinct(primary_year),
             first_live_year_any=min(primary_year),last_live_year_any=max(primary_year),.groups="drop")
 
 spatial_stats <- live_spatial %>%
-  group_by(individual_id) %>%
+  group_by(tattoo) %>%
   summarise(n_spatial_encounters=n(),n_spatial_years=n_distinct(primary_year),
             first_spatial_year=min(primary_year),last_spatial_year=max(primary_year),
             spatial_year_span=last_spatial_year-first_spatial_year,.groups="drop")
@@ -119,12 +148,12 @@ spatial_stats <- live_spatial %>%
 inf_ids <- character()
 if(file.exists(INFECTION_FILE)){
   inf <- readRDS(INFECTION_FILE)
-  if("tattoo" %in% names(inf)) inf_ids <- trimws(as.character(inf$tattoo))
+  if("tattoo" %in% names(inf)) inf_ids <- toupper(trimws(as.character(inf$tattoo)))
 }
 
 pop <- individuals %>%
-  left_join(live_stats,by="individual_id") %>%
-  left_join(spatial_stats,by="individual_id") %>%
+  left_join(live_stats,by="tattoo") %>%
+  left_join(spatial_stats,by="tattoo") %>%
   mutate(
     across(c(n_live_encounters,n_live_years_any,n_spatial_encounters,n_spatial_years),~replace_na(.x,0L)),
     has_any_live=n_live_years_any>=1L,
@@ -164,7 +193,7 @@ pop <- individuals %>%
 # Adult entrants and unknown-entry animals remain in the data with age unknown.
 age_year <- pop %>%
   filter(movement_eligible) %>%
-  select(individual_id,tattoo,sex_class,age_entry_class,exact_age_supported,inferred_birth_year,
+  select(tattoo,individual_id,sex_class,age_entry_class,exact_age_supported,inferred_birth_year,
          first_spatial_year,last_spatial_year) %>%
   filter(!is.na(first_spatial_year),!is.na(last_spatial_year)) %>%
   rowwise() %>%
