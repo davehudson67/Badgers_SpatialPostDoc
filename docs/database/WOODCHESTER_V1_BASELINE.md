@@ -48,3 +48,12 @@ The sett inventory has 176 canonical sett records, 159 with linked coordinates. 
 Reconcile the nine remaining definitive-source names, the canonical setts without coordinates, historical sett-name aliases and other descriptive recovery locations using source records and field evidence. Do not automatically classify roads, fields, recovery sites, or grid squares as sett identities. The wider Access-table and detailed field-parity audit is also outstanding.
 
 Technical SQL migration history is retained in Git so the implemented rules remain reproducible. The research-facing documentation records this consolidated state and its open issues; new scientific corrections after V1 should be explicitly versioned and accompanied by a recorded rationale.
+
+
+## Consistent V1 location fields (23 October 2026)
+
+I use `analysis.capture_history_v1` for researcher-facing capture history and `analysis.capture_traits_v1` for standardised capture traits. Both retain their existing columns and add `sett_name`, `location_type`, `location_easting`, `location_northing`, `location_crs`, `location_coordinate_basis` and `location_class` by capture ID. The shared implementation is `analysis.capture_location_fields_v1`. Legacy `analysis.capture_history` and `analysis.capture_traits_standardised` remain unchanged for compatibility with running models and earlier analyses.
+
+The standardised `sett_name` is **NULL unless the record has an established canonical sett**. Grid-referenced PM locations have `location_type = 'PM_GRID_REFERENCE'`, `sett_name = NULL`, and provisional grid-square south-west-corner coordinates in the separate `location_easting` and `location_northing` fields. These are not sett coordinates or precise recovery points. Other classifications are `SETT`, `PM_LOCATION_UNRESOLVED`, `UNMATCHED_CAPTURE_LOCATION` and `NOT_RECORDED`. Original `recorded_sett_name`, `os_ref`, `capture_location_text` and `sett_id` remain unchanged.
+
+Validation: 17,586 unique captures in the V1 traits view; capture history V1: 16,337 known-sett rows (16,034 with sett coordinates), 710 grid-referenced PM recovery rows (all have parsed coordinates and **no sett name**), 343 PM location unresolved, 170 other unmatched captures and 26 missing location. The V1 label and initial 23 October baseline remain unchanged; remaining names and spatial-validation questions are explicitly deferred.
