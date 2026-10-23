@@ -51,7 +51,7 @@ At the current audit:
 
 ```text
 17,586 captures
-16,340 with sett_id
+16,337 with sett_id
 464 with recorded sett text but no sett_id
 ```
 
@@ -113,31 +113,13 @@ The note is retained specifically so this remains auditable.
 
 ---
 
-## 6. The CHESTNUT / HOLLOW TREE rule
+## 6. Post-mortem records with no recorded sett
 
-Three captures have an explicit cleaning note:
+A post-mortem record does not automatically establish a physical sett at which the animal was captured, found or resident. A missing recorded sett must not be filled from the `socg` field alone.
 
-```text
-Original sett blank; value recorded in socg was not a valid social group
-but matched a known sett and was used as cleaned sett
-```
+For the BCP post-mortem records of tattoos `015S` and `053M` on 2 September 2021 (recorded `socg=CHESTNUT`) and `026H` on 29 September 2021 (`socg=HOLLOW TREE`), original Access `sett` is blank. Their canonical `sett_id` is accordingly NULL. The recorded `socg` strings remain available as historical evidence, without asserting verified residency.
 
-The values are:
-
-- CHESTNUT — 2 captures
-- HOLLOW TREE — 1 capture
-
-Rule:
-
-1. Original `sett` was blank.
-2. Original `socg` contained a value.
-3. That value was not a valid canonical social group.
-4. It matched a known sett.
-5. It was therefore assigned as the cleaned sett.
-6. It was **not** forced into the social-group lookup.
-7. The original recorded field remains preserved and a cleaning note explains the decision.
-
-This is preferable to the misleading interpretation that CHESTNUT or HOLLOW TREE were genuine social-group assignments.
+Scientific review: **Dave Hudson**.
 
 ---
 
@@ -427,27 +409,3 @@ subsequent behavioural and disease analyses.
 
 Approved by project investigator: merge `TODD'S` (sett_id 158) and `TODDS` (sett_id 538) as the same physical sett. **Canonical survivor: sett_id 158**. Before the merge, ID 158 had zero linked captures and one sett–SG history entry; ID 538 had eight linked captures and no history entry. The eight recorded captures belonged to recorded SG ARTHURS (social_group_id 48), consistent with ID 158 history. In a single database transaction, reassigned eight `research.captures.sett_id` references from 538 to 158, added explicit migration notes to those capture rows and the surviving sett record, and deleted duplicate canonical row 538. Original `recorded_sett_name` values were not edited. Post-merge verification: 177 canonical setts; eight captures linked to 158; zero to 538; existing history count for 158 remains one. Historical alias remains recorded here and in notes. Do not reintroduce ID 538 during future imports. This was a canonical identity correction, NOT an instruction to treat all geographical polygon labels as equivalent to social-group IDs.
 
-
-## V1.1 field-team coordinate and historical location audit (23 October 2026)
-
-The existing 176 canonical setts remain intact. The new `research.sett_location_evidence` table stores candidate coordinates **separately** from sett identity, with source, EPSG coordinate system (default EPSG:27700 British National Grid), observation date, estimated error, reviewer, review status, and supporting notes. Approved coordinates only are exposed in `analysis.sett_coordinates_approved`; zero were present immediately after creation. An approved coordinate does **not** automatically set an uncertain capture's `sett_id` nor establish the historical social-group affiliation.
-
-Queries for the field team:
-```sql
--- Established sett names that need coordinates
-select sett_name,canonical_capture_count,last_capture_date
-from analysis.sett_field_team_review
-where not has_approved_coordinate
-order by canonical_capture_count desc,sett_name;
-
--- Unresolved written locations (DO NOT assume all are setts)
-select * from analysis.unresolved_recorded_sett_names
-order by n_captures desc,recorded_sett_name;
-```
-At baseline there are **176** canonical sett names and **358** distinct unresolved recorded location labels (464 captures). The latter include lanes, outliers, grid references, field locations and ambiguous text. They require triage: actual physical sett; synonym of known sett; non-sett location; unreliable text; genuinely unresolved. Do not promote all 358 labels to canonical setts.
-
-**Field-team return format:** canonical sett name (or original recorded name), known alias(es), British National Grid easting and northing (or an explicitly labelled latitude/longitude with CRS), coordinate method, estimated accuracy, observation date or date range, field observer, GPS/map source identifier, and confidence in identification. Optional: sett active-period history, evidence whether rebuilt/moved, and historical social group (as a dated observation, not a timeless ownership rule). Record coordinate source even where the coordinates were estimated from a map.
-
-All new coordinates should start `PROPOSED`, then be approved individually after validation. Updating `research.sett_location_evidence` requires a controlled curator process; coauthors remain read-only. Source photographs or sketches should be linked by references, not exposed as public database files.
-
-**Historical rule retention:** spelling aliases and evidence-backed CHESTNUT/HOLLOW TREE exception rules already described earlier in this document remain operative. New field information should *add* provenance and enable separately reviewed corrections; it must not retroactively infer group residence or overwrite historical capture text.
