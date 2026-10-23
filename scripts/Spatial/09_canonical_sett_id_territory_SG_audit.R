@@ -31,8 +31,9 @@ load_snapshot <- function(file,required) {
 }
 mode <- tolower(Sys.getenv("SUPABASE_SOURCE","live"))
 if(mode=="live") {
-  source(file.path("scripts","Spatial","woodchester_supabase_connection.R"))
-  con <- woodchester_supabase_connect()
+  source("scripts/BadgerDatabase.R")
+  con <- badger_db_connect()
+  DBI::dbExecute(con,"SET default_transaction_read_only = on")
   on.exit(if(DBI::dbIsValid(con)) DBI::dbDisconnect(con),add=TRUE)
   canonical <- DBI::dbGetQuery(con,
     "select sett_id,sett_name,notes from research.setts order by sett_id")
