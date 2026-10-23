@@ -42,3 +42,12 @@ The analysis view `analysis.sett_social_group_observed` summarises observed co-o
 The database also exposes `analysis.sett_field_team_review` (canonical sett names and capture associations) and `analysis.unresolved_recorded_sett_names` (358 distinct labels covering 464 captures). These unmatched labels include place descriptions and field locations as well as potential setts.
 
 The separate **sett and social-group scientific audit** will establish further historic aliases, verified sett coordinates and temporally varying group associations. Its results will be incorporated into the database after that exercise is complete.
+
+
+## Definitive sett coordinate source — October 2026
+
+I imported the 168-row file `WoodchesterSettLocations (1).csv` into `research.sett_coordinate_source_20261023`. The supplied fields are `Sett_Upper`, `SETT`, `SettX` and `SettY`. A copy is versioned at `data/spatial/sett_coordinates/WoodchesterSettLocations_source_20261023.csv`. The source has 168 unique names and complete numeric coordinate pairs; the British National Grid CRS (`EPSG:27700`) is inferred from the values and needs source confirmation.
+
+I linked 155 coordinates by unique punctuation-insensitive canonical-name matching, and four more using the existing documented coordinate aliases: CLIFF.FACE/CLIFF, GULLY/GULLEY, STONEY.TRACK/STONY TRACK and ELEVEN.ROW/ELEVENTH ROW. These 159 linked coordinates are available in `research.sett_location_evidence` and `analysis.sett_coordinates_approved`; the source strings are unchanged. The unified canonical sett inventory is `analysis.capture_sett_coordinate_inventory` (176 rows). The nine unmatched source names are shown in `analysis.sett_coordinate_source_name_review`: BOWLAS, CONVENT, COVERT, JUNGLE, PEN.(NEEDS.RENAME), SELSLEY, STREAM.(NEEDS.NEW.NAME), VILLIERS.CUT and VILLIERS.UPPER.
+
+Sixteen canonical setts associated with capture records still lack a coordinate match. Their original names and capture associations remain unchanged. The independent sett-name audit will reconcile the remaining source labels and verify any historically distinct setts.
