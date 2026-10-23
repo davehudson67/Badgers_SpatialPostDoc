@@ -1504,3 +1504,73 @@ Reanalysis of 542,400 posterior badger-year location draws with recorded capture
 **Remain pending field-team confirmation:** JACKSMIREY/JACKS, COLLIERSWOOD/COLLIERS, original names paired with clearly different polygon names (e.g., ARTHURS/JUNCTION and LARCH/BOX), and hyphenated/compound historical territories (e.g. YEW-TOP and YEW-TAXUS-TOP-WYCH ELM). Never assume split/merger or membership merely from a string; ask what the mapped territorial units were intended to represent in each period, and whether name relationships are date-bounded. Capture-level anomalies CHESTNUT and HOLLOW TREE must remain excluded from inferred group IDs per database governance unless explicitly corrected by source evidence.
 
 **Next action:** run `scripts/Spatial/04_reconcile_historical_social_group_names.R` to generate (1) candidate pairs for field review with year and frequency, (2) source-string dictionary with formatting keys, (3) badger-year concordance comparison, (4) annual comparison and (5) ranked unresolved-pair queue. Keep any approved aliases in a separate, versioned crosswalk with source, reviewer, evidence, effective dates and relationship type (equivalent name vs merger/compound vs different social group). Do not recode raw data; rerun validation after approvals. Then inspect residual spatial mismatches before introducing group membership into V12/V13.
+
+
+---
+
+## 2026-10-23 update — V11S resolution limit and protected path to demography / disease
+
+The long full-data V11S continuation confirmed a structural ridge in the
+freely-estimated resident annual movement scale. This does **not** change the
+overarching scientific programme.
+
+Annual activity centres remain continuous. The 50 m raster describes spatial
+habitat/support and should not be converted into a hard rule that a resident
+must remain in the same raster cell. However, an annual resident-process scale
+of only a few to a few tens of metres is not usefully distinguishable given
+the 50 m landscape raster and approximately 150--160 m observation/activity
+scale.
+
+The resident state should therefore be interpreted as:
+
+> **no resolvable annual relocation**
+
+rather than as an exact small-distance movement distribution.
+
+The final movement correction remains in the **V11 family** (provisionally
+V11R). V12 remains reserved for entry, immigration/settlement, survival,
+retention and apparent emigration.
+
+V11R should preserve the V11S biological transition structure initially and
+fix/anchor only the non-identifiable resident process scale. Use a pre-specified
+small sensitivity set around the unresolved scale (e.g. 25, 50 and 100 m mean
+radial displacement), and ask whether inferred relocation histories and
+biological effects remain stable. Only simplify age/sex/individual or Markov
+transition biology if convergence still fails after this nuisance ridge is
+removed.
+
+The now-available 1977--2025 territory polygons form a parallel,
+time-varying **social landscape**, not the definition of geographical movement.
+For every annual transition distinguish:
+
+- geographic relocation;
+- capture-derived resident-group change;
+- polygon-defined territory crossing;
+- apparent reassignment caused by boundary movement itself.
+
+This distinction is essential because territory contraction/expansion, group
+loss, overlap and post-2018 social reorganisation can change group identity
+without equivalent animal movement.
+
+After V11R is frozen, proceed directly to the demographic/immigration model.
+Immigrant status must be inferred from full entry + settlement + movement +
+territory/residency history and never equated automatically with adult first
+capture or high mobility.
+
+The disease programme then uses infectiousness and source/recipient social
+connectivity to distinguish local maintenance from external reseeding.
+Time-varying boundaries are especially important here because they define
+changing membership, adjacency and plausible infectious pressure.
+
+This sequence preserves the final scientific target:
+
+**individual movement -> immigration/emigration and demographic turnover ->
+infectious movement / exposure -> social-group persistence and recolonisation
+-> system resilience.**
+
+The older instruction to broadly "refresh" disease-movement analyses should not
+be interpreted as permission to repeat generic infected -> movement or movement
+-> infection models unchanged. Those questions have already been addressed;
+future disease analyses require a changed estimand such as infectiousness,
+demography, dynamic exposure, importation/establishment or a materially improved
+joint state formulation.
