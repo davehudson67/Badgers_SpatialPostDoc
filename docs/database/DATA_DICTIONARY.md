@@ -1,19 +1,17 @@
 # Woodchester Badger Database — Data Dictionary
 
-**Status:** Draft baseline Version 1 — reviewed by Dave Hudson
+**Dave Hudson | Working Version 1 baseline**
 
-This is a working key to the canonical `research` tables.
-
-Where a description is based only on field naming/current structure rather than surviving original Access documentation, treat it as a practical interpretation to be checked against original source documentation if available.
+This dictionary describes the canonical `research` tables and the analysis views. It records the fields retained or derived from the original Access imports. The internal database structure and the scientific identifiers are distinguished below.
 
 ## General conventions
 
-- Fields ending `_id` are stable relational identifiers.
+- `tattoo` is the scientific identifier for each badger.
 - `capture_id` links a record to one capture event.
-- `individual_id` is an internal relational foreign key (not a scientific identifier); researchers use `tattoo` for individuals and `capture_id` for events.
+- `individual_id` appears in the underlying research schema only as an internal relational key.
 - `created_at` / `imported_at` are database provenance timestamps.
 - Recorded free text is retained where historically important.
-- Import/staging tables are not canonical research products.
+- Import and staging tables are not canonical research observations.
 
 ---
 
@@ -107,7 +105,7 @@ Potentially multiple wound rows per capture.
 
 Variables: `wound_id`, `capture_id`, `wound_area`, `wound_amount`, `wound_age`, `wound_size`, `wound_type`, `notes`, `created_at`.
 
-Do not join this to another one-to-many table without considering row multiplication.
+Multiple wounds can be associated with a single capture.
 
 ## `research.cultures`
 
@@ -261,7 +259,7 @@ Temporary/wide import structure for infection probabilities.
 
 Temporary import structure for quarterly probabilities.
 
-These are intentionally excluded from `badger_research_readonly`.
+These are import/staging tables rather than canonical records.
 
 ---
 
@@ -283,57 +281,37 @@ Important grain:
 
 ---
 
-# Original Access descriptions
+## Additional Version 1 research tables
 
-The imported raw schema preserves original field names, which is useful evidence of intended meaning.
+| Table | Contents |
+|---|---|
+| `research.sett_location_evidence` | `evidence_id` (record), `sett_id` (sett), `easting`, `northing`, `coordinate_system` (default EPSG:27700), `accuracy_m`, `evidence_type` (FIELD_TEAM/HISTORIC_MAP/GPS/OTHER), `source_reference`, `observed_on`, `recorded_by`, `review_status` (PROPOSED/APPROVED/REJECTED/SUPERSEDED), `reviewed_by`, `reviewed_at`, `notes`, `created_at` |
 
-However, a complete set of original Access field descriptions/forms/validation rules has not yet been recovered into this dictionary.
+## Additional Version 1 analysis views
 
-If the original `.accdb` or an Access schema export is available, the next dictionary improvement should be to extract:
+| View | Contents and principal columns |
+|---|---|
+| `analysis.individual_traits_standardised` | Tattoo, recorded and standardised age/sex, first capture year, missingness flags |
+| `analysis.capture_traits_standardised` | Tattoo, capture ID/date/year/quarter, PM status, recorded sett/SG, standardised sex and age, time since first capture and approximate age when first observed as cub |
+| `analysis.culture_results_standardised` | Culture source record and capture identifiers, sample type/group, original result, interpreted status, nullable M. bovis detection |
+| `analysis.stat_pak_results_standardised` | Stat-Pak source and capture identifiers, recorded result code and interpretation (P positive; N negative; C no clotted sample/invalid) |
+| `analysis.diagnostic_interpretation_standardised` | Tattoo, capture ID, test family, family-specific source record ID, recorded result, POSITIVE/NEGATIVE/INVALID/INDETERMINATE status, nullable binary indicator |
+| `analysis.capture_diagnostic_summary_standardised` | One row per capture; positive, negative and uninterpretable test counts, descriptive any-positive-test flag |
+| `analysis.sett_coordinates_approved` | Approved canonical sett coordinates, CRS, accuracy and source |
+| `analysis.sett_field_team_review` | Canonical sett names, number and latest date of associated captures, presence of approved coordinates |
+| `analysis.unresolved_recorded_sett_names` | Original sett labels without a canonical sett ID, capture frequency and earliest/latest dates |
 
-- table descriptions;
-- field descriptions;
-- lookup lists;
-- relationships;
-- validation rules;
-- form labels/tooltips where scientifically informative.
+## Access import and refresh metadata
 
-Those should be added as **source-derived descriptions**, rather than silently replacing this working interpretation.
+| Schema/table | Contents |
+|---|---|
+| `access_raw` | Twelve original Access source tables imported without applying canonical biological corrections |
+| `ingest.access_refresh_batches` | Source filename, checksum, export/import timing, review/application status and version reference |
+| `ingest.access_refresh_table_audits` | Source table, expected/current record counts and reconciliation outcomes |
+| `ingest.canonical_cleaning_decisions` | Evidence, recorded and cleaned values, review and version metadata for corrections |
 
+## Field values and definitions
 
-## Version 1.1 — comprehensive dictionary and valid-value policy (23 October 2026)
+The database schema lists the exact column names, types, nullability and supported constraints. The query in [`sql/audit/Woodchester_v1_1_schema_and_value_dictionary.sql`](../../sql/audit/Woodchester_v1_1_schema_and_value_dictionary.sql) regenerates the full column inventory and example distributions. Lookup tables and constraints specify controlled codes where present; free-text fields have observed values rather than a finite permitted list.
 
-The material above describes the original canonical research tables. The **authoritative inventory of every column** across `access_raw`, `research`, `analysis` and private `ingest` can be regenerated using [`sql/audit/Woodchester_v1_1_schema_and_value_dictionary.sql`](../../sql/audit/Woodchester_v1_1_schema_and_value_dictionary.sql). The live database is the authority for column existence and SQL type; this prose dictionary is the place for scientific meanings, measurement units, applicable periods and evidence notes.
-
-**Do not confuse observed values with allowed values.** Database `CHECK` constraints or lookup tables, where available, define allowed codes. For unconstrained free-text fields, report *observed distinct values and frequencies* rather than implying a closed valid-code list. The companion SQL provides examples and the full-column inventory. Distinguish SQL NULL, source literal UNKNOWN, invalid test, missing test and source NOT TESTED.
-
-### Additional V1 standardisation outputs
-
-- `analysis.individual_traits_standardised`: `tattoo`, recorded/standardised age-first-capture and sex, year first captured and corresponding `*_missing` flags.
-- `analysis.capture_traits_standardised`: one row per canonical capture, with `tattoo`, `capture_id`, date/year/quarter, original and standardised individual attributes, elapsed years since first capture, and a separately named approximate age only for first-capture CUB records.
-- `analysis.culture_results_standardised`: one sample/test row, original result text, standardised culture status, grouped sample type, nullable `is_m_bovis_detected`.
-- `analysis.stat_pak_results_standardised`: one row per Stat-Pak test; `original_result_code` has lookup-verified N=negative, P=positive and C=no clotted sample (invalid).
-- `analysis.diagnostic_interpretation_standardised`: one row per assay/sample across six test families. `test_family` distinguishes test domains; `source_record_id` identifies a record **within** its family; `interpreted_status` = POSITIVE/NEGATIVE/INVALID/INDETERMINATE, with nullable `test_positive`.
-- `analysis.capture_diagnostic_summary_standardised`: one row per capture, diagnostic counts and descriptive any-positive flag (not a latent infection diagnosis).
-- `analysis.sett_coordinates_approved`: one coordinate record per currently approved canonical sett; preserves provenance/precision.
-- `analysis.sett_field_team_review`: each canonical sett, frequency and last capture, and whether there is an approved coordinate.
-- `analysis.unresolved_recorded_sett_names`: distinct source location labels that have no verified canonical sett ID, with frequency and first/last dates.
-
-### Sett evidence table: `research.sett_location_evidence`
-
-Fields: `evidence_id` unique entry; `sett_id` canonical physical sett; `easting`/`northing` numeric coordinates **in `coordinate_system`**, default EPSG:27700; `accuracy_m` stated uncertainty (metres); `evidence_type` one of FIELD_TEAM, HISTORIC_MAP, GPS, OTHER; `source_reference` citation or field record; `observed_on` observation date; `recorded_by`, `notes`; `review_status` PROPOSED/APPROVED/REJECTED/SUPERSEDED; `reviewed_by`/`reviewed_at`; `created_at`. A partial unique index forbids two simultaneous APPROVED records for the same sett. The table starts empty; **no coordinates have been invented**.
-
-### Private refresh and decision tables
-
-`ingest.access_refresh_batches`: `batch_id`, source file name and SHA256, exported and registered dates, status (REGISTERED, STAGED, REVIEWED, APPLIED, REJECTED), Git commit, notes.
-`ingest.access_refresh_table_audits`: per-batch table counts and changed/new/missing/ambiguous rows, decision status (PENDING, PASS, REVIEW, FAIL), JSON audit evidence.
-`ingest.canonical_cleaning_decisions`: recorded and proposed canonical values, rule version, evidence/rationale, approval status (PROPOSED, APPROVED, REJECTED, SUPERSEDED), reviewer and Git commit.
-
-**Outstanding documentation gap:** some original Access field labels, units and validation-code meanings are not yet independently evidenced. Do not invent these. The SQL inventory is complete as a schema query, but a fully human-curated definition for *each* raw and derived field requires checking Access forms/lookup tables and the field team.
-
-
-## Canonical identifier and PM location conventions
-
-In researcher-facing data, `tattoo` identifies a badger and `capture_id` identifies a capture or post-mortem event. The internal `individual_id` remains documented where it genuinely occurs in the underlying relational schema, but is not a recommended scientific join key.
-
-For the 2021 BCP post-mortem records of `015S`, `053M`, and `026H`, `sett_id` is NULL because no actual physical sett was recorded. Recorded CHESTNUT/HOLLOW TREE text remains in `recorded_social_group_name`. Scientific decision reviewed by **Dave Hudson**.
+The original Access field descriptions and complete allowable-code definitions have not all been recovered. The descriptions above reflect the present database and identifiable source fields; unverified original meanings and measurement units are not asserted as confirmed.
