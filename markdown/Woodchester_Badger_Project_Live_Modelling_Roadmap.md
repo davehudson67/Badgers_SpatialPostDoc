@@ -1574,3 +1574,16 @@ be interpreted as permission to repeat generic infected -> movement or movement
 future disease analyses require a changed estimand such as infectiousness,
 demography, dynamic exposure, importation/establishment or a materially improved
 joint state formulation.
+
+
+---
+
+## 2026-10-23 — annual sett / social-group / polygon crosswalk for infection transmission
+
+Sett locations are fixed; annual capture-recorded SG and Vicente annual residence are separate from changing bait-marked territory polygons. Published Woodchester sources describe marker deployment at main setts, but not a universal GIS polygon naming rule. A documented 2005 exception is the Larch group with main setts Larch and Box; Taxus and Top were treated as one Yew *supergroup* at that time, with trapping labels still tied to individual setts. These are dated cases, not timeless aliases.
+
+**Next data product:** evidence-graded, year-specific crosswalk using annual polygon labels, sett-to-capture-SG evidence, source names, counts, competing groups and confidence. Keep candidate (not proven) assignments and their provenance separate from approved aliases; leave compound, overlapping and ambiguous polygons unresolved. No fuzzy auto-merges or editing raw data. Obtain field-team decisions with effective years, relationship type and evidence.
+
+**Why this matters for V13:** an infected badger moving across a territory edge does not itself establish between-social-group transmission. Separately estimate residency, movement/contact opportunity, infectious source status, incident recipient infection, introduction, and subsequent local establishment. Incorporate mapping uncertainty and use temporally lagged analyses. Do not use year-to-year polygon row IDs as group IDs.
+
+Implementation: `scripts/Spatial/06_build_historical_polygon_SG_crosswalk.R` produces `outputs/social_group_crosswalk/` evidence and field-review tables. Review before using as a group-specific force-of-infection input.
