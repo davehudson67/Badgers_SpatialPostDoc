@@ -1,10 +1,10 @@
 #!/usr/bin/env Rscript
 # 09: Canonical-ID based historical sett -> territory -> SG crosswalk.
-# Prerequisite: DATABASE_URL (read-only Postgres connection URI), plus
+# Prerequisite: local Supabase CSV snapshots (no database credentials), plus
 # the geometry and coordinate files already used in script 07.
 # No SQL writes, and no modifications to primary data.
 suppressPackageStartupMessages({
- library(DBI); library(RPostgres); library(sf)
+ library(sf)
  library(dplyr); library(tidyr); library(readr); library(stringr); library(purrr)
 })
 snapshot_dir <- Sys.getenv("SUPABASE_SNAPSHOT_DIR",file.path("data","local_supabase_snapshots"))
