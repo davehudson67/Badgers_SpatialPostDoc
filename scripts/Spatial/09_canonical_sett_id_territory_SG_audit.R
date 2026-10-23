@@ -81,24 +81,45 @@ co <- co %>% transmute(coordinate_name=Sett_Upper,
  east=suppressWarnings(as.numeric(SettX)),north=suppressWarnings(as.numeric(SettY)),
  name_key=clean(coordinate_name))
 canonical <- canonical %>% mutate(name_key=clean(sett_name))
-dup_coord <- co %>% filter(!is.na(name_key)) %>% count(name_key) %>% filter(n>1)
-dup_can <- canonical %>% filter(!is.na(name_key)) %>% count(name_key) %>% filter(n>1)
+# A normalised key is a candidate matching aid, never a substitute for sett_id.
+# Canonical duplicates (e.g. TODD'S versus TODDS) must NOT inherit the
+# same coordinate merely because punctuation was removed.
+dup_coord <- co %>% filter(!is.na(name_key)) %>%
+ group_by(name_key) %>% summarise(n=n(),
+  n_unique_locations=n_distinct(paste(east,north,sep=":")),
+  coordinate_names=paste(sort(unique(coordinate_name)),collapse=" | "),.groups="drop") %>%
+ filter(n>1)
+dup_can <- canonical %>% filter(!is.na(name_key)) %>% group_by(name_key) %>%
+ summarise(n=n(),canonical_ids=paste(sort(sett_id),collapse=" | "),
+  canonical_names=paste(sort(sett_name),collapse=" | "),.groups="drop") %>%
+ filter(n>1)
 write_csv(dup_coord,file.path(out,"02_duplicate_coordinate_keys.csv"))
 write_csv(dup_can,file.path(out,"03_duplicate_canonical_keys.csv"))
-if(nrow(dup_coord)||nrow(dup_can)) stop("Non-unique cleaned name keys. Review duplicate reports: no uncertain matches permitted.")
-joined <- canonical %>% left_join(co,by="name_key") %>%
- mutate(coord_status=case_when(is.na(east)|is.na(north)~"NO_COORDINATE",
+bad_keys <- union(dup_coord$name_key,dup_can$name_key)
+write_csv(canonical %>% filter(name_key %in% bad_keys) %>%
+ left_join(co %>% filter(name_key %in% bad_keys),by="name_key",
+ relationship="many-to-many"),
+ file.path(out,"03b_ambiguous_coordinate_identity_review.csv"))
+# No join on ambiguous keys. Distinct canonical IDs remain distinct, but both
+# are recorded with missing geometry pending documented identity resolution.
+co_safe <- co %>% filter(!is.na(name_key),!name_key %in% bad_keys)
+joined <- canonical %>% left_join(co_safe,by="name_key",relationship="many-to-one") %>%
+ mutate(coord_status=case_when(
+ name_key %in% bad_keys~"AMBIGUOUS_NAME_KEY",
+ is.na(east)|is.na(north)~"NO_COORDINATE",
  TRUE~"EXACT_NORMALISED_NAME"))
+if(nrow(joined)!=nrow(canonical) || anyDuplicated(joined$sett_id))
+ stop("Coordinate merge violated canonical sett_id uniqueness")
 write_csv(joined,file.path(out,"04_canonical_coordinate_match.csv"))
 write_csv(co %>% anti_join(canonical,by="name_key"),file.path(out,"05_coordinate_names_not_canonical.csv"))
 # Crucially, we NEVER turn an unmatched capture name into a settled ID.
 summary <- tibble(
  metric=c("n_canonical_setts","n_canonical_with_coordinates",
- "n_canonical_without_coordinates","n_captures_1977_2025",
+ "n_canonical_without_coordinates","n_canonical_ambiguous_name_keys","n_captures_1977_2025",
  "n_captures_with_sett_id","n_captures_without_sett_id",
  "n_captures_with_sg_id"),
  value=c(nrow(canonical),sum(joined$coord_status=="EXACT_NORMALISED_NAME"),
- sum(joined$coord_status=="NO_COORDINATE"),sum(captures$n_captures),
+ sum(joined$coord_status=="NO_COORDINATE"),sum(joined$coord_status=="AMBIGUOUS_NAME_KEY"),sum(captures$n_captures),
  sum(captures$n_captures[!is.na(captures$sett_id)]),NA_integer_,
  sum(captures$n_captures[!is.na(captures$recorded_social_group_id)])))
 write_csv(summary,file.path(out,"00_source_audit_summary.csv"))
@@ -136,7 +157,7 @@ write_csv(hits,file.path(out,"09_sett_polygon_all_matches.csv"))
 all_years <- crossing(year=years,joined %>% select(sett_id,sett_name,coord_status))
 status <- all_years %>% left_join(hits %>% count(year,sett_id,name="n_polygons"),
  by=c("year","sett_id")) %>% mutate(n_polygons=coalesce(n_polygons,0L),
- status=case_when(coord_status=="NO_COORDINATE"~"NO_COORDINATE",
+ status=case_when(coord_status!="EXACT_NORMALISED_NAME"~coord_status,
  n_polygons==0~"OUTSIDE_ALL",n_polygons==1~"ONE_POLYGON",TRUE~"MULTIPLE_POLYGONS"))
 write_csv(status,file.path(out,"10_all_sett_year_status.csv"))
 # 'Observed' means captured at least once that year, NOT proof of biological occupancy.
@@ -161,9 +182,9 @@ pdecision <- st_drop_geometry(polys) %>% select(year,polygon_uid,territory_name)
  approved_sg_id=NA_integer_,approval_source="",reviewer="",review_date="",notes="")
 write_csv(pdecision,file.path(out,"14_annual_polygon_review_worklist.csv"))
 annual <- obsstatus %>% group_by(year) %>%
- summarise(n_observed_setts=n(),n_with_coordinates=sum(status!="NO_COORDINATE"),
+ summarise(n_observed_setts=n(),n_with_coordinates=sum(status %in% c("ONE_POLYGON","MULTIPLE_POLYGONS","OUTSIDE_ALL")),
  n_one_polygon=sum(status=="ONE_POLYGON"),n_overlap=sum(status=="MULTIPLE_POLYGONS"),
- n_outside=sum(status=="OUTSIDE_ALL"),n_missing_coordinates=sum(status=="NO_COORDINATE"),
+ n_outside=sum(status=="OUTSIDE_ALL"),n_missing_coordinates=sum(status %in% c("NO_COORDINATE","AMBIGUOUS_NAME_KEY")),
  .groups="drop")
 write_csv(annual,file.path(out,"15_annual_observed_coverage.csv"))
 cat("Completed in ",out,"\n",sep="")
