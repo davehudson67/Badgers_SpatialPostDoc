@@ -42,13 +42,13 @@ con <- badger_db_connect()
 
 captures_db <- tbl(
   con,
-  dbplyr::in_schema("analysis", "coauthor_capture_history")
+  dbplyr::in_schema("analysis", "capture_history")
 ) %>%
   collect()
 
 diagnostics_db <- tbl(
   con,
-  dbplyr::in_schema("analysis", "coauthor_diagnostic_results")
+  dbplyr::in_schema("analysis", "diagnostic_results")
 ) %>%
   collect()
 
