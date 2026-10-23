@@ -507,3 +507,26 @@ from analysis.diagnostic_results;
 7. **Release gate:** sign off an audit snapshot and data-dictionary version, then share a sample read-only R query using `scripts/BadgerDatabase.R`; test external collaboration with least-privileged credentials.
 
 **As of this assessment no database schema or coauthor privileges were altered.** The live inspections were read-only.
+
+
+## Tattoo-first coauthor interface and the 040l historical correction — 23 October 2026
+
+Investigator decision: **tattoo is the canonical scientific identifier for an individual badger**. Coauthors should use `tattoo` for individual-level work, and `capture_id` for capture/test joins. The surrogate `individual_id` remains a relational database implementation key and is not a second biological identity.
+
+Live validation found **3,791** `research.individuals`, **3,791 unique nonblank tattoo values**, and **zero duplicated tattoos after `upper(btrim(tattoo))`**. Thus the current canonical register supports a tattoo-first research interface. Changes to tattoos require source-supported documented mapping, not indiscriminate case normalisation.
+
+**Verified 040l/040L case:** In preserved `access_raw`, the individual and ten capture records use `040L`. The culture table has **34** records marked `040L` and **four** marked `040l`. All four lowercase culture records are dated **2011-01-25**, PM = No, with samples HEAD, OA, TA and URINE. `research.individuals` has exactly one canonical badger `040L` (`individual_id=792`), and its captured encounter on that date has four linked culture records. In all, `research.cultures` has **38** culture records associated with the canonical tattoo through capture relations. This constitutes strong linkage corroboration; the four row identities were not separately reconciled by a source-row foreign key, which `research.cultures` does not currently expose. The original source-case distinction remains preserved in `access_raw.tbl_culture`. No `040l` alias row was found in `research.individual_names`; **the correction is therefore documented here as a verified historical alias**, not as a claim of an existing alias-row entry.
+
+Five `analysis.coauthor_*` SQL views were created and SELECT-granted to `badger_readonly` and `badger_research_readonly`: `coauthor_capture_history`, `coauthor_diagnostic_results`, `coauthor_capture_infection_probabilities`, `coauthor_infection_probabilities`, `coauthor_infection_quarterly_probabilities`. These expose the columns of their corresponding existing `analysis` views **except `individual_id`**, while retaining tattoo, and capture_id wherever the source view contains it. `coauthor_capture_history` returns 17,586 rows, matching the original view and research captures. Original views were not changed, protecting existing R scripts and references. These are coauthor-facing convenience views; `research` still exposes internal IDs to advanced users if granted read access.
+
+**Caution:** a tattoo-based join links all observations of an individual. Always use `capture_id` to link diagnostics to the intended encounter. The `040l` alias is a specific evidenced correction, not a general permission to merge visually similar identifiers.
+
+Example:
+
+```sql
+select tattoo,capture_id,capture_date,recorded_sett_name,recorded_social_group_name
+from analysis.coauthor_capture_history;
+
+select tattoo,capture_id,test_family,sample_type,result
+from analysis.coauthor_diagnostic_results;
+```
