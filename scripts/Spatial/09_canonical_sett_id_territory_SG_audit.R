@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # 09: Canonical-ID based historical sett -> territory -> SG crosswalk.
-# Prerequisite: local Supabase CSV snapshots (no database credentials), plus
+# Set SUPABASE_SOURCE=live (default) for live read-only RPostgres, or snapshot for CSVs.
 # the geometry and coordinate files already used in script 07.
 # No SQL writes, and no modifications to primary data.
 suppressPackageStartupMessages({
@@ -29,14 +29,36 @@ load_snapshot <- function(file,required) {
   " missing columns: ",paste(setdiff(required,names(x)),collapse=", "))
  x
 }
-canonical <- load_snapshot("setts.csv",c("sett_id","sett_name","notes"))
-groups <- load_snapshot("groups.csv",c("social_group_id","social_group_name"))
-history <- load_snapshot("history.csv",c("sett_id","social_group_id","valid_from","valid_to","notes"))
-agg <- load_snapshot("captures_annual_aggregate.csv",
- c("year","sett_id","recorded_social_group_id","n_captures")) %>%
- filter(year>=1977,year<=2025)
-# Snapshot contains aggregated non-PM capture counts by year, sett_id and recorded SG ID.
-# NULL social-group IDs are valid: they contribute to observed sett activity.
+mode <- tolower(Sys.getenv("SUPABASE_SOURCE","live"))
+if(mode=="live") {
+  source(file.path("scripts","Spatial","woodchester_supabase_connection.R"))
+  con <- woodchester_supabase_connect()
+  on.exit(if(DBI::dbIsValid(con)) DBI::dbDisconnect(con),add=TRUE)
+  canonical <- DBI::dbGetQuery(con,
+    "select sett_id,sett_name,notes from research.setts order by sett_id")
+  groups <- DBI::dbGetQuery(con,
+    "select social_group_id,social_group_name from research.social_groups order by social_group_id")
+  history <- DBI::dbGetQuery(con,
+    "select sett_id,social_group_id,valid_from,valid_to,notes from research.sett_social_group_history order by sett_id,social_group_id")
+  agg <- DBI::dbGetQuery(con,
+    "select extract(year from capture_date)::integer as year,
+       sett_id,recorded_social_group_id,count(*)::integer as n_captures
+     from research.captures
+     where capture_date >= date '1977-01-01'
+       and capture_date < date '2026-01-01'
+       and coalesce(is_pm,false)=false
+       and sett_id is not null
+     group by 1,2,3 order by 1,2,3")
+  DBI::dbDisconnect(con)
+  # Connection is closed as soon as the read-only snapshot has been loaded.
+} else if(mode=="snapshot") {
+  canonical <- load_snapshot("setts.csv",c("sett_id","sett_name","notes"))
+  groups <- load_snapshot("groups.csv",c("social_group_id","social_group_name"))
+  history <- load_snapshot("history.csv",c("sett_id","social_group_id","valid_from","valid_to","notes"))
+  agg <- load_snapshot("captures_annual_aggregate.csv",
+    c("year","sett_id","recorded_social_group_id","n_captures"))
+} else stop("SUPABASE_SOURCE must be live or snapshot")
+agg <- as_tibble(agg) %>% filter(year>=1977,year<=2025)
 captures <- agg %>% left_join(groups,by=c("recorded_social_group_id"="social_group_id")) %>%
  transmute(year=as.integer(year),sett_id=as.integer(sett_id),
   recorded_social_group_id=as.integer(recorded_social_group_id),
