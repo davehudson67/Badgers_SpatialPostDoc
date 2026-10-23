@@ -530,3 +530,14 @@ from analysis.coauthor_capture_history;
 select tattoo,capture_id,test_family,sample_type,result
 from analysis.coauthor_diagnostic_results;
 ```
+
+
+## Tattoo-first consolidation completed — 23 October 2026
+
+**Live change completed and verified**: five former `analysis.coauthor_*` views were rebuilt with standalone SQL (the original base-query definition embedded, not references to original analysis views). For each, the former standard analysis view was dropped and the rebuilt tattoo-first view renamed to its original standard name. The five duplicate `coauthor_*` views no longer exist. The remaining `analysis` namespace has **seven** views: `capture_history`, `diagnostic_results`, `capture_infection_probabilities`, `infection_probabilities`, `infection_quarterly_probabilities`, `historical_sett_candidates`, `sett_social_group_observed`.
+
+The five public-facing core/model views now contain **tattoo rather than individual_id**. Capture-grain views retain `capture_id`; `infection_quarterly_probabilities` retains tattoo and quarterly temporal keys. The internal `research` schema still uses `individual_id` and foreign keys. `badger_readonly` and `badger_research_readonly` were granted SELECT on the seven analysis views. Verification after the changes: **17,586** `analysis.capture_history` rows, matching **17,586** `research.captures` rows; **76,051** `analysis.diagnostic_results` rows. These were live SQL-level checks; **R end-to-end data-preparation pipeline has not yet been executed on Exeter**.
+
+The repository `DataPrep_fromSupaBase.R` was updated to use tattoo-only identity checks and joins, standard `analysis.capture_history` / `analysis.diagnostic_results` view names, and omit `individual_id` from its analytical products. Once pulled, run the normal R preparation pipeline and compare output/diagnostic row counts with the previous snapshot. Record model-output consequences before replacing published results.
+
+Earlier prose in this document referring to existing `coauthor_*` views describes a **now-retired intermediate state** and should not be interpreted as live schema documentation.
