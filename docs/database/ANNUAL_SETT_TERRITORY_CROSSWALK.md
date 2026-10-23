@@ -13,35 +13,19 @@
 Read-only SQL confirmed 178 canonical setts, 17,586 captures, 16,340 captures linked to `sett_id`, and 173 historical sett–SG relationship rows, as of 2026-10-23. The first join must establish how many canonical setts have unique clean-name matches to BNG coordinates; those numbers were **not** guessed or prematurely accepted.
 
 
-## Live RStudio connection (recommended)
+## Existing RStudio database connection (recommended)
 
-Exeter runs a persistent RStudio session. In the Supabase dashboard for the Woodchester project, choose **Connect → Session pooler** (port **5432**, IPv4-supported). Copy the **exact host and user from the dashboard**; do not invent a regional pooler hostname. Ideally create a database role with SELECT-only permissions on the specific research tables needed by the spatial analysis. A general database-admin account is not truly read-only even when the script sets a read-only session.
-
-In Exeter, edit the private user-level `~/.Renviron` (outside this Git repo) using `usethis::edit_r_environ()`, adding:
-
-```text
-SUPABASE_DB_HOST=THE_EXACT_SESSION_POOLER_HOST
-SUPABASE_DB_PORT=5432
-SUPABASE_DB_NAME=postgres
-SUPABASE_DB_USER=THE_EXACT_USERNAME_FROM_CONNECT
-SUPABASE_DB_PASSWORD=YOUR_DATABASE_PASSWORD
-```
-
-**Do not paste filled-in credentials into GitHub, chat or logs.** Restart the R session after editing; R automatically loads `~/.Renviron` at startup. Make sure this file is readable only by your own account (`chmod 600 ~/.Renviron`). The connection helper enables TLS (`sslmode=require`) and a read-only SQL session.
-
-From the repository root:
+Use the project's established `scripts/BadgerDatabase.R` helper, which defines `badger_db_connect()` and reads `BADGER_DB_HOST`, `BADGER_DB_PORT`, `BADGER_DB_NAME`, `BADGER_DB_USER`, and `BADGER_DB_PASSWORD`. This is already used by `DataPrep_fromSupaBase.R`; do not configure a second connection. Credentials remain in your private environment, not in Git. Script 09 and the smoke test both source this existing helper and set their SQL session to read-only before querying. A dedicated SELECT-only DB account remains preferable.
 
 ```bash
 git pull --ff-only
-Rscript -e 'install.packages(c("DBI", "RPostgres"))' # only if missing
 Rscript scripts/Spatial/09_test_supabase_connection.R
 SUPABASE_SOURCE=live Rscript scripts/Spatial/09_canonical_sett_id_territory_SG_audit.R \\
   2>&1 | tee logs/canonical_sett_territory_audit.log
+echo "EXIT STATUS: ${PIPESTATUS[0]}"
 ```
 
-For a local/offline fallback, set `SUPABASE_SOURCE=snapshot` and use the four CSVs detailed below. **The 09 script now defaults to live mode.**
-
-If the connection test fails, check DNS/reachability on port 5432, whether Exeter can connect outside its firewall, the username format (pooler users usually include the project reference), and the password. Supabase direct `db.<project-ref>.supabase.co:5432` may require IPv6 and should not automatically be assumed reachable from Exeter.
+If it fails, compare the process environment with your existing working `DataPrep_fromSupaBase.R` session; never print passwords. In RStudio, `Sys.getenv('BADGER_DB_HOST')` and `Sys.getenv('BADGER_DB_USER')` can confirm whether the connection variables are present without displaying a password.
 
 ## Offline execution (no database connection)
 
