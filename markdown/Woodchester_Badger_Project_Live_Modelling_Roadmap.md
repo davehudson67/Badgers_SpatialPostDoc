@@ -1587,3 +1587,14 @@ Sett locations are fixed; annual capture-recorded SG and Vicente annual residenc
 **Why this matters for V13:** an infected badger moving across a territory edge does not itself establish between-social-group transmission. Separately estimate residency, movement/contact opportunity, infectious source status, incident recipient infection, introduction, and subsequent local establishment. Incorporate mapping uncertainty and use temporally lagged analyses. Do not use year-to-year polygon row IDs as group IDs.
 
 Implementation: `scripts/Spatial/06_build_historical_polygon_SG_crosswalk.R` produces `outputs/social_group_crosswalk/` evidence and field-review tables. Review before using as a group-specific force-of-infection input.
+
+
+---
+
+## 2026-10-23 — observed-sett filtering of annual boundary crosswalk
+
+A full historical spatial overlay tested 168 fixed master sett locations against 49 annual polygon maps (8,232 sett-years). This is a **geographical reference set**, not an annual occupied-sett census: several historical setts may be inactive in a given year. The crosswalk must therefore be checked on contemporaneously observed live-capture sett-years before assigning polygon labels to social groups.
+
+New script `scripts/Spatial/08_validate_observed_setts_annual_territories.R` takes the outputs of script 07 and reports only sett-years with usable live capture SG evidence. It retains multiple polygons per sett, competing SGs within a polygon, unmatched master coordinates and sett-years without spatial coverage. 'Observed' means at least one usable live capture at that sett/year, **not** proof all other setts were inactive. Neither polygon containment nor an apparently unique captured SG automatically approves a polygon's biological identity. Field-team confirmation, contemporaneous sett/SG histories and dated provenance are required for accepted mappings, particularly under territorial contraction or overlap.
+
+Outputs: `outputs/active_sett_territory_validation/`, including observed sett-year and polygon links, competing-SG flags, annual coverage and review queue. Follow up with a sensitivity to trapping effort and additional occupancy evidence if available. Preserve the Vicente annual resident-SG algorithm separately from the capture-location SG field. Only use accepted year-specific SG identity mappings for V13 between-group infectious-source exposure, introduction and establishment; avoid calling boundary crossing transmission.
