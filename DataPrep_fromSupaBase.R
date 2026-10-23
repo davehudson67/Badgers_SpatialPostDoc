@@ -42,74 +42,39 @@ con <- badger_db_connect()
 
 captures_db <- tbl(
   con,
-  dbplyr::in_schema("analysis", "capture_history")
+  dbplyr::in_schema("analysis", "coauthor_capture_history")
 ) %>%
   collect()
 
 diagnostics_db <- tbl(
   con,
-  dbplyr::in_schema("analysis", "diagnostic_results")
+  dbplyr::in_schema("analysis", "coauthor_diagnostic_results")
 ) %>%
   collect()
 
 DBI::dbDisconnect(con)
 
 # ==============================================================================
-# Identifier policy
-#
-# Biological/model identifier:
-#   tattoo
-#
-# Database relational key:
-#   individual_id
-#
-# The migrated database is required to maintain a strict one-to-one mapping
-# between current canonical tattoo and individual_id. All biological grouping
-# below therefore uses tattoo. individual_id is retained on output rows for
-# relational joins, provenance and integrity checking only.
+# Identifier policy: tattoo is the scientific individual identifier.
+# Only capture_id is used to associate same-encounter tests/measurements.
 # ==============================================================================
-
 identifier_map <- captures_db %>%
-  transmute(
-    individual_id = as.integer(individual_id),
-    tattoo = toupper(trimws(as.character(tattoo)))
-  ) %>%
-  distinct()
-
-if (any(is.na(identifier_map$tattoo) | identifier_map$tattoo == "")) {
-  stop("Canonical capture_history contains missing/blank tattoo identifiers.")
+  transmute(tattoo = toupper(trimws(as.character(tattoo)))) %>% distinct()
+if (anyNA(identifier_map$tattoo) || any(identifier_map$tattoo == "")) {
+  stop("Canonical captures contain missing tattoo identifiers.")
 }
-
-id_to_tattoo_conflict <- identifier_map %>%
-  count(individual_id, name = "n_tattoos") %>%
-  filter(n_tattoos != 1L)
-
-tattoo_to_id_conflict <- identifier_map %>%
-  count(tattoo, name = "n_individual_ids") %>%
-  filter(n_individual_ids != 1L)
-
-if (nrow(id_to_tattoo_conflict) || nrow(tattoo_to_id_conflict)) {
-  stop("tattoo <-> individual_id is not one-to-one in capture_history.")
-}
-
 diagnostic_identifier_conflicts <- diagnostics_db %>%
-  transmute(
-    individual_id = as.integer(individual_id),
-    tattoo = toupper(trimws(as.character(tattoo)))
-  ) %>%
-  filter(!is.na(tattoo), tattoo != "") %>%
-  distinct() %>%
-  anti_join(identifier_map, by = c("individual_id", "tattoo"))
-
+  transmute(tattoo = toupper(trimws(as.character(tattoo)))) %>%
+  distinct() %>% anti_join(identifier_map, by = "tattoo")
 if (nrow(diagnostic_identifier_conflicts)) {
-  stop("diagnostic_results contains tattoo/individual_id mappings inconsistent with capture_history.")
+  stop("Diagnostic results contain tattoos absent from capture history.")
 }
 
 cat("\n============================================================\n")
 cat("DATABASE IMPORT\n")
 cat("============================================================\n")
 cat("Capture rows:", nrow(captures_db), "\n")
-cat("Individuals:", n_distinct(captures_db$individual_id), "\n")
+cat("Individuals:", n_distinct(captures_db$tattoo), "\n")
 cat("Diagnostic rows:", nrow(diagnostics_db), "\n")
 cat(
   "Capture date range:",
@@ -174,7 +139,6 @@ get_mode_character <- function(x) {
 
 individuals <- captures_db %>%
   transmute(
-    individual_id,
     tattoo = toupper(trimws(tattoo)),
     elect_tag,
     sex = str_to_title(trimws(sex)),
@@ -218,7 +182,6 @@ stopifnot(
 capture_records <- captures_db %>%
   transmute(
     capture_id,
-    individual_id,
     tattoo = toupper(trimws(tattoo)),
     capture_date,
     
@@ -282,10 +245,9 @@ capture_records <- captures_db %>%
 # ==============================================================================
 
 encounters <- capture_records %>%
-  arrange(tattoo, capture_date, pm_flag, individual_id) %>%
+  arrange(tattoo, capture_date, pm_flag) %>%
   group_by(tattoo, capture_date) %>%
   summarise(
-    individual_id = first_nonmissing(individual_id),
     primary_year = first(primary_year),
     trap_season = first(trap_season),
     
@@ -489,7 +451,6 @@ quarter_location_audit <- encounters_useful %>%
     trap_season
   ) %>%
   summarise(
-    individual_id = first(individual_id),
     n_encounters = n(),
     n_setts = n_distinct(sett[!is.na(sett)]),
     n_socg = n_distinct(socg[!is.na(socg)]),
@@ -1033,7 +994,6 @@ print(diagnostic_summary)
 individual_encounter_summary <- encounters_useful %>%
   group_by(tattoo) %>%
   summarise(
-    individual_id = first(individual_id),
     sex = first(sex),
     age_fc = first(age_fc),
     year_fc = first(year_fc),
@@ -1241,13 +1201,9 @@ stopifnot(
 )
 
 # Relational provenance must remain one-to-one after all analytical transforms.
-final_identifier_check <- encounters_final_with_disease %>%
-  distinct(tattoo, individual_id)
-
-stopifnot(
-  nrow(final_identifier_check) == n_distinct(final_identifier_check$tattoo),
-  nrow(final_identifier_check) == n_distinct(final_identifier_check$individual_id)
-)
+final_identifier_check <- encounters_final_with_disease %>% distinct(tattoo)
+stopifnot(!anyNA(final_identifier_check$tattoo),
+          !any(final_identifier_check$tattoo == ""))
 
 
 # ==============================================================================
