@@ -3652,3 +3652,171 @@ This is a change in parameterisation/estimand, not an attempt to fit a new
 biological story after seeing coefficient significance. It follows directly
 from the demonstrated resolution limit and the previously defined roadmap rule
 against repeated fit-fishing.
+
+
+## 23 October 2026 — resolution-aware final V11 movement engine; preserve V12/V13 biology
+
+The failed long V11S continuation changes the *parameterisation* of the final
+movement engine, not the biological programme.
+
+### Versioning decision
+
+Do **not** rename the next movement reparameterisation V12.
+
+V12 remains reserved for the roadmap's genuinely new demographic biology:
+
+- entry/recruitment;
+- immigration/settlement;
+- apparent survival/retention;
+- permanent disappearance/emigration;
+- known-death information.
+
+The immediate movement step should therefore remain in the V11 family
+(provisionally **V11R: resolution-aware resident/relocation model**).
+
+### What the V11S ridge means biologically
+
+Annual activity-centre coordinates are continuous; the 50 m habitat raster is
+not itself a 50 m coordinate measurement device. Nevertheless, the freely
+estimated resident-process mean displacement has occupied modes from roughly
+2--20 m while:
+
+- the habitat/support raster is 50 m;
+- the quarterly observation/activity-centre scale is roughly 150--160 m;
+- the large-movement component is roughly 1 km and is much more stable.
+
+Therefore the exact resident annual displacement scale is below the useful
+resolution of this model. It should not be interpreted as literal biological
+home-range movement.
+
+The intended resident-state estimand is now:
+
+> **no resolvable annual relocation of the activity centre**
+
+rather than "zero movement", "movement below exactly 50 m", or "same raster
+cell".
+
+Avoid a hard same-cell rule because an arbitrarily small displacement across a
+cell edge would be classified differently from the same displacement within a
+cell.
+
+### V11R architecture
+
+Preserve as much V11S biology as possible and change only the demonstrated
+non-identifiable nuisance component first:
+
+1. retain continuous annual activity centres;
+2. retain the direct quarterly multi-location observation likelihood;
+3. retain the two-component resident/relocation annual movement mixture;
+4. **fix/anchor the resident-process movement scale** rather than estimating it
+   freely;
+5. estimate the relocation/high-mobility scale;
+6. initially retain the existing transition biology:
+   - initial relocation probability;
+   - resident -> relocation transition;
+   - relocation -> relocation persistence;
+   - sex;
+   - current chronological age;
+   - persistent individual mover propensity;
+7. remove transition structure only if convergence remains poor *after* the
+   resident-scale ridge has been eliminated.
+
+Pre-specify a small sensitivity set for the fixed resident scale. Express this
+in biologically interpretable mean radial displacement, not raw Gaussian sigma;
+candidate values should bracket the 50 m raster scale without pretending that
+50 m is a biological threshold (for example 25, 50 and 100 m mean radial
+displacement).
+
+The purpose of this sensitivity is not model selection. The question is whether
+the inferred relocation histories and biological coefficients are robust to a
+plausible unresolved resident-process scale.
+
+### Dynamic social-group boundaries are now an explicit parallel state layer
+
+The available annual territory polygons (1977--2025) should **not** define the
+latent relocation state. Geographic movement must remain inferable without
+using group identity so that social consequences can be tested independently.
+
+For each posterior annual transition, derive at least four distinct concepts:
+
+1. **geographic relocation probability** from V11R;
+2. **capture-derived social-group/residency change** from the audited SOCG and
+   annual resident-group histories;
+3. **polygon-defined territory transition** under the year-specific maps;
+4. **boundary-change-only reassignment**, where group assignment changes because
+   the territory map changes despite little geographic relocation.
+
+Use both endpoint coordinates against both year-t and year-(t+1) polygon layers
+where possible so that animal movement and moving boundaries are not conflated.
+
+Do not force out-of-polygon or overlapping locations into a group. Preserve
+posterior assignment uncertainty.
+
+### Why this preserves the immigration story
+
+V11R supplies a robust geographic relocation history. V12 then combines that
+with entry timing, detection history, annual residency/group identity,
+time-varying territory membership, known death and subsequent disappearance.
+
+Probable immigration should be inferred from the *whole entry and settlement
+history*, not from adult entry or sex alone.
+
+Candidate V12 distinctions include:
+
+- first appearance with stable local settlement;
+- first appearance accompanied by geographic relocation/high mobility;
+- entry into a social territory from an uncertain/outside origin;
+- later within-study dispersal between established territories;
+- disappearance following relocation versus disappearance from stable
+  residency;
+- known death versus apparent emigration/nondetection.
+
+This keeps immigration, survival and emigration as demographic processes rather
+than relabelling all high-mobility events as immigration.
+
+### Why this preserves the infection/transmission story
+
+V13 remains focused on infectiousness and transmission, not another generic
+infected-versus-mover regression.
+
+The combined V11R/V12/social-landscape products will allow the biologically
+important distinction between:
+
+- infectious resident source;
+- infectious temporary inter-group visitor/prospector;
+- infectious disperser/immigrant;
+- susceptible recipient crossing into infectious territory;
+- infection imported into a group;
+- infection becoming established/persisting after importation.
+
+Year-specific territory geometry then defines changing adjacency, social
+membership and infectious-source pressure without being used circularly to
+define movement.
+
+The eventual group-level questions remain:
+
+> Is infection maintained by resident infectious burden, or repeatedly reseeded
+> by immigration / inter-group movement?
+
+and
+
+> How do mortality, social-group loss, territory expansion/contraction,
+> immigration, culling and connectivity alter persistence and recolonisation?
+
+### Immediate sequence
+
+1. build V11R with anchored resident scale and pre-specified sensitivity;
+2. require convergence and robustness of relocation histories across that
+   sensitivity;
+3. overlay V11R posterior states on the already-built time-varying territory
+   products and capture-derived residency histories;
+4. freeze the geographical movement engine;
+5. proceed to V12 demographic entry/survival/apparent-emigration/immigration;
+6. perform the infectiousness diagnostic audit and then V13;
+7. use dynamic territory connectivity for importation, establishment,
+   persistence and reseeding analyses.
+
+Do not repeat the already-completed generic infected -> movement or movement ->
+infection questions unchanged. Revisit disease only where the estimand changes
+to infectiousness, demography, importation/reseeding, dynamic exposure or a
+materially improved joint latent-state formulation.
