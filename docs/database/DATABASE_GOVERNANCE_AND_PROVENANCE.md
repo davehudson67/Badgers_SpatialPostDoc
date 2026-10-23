@@ -1,3 +1,5 @@
+> **Working baseline Version 1 — scientific review: Dave Hudson.** This document records the currently accepted canonical cleaning decisions and outstanding checks. Historical SQL migration files remain as execution provenance; intermediate alternatives are not scientific rules. Version 1 will be formally frozen when the current audit is signed off.
+
 # Woodchester Badger Database — Governance, Provenance and Cleaning Audit
 
 **Updated:** 16 October 2026
@@ -251,7 +253,7 @@ Important summary:
 - unresolved historical text is allowed to remain unresolved;
 - a normalised value must not be invented merely because a string looks similar;
 - three capture records have explicit location-cleaning notes because the original sett was blank and the value in `socg` matched a known sett rather than a valid social group;
-- the affected historical values are CHESTNUT (2 captures) and HOLLOW TREE (1 capture);
+- post-mortem records with blank original sett remain unassigned; CHESTNUT (2 PM records) and HOLLOW TREE (1 PM record) occur only in their recorded social-group field;
 - 18 canonical setts currently carry notes stating that they were historical setts manually promoted during migration QC;
 - capture-level historical social-group values should not be overwritten automatically from a current sett→group lookup.
 
@@ -414,7 +416,7 @@ This is the **master governance, cleaning and audit document** for the Woodchest
 
 ## Scope, methodology, and provenance of this assessment
 
-Live, read-only SQL inspected `access_raw`, `research`, `analysis`, constraint catalogues, view definitions and the role grants on 2026-10-23. Separately, the investigator exported the structure of the password-protected original Access database: **62 tables**. This was a schema-only Access inspection, **not a complete table-by-table content comparison**. The Access capture-only annual sett/SG aggregate showed 27 names with multiple historically recorded SGs and possible transitions, but cannot establish physical group changes by itself.
+Live, read-only SQL inspected `access_raw`, `research`, `analysis`, constraint catalogues, view definitions and the role grants on 2026-10-23. Separately, the original Access schema was exported the structure of the password-protected original Access database: **62 tables**. This was a schema-only Access inspection, **not a complete table-by-table content comparison**. The Access capture-only annual sett/SG aggregate showed 27 names with multiple historically recorded SGs and possible transitions, but cannot establish physical group changes by itself.
 
 ### Verified live counts
 
@@ -453,10 +455,10 @@ Maintain three classifications for each item: **VERIFIED IN LIVE DATA**, **EVIDE
 | Captures | One canonical `capture_id` per imported capture; retain recorded sett, SG, supergroup and contextual text; split sampling, assessment and collar fields into separate tables | VERIFIED row counts and structure; all column-level equivalences TO VERIFY |
 | Assays | Convert source assay records to separate one-to-many `research` test tables; link by `capture_id`, expose long-format `analysis.diagnostic_results` | VERIFIED count parity and nonnull capture links; *correct-target* matches and assay fields TO VERIFY |
 | Capture locations | Clean only supported canonical sett IDs; preserve unresolved source descriptions; use `location_cleaning_note` on nontrivial changes | VERIFIED architecture; complete log of all name-rule decisions TO VERIFY |
-| Original sett/socg fix | Historical blank-sett/socg shifts involving CHESTNUT and HOLLOW TREE (3 records) | EVIDENCED by earlier audit; confirm source row provenance |
-| Sett identity | Investigator approved `TODDS` (former ID 538) → `TODD'S` ID 158; migrated 8 linked captures, historical text preserved | EXECUTED and previously post-checked 2026-10-23 |
-| Sett identity | Investigator approved `TOP SETT` (former ID 548) → `TOP` ID 20; migrated 358 linked captures, original name preserved | VERIFIED post-check: 615 captures on ID 20, no ID 548 rows |
-| Sett coordinate aliases | `CLIFF.FACE`→`CLIFF` (160), `GULLY`→`GULLEY` (550), `STONEY.TRACK`→`STONY TRACK` (29), `ELEVEN.ROW`→`ELEVENTH ROW` (58) | Investigator-approved rules in `data/spatial/canonical_sett_coordinate_aliases.csv`; spatial audit Script 09 applies them |
+| PM sett assignment | The three BCP post-mortem records with `socg=CHESTNUT` or `HOLLOW TREE` retain `sett_id=NULL` because original sett is blank | VERIFIED against `access_raw`, reviewed by Dave Hudson |
+| Sett identity | Dave Hudson approved `TODDS` (former ID 538) → `TODD'S` ID 158; migrated 8 linked captures, historical text preserved | EXECUTED and previously post-checked 2026-10-23 |
+| Sett identity | Dave Hudson approved `TOP SETT` (former ID 548) → `TOP` ID 20; migrated 358 linked captures, original name preserved | VERIFIED post-check: 615 captures on ID 20, no ID 548 rows |
+| Sett coordinate aliases | `CLIFF.FACE`→`CLIFF` (160), `GULLY`→`GULLEY` (550), `STONEY.TRACK`→`STONY TRACK` (29), `ELEVEN.ROW`→`ELEVENTH ROW` (58) | Dave Hudson-approved rules in `data/spatial/canonical_sett_coordinate_aliases.csv`; spatial audit Script 09 applies them |
 | Annual territory crosswalk | Annual polygon containment is spatial evidence, not an assignment of residence or transmission | VERIFIED workflow; historical interpretations still under review |
 | Historical SG | Current `research.sett_social_group_history` has **173 entries, none dated**; notes show current Access lookup import | VERIFIED live; cannot treat as a valid year-by-year affiliation table |
 | Model infection probabilities | Imported/model-specific probability tables and `analysis` views; maintain model variants and provenance | VERIFIED structure; source CSV and version reconciliation TO VERIFY |
@@ -511,7 +513,7 @@ from analysis.diagnostic_results;
 
 ## Tattoo-first coauthor interface and the 040l historical correction — 23 October 2026
 
-Investigator decision: **tattoo is the canonical scientific identifier for an individual badger**. Coauthors should use `tattoo` for individual-level work, and `capture_id` for capture/test joins. The surrogate `individual_id` remains a relational database implementation key and is not a second biological identity.
+Dave Hudson decision: **tattoo is the canonical scientific identifier for an individual badger**. Coauthors should use `tattoo` for individual-level work, and `capture_id` for capture/test joins. The surrogate `individual_id` remains a relational database implementation key and is not a second biological identity.
 
 Live validation found **3,791** `research.individuals`, **3,791 unique nonblank tattoo values**, and **zero duplicated tattoos after `upper(btrim(tattoo))`**. Thus the current canonical register supports a tattoo-first research interface. Changes to tattoos require source-supported documented mapping, not indiscriminate case normalisation.
 
