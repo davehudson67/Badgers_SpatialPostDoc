@@ -402,3 +402,108 @@ A coauthor should be able to answer:
 > Where did this value come from, was it recorded or inferred, what cleaning rule changed it, and can I reproduce that rule?
 
 If the answer is not clear from the database, code and documentation, the provenance system needs improving.
+
+
+---
+
+# Live database verification and coauthor release assessment — 23 October 2026
+
+**Status: partial verification; not yet certified as a complete original-Access-to-Supabase reconciliation.**
+
+This is the **master governance, cleaning and audit document** for the Woodchester database. Retain detailed field meanings in [DATA_DICTIONARY.md](DATA_DICTIONARY.md), the sett-specific rules in [SETT_SOCIAL_GROUP_RULES.md](SETT_SOCIAL_GROUP_RULES.md), and executable read-only checks in `sql/audit/Woodchester_database_cleaning_audit.sql`. All modifications should be cross-referenced here rather than scattered undocumented corrections.
+
+## Scope, methodology, and provenance of this assessment
+
+Live, read-only SQL inspected `access_raw`, `research`, `analysis`, constraint catalogues, view definitions and the role grants on 2026-10-23. Separately, the investigator exported the structure of the password-protected original Access database: **62 tables**. This was a schema-only Access inspection, **not a complete table-by-table content comparison**. The Access capture-only annual sett/SG aggregate showed 27 names with multiple historically recorded SGs and possible transitions, but cannot establish physical group changes by itself.
+
+### Verified live counts
+
+| Data type | `access_raw` | `research` | Finding |
+|---|---:|---:|---|
+| Individuals / `tbl_badger` | 3,791 | 3,791 | Count parity |
+| Captures | 17,586 | 17,586 | Count parity |
+| Cultures | 48,699 | 48,699 | Count parity |
+| DPP | 3,316 | 3,316 | Count parity |
+| ELISA | 15,162 | 15,162 | Count parity |
+| IFN-gamma ELISA | 4,375 | 4,375 | Count parity |
+| Brock | 1,648 | 1,648 | Count parity |
+| Stat-Pak | 2,851 | 2,851 | Count parity |
+| Wounds | 1,636 | 1,636 | Count parity |
+
+`analysis.capture_history`: **17,586** rows, matching `research.captures`. `research.capture_sampling`: **17,586** rows.
+
+**Important limitation:** equal counts do not prove equal values, full field coverage, correct parse rules, or completeness against the live original Access database. The `access_raw` schema contains **12 source tables** compared with **62 tables** in the original Access structural inventory. Many excluded tables are temporary, lookups, backup/error outputs or archived versions; their omission may be intentional, but it **has not been individually signed off**. Reconcile each Access table by classification (core, lookup, archive, temporary, redundant, missing-needed), record count, keys and destination; examine the potentially valuable `temp_GuyOutput` seasonal residency data and older capture/error tables.
+
+### Foreign keys and linkage
+
+The live catalogue confirms explicit foreign keys linking captures to individuals, canonical setts, recorded SGs and disease-status lookups; assay records to captures; and history association tables to corresponding canonical identities. Verified **0 NULL individual IDs in captures**; **0 NULL capture IDs** in culture, DPP, ELISA, IFN-gamma, Brock and wounds. These checks are encouraging but do **not** test whether the *correct* capture was chosen when importing records that share the same tattoo, date and PM flags. Require per-assay match-key collision and raw-to-research identity audits.
+
+Remaining missing canonical links: **1,246 captures without `sett_id`** and **685 without `recorded_social_group_id`**. These are permitted missing states, not automatically rejected records; distinguish genuinely unrecorded, ambiguous, geographic-only and malformed-source cases.
+
+## Cleaning and transformation register (evidence levels)
+
+Maintain three classifications for each item: **VERIFIED IN LIVE DATA**, **EVIDENCED BY HISTORICAL CODE/NOTES**, or **TO VERIFY AGAINST ORIGINAL ACCESS**. Record source table/field, rule, SQL/R commit, affected IDs/counts, reviewer, date, reversible mapping, and post-change checks.
+
+| Domain | Cleaning/transformation | Evidence/status |
+|---|---|---|
+| Import | Preserve original values in `access_raw`, with `raw_row_id` and `raw_imported_at` | VERIFIED structure; completeness vs original Access TO VERIFY |
+| Data types | Parse dates, numeric measurements, booleans and test measurements into typed research fields | VERIFIED structure; conversion exceptions/invalid inputs TO VERIFY |
+| Individuals | Allocate canonical `individual_id`; retain tattoo/electronic tag and alternative historical names in `research.individual_names` | VERIFIED structure; individual-specific reconciliation TO VERIFY |
+| Individual correction | Historical `040l` → `040L` correction occurs in legacy code | EVIDENCED; live value-level reconciliation TO VERIFY |
+| Captures | One canonical `capture_id` per imported capture; retain recorded sett, SG, supergroup and contextual text; split sampling, assessment and collar fields into separate tables | VERIFIED row counts and structure; all column-level equivalences TO VERIFY |
+| Assays | Convert source assay records to separate one-to-many `research` test tables; link by `capture_id`, expose long-format `analysis.diagnostic_results` | VERIFIED count parity and nonnull capture links; *correct-target* matches and assay fields TO VERIFY |
+| Capture locations | Clean only supported canonical sett IDs; preserve unresolved source descriptions; use `location_cleaning_note` on nontrivial changes | VERIFIED architecture; complete log of all name-rule decisions TO VERIFY |
+| Original sett/socg fix | Historical blank-sett/socg shifts involving CHESTNUT and HOLLOW TREE (3 records) | EVIDENCED by earlier audit; confirm source row provenance |
+| Sett identity | Investigator approved `TODDS` (former ID 538) → `TODD'S` ID 158; migrated 8 linked captures, historical text preserved | EXECUTED and previously post-checked 2026-10-23 |
+| Sett identity | Investigator approved `TOP SETT` (former ID 548) → `TOP` ID 20; migrated 358 linked captures, original name preserved | VERIFIED post-check: 615 captures on ID 20, no ID 548 rows |
+| Sett coordinate aliases | `CLIFF.FACE`→`CLIFF` (160), `GULLY`→`GULLEY` (550), `STONEY.TRACK`→`STONY TRACK` (29), `ELEVEN.ROW`→`ELEVENTH ROW` (58) | Investigator-approved rules in `data/spatial/canonical_sett_coordinate_aliases.csv`; spatial audit Script 09 applies them |
+| Annual territory crosswalk | Annual polygon containment is spatial evidence, not an assignment of residence or transmission | VERIFIED workflow; historical interpretations still under review |
+| Historical SG | Current `research.sett_social_group_history` has **173 entries, none dated**; notes show current Access lookup import | VERIFIED live; cannot treat as a valid year-by-year affiliation table |
+| Model infection probabilities | Imported/model-specific probability tables and `analysis` views; maintain model variants and provenance | VERIFIED structure; source CSV and version reconciliation TO VERIFY |
+| Cohort/derived data | R model scripts implement encounter/quarter fusion, eligibility and age/sex/infection classifications | CODE LEVEL; do not label modelling choices as irreversible source cleaning |
+
+**Never represent the list above as a complete retrospective changelog.** Some original migration SQL is not preserved in version control. This document is the central reconstructed audit, with unresolved evidence gaps explicitly identified. For every *future* cleaning operation, commit the exact SQL/R migration and record before/after counts and IDs.
+
+## Should the `research` / `analysis` distinction remain?
+
+**Recommendation: yes, keep both physically; make their use simple.** This is not a duplicate hierarchy of independently cleaned data. The `research` schema holds one canonical relational source of truth with explicit foreign keys and multiple assay rows per capture; `analysis` contains **views, not separate copies**. Coauthors can use the same biological data through views without repeating potentially dangerous many-to-many joins. Advanced coauthors should also have read-only access to canonical `research` tables, not raw staging by default.
+
+Suggested access policy:
+- `analysis`: default for ordinary research, especially `capture_history`, `diagnostic_results` and model outputs.
+- `research`: accessible **read-only** to authorised collaborators for field-level audit and specialist joins, with clear join-grain warnings.
+- `access_raw`: restricted provenance archive for maintainers, accessed on request for validation.
+
+### Join contract for coauthors
+
+- **Individuals**: `research.individuals.individual_id` (one badger).
+- **Captures**: `research.captures.capture_id` (one encounter), with `individual_id` foreign key.
+- **Sett and group**: `captures.sett_id` → `research.setts.sett_id`; `captures.recorded_social_group_id` → `research.social_groups.social_group_id`; recorded SG **does not** mean annual resident SG.
+- **Assays and wounds**: multiple records may share a `capture_id`. Do not attach two assay tables directly to captures and assume one row per capture; aggregate separately or use `analysis.diagnostic_results` in its documented *one-row-per-test* grain.
+- **Model products**: join on published `individual_id` plus temporal and `model_variant`/`model_run` keys; verify capture-level uniqueness for any capture-derived version.
+- **Territories**: spatial/annual keys must include **year**; polygon labels need not equal sett IDs or annual resident SG IDs.
+
+Illustrative read-only SQL:
+
+```sql
+-- Exactly one row per capture
+select capture_id, individual_id, tattoo, capture_date,
+       recorded_sett_name, normalized_sett_name,
+       recorded_social_group_name, normalized_social_group_name
+from analysis.capture_history;
+
+-- Long-format test results: may include many tests per capture
+select capture_id, test_family, test_type, result, source_record_id
+from analysis.diagnostic_results;
+```
+
+## Coauthor launch checklist (not yet complete)
+
+1. **Original-Access completeness:** account for all 62 Access tables and verify source/version timing, record counts and identity keys against the preserved 12 raw tables.
+2. **Field-level parity:** compare source and destination columns/values across all core entities; document parsing failures, duplicate-record handling, nulls, enums, source-row links and assay capture joins.
+3. **Permissions:** live verified `badger_readonly` SELECT grants on seven `analysis` views only. Verify *effective* privileges of `badger_research_readonly` (including schema USAGE, inheritance, future-table default privileges and excluded staging), **using a test account rather than admin**. Create named coauthor accounts; no sharing of maintainer credentials.
+4. **Security:** confirm `anon`/`authenticated` do not unintentionally gain research/analysis access through role inheritance or exposed API views; review RLS, security-invoker behaviour, search paths, and credential rotation. Never distribute database connection passwords in repository files or logs.
+5. **Documentation:** retain this page as the **single governance/cleaning index**, with field-by-field glossary in `DATA_DICTIONARY.md` and executable audit query bank in `sql/audit`.
+6. **Scientific definitions:** publish the data grain, time origin, PM flags, test interpretation, missingness, SG/residency distinction, spatial coordinate provenance and limitations of infection probability outputs.
+7. **Release gate:** sign off an audit snapshot and data-dictionary version, then share a sample read-only R query using `scripts/BadgerDatabase.R`; test external collaboration with least-privileged credentials.
+
+**As of this assessment no database schema or coauthor privileges were altered.** The live inspections were read-only.
