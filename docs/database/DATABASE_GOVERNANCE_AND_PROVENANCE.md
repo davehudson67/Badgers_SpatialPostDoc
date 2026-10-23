@@ -608,3 +608,33 @@ Applied, versioned SQL migrations:
 **Repeatability:** both views are deterministic expressions over current canonical tables. New Access records will be interpreted automatically *once a separately audited source→research import has completed*. Neither migration currently performs Access ingestion or updates canonical research rows.
 
 **Unresolved scientific rule checks:** compare positivity semantics for DPP `Px`/`Nx` and missing second visual line, IFN `test_failed` text, ELISA `I`/`ITT`/`BIT`, and Brock `no_clotted`; maintain source codes for reviewer decisions. The present version documents practical explicit interpretations, not replacements for assay validation protocols.
+
+
+# Woodchester Database — Version 1 baseline (23 October 2026)
+
+**Version 1 comprises the cumulative, applied and source-versioned database standardisation changes**, not a claim that all future Access records have been imported. Earlier migration filenames with v2/v3 indicate construction order; their cumulative rules are included in this **database release Version 1**. Retain the actual ordered migration history rather than renaming or deleting executed migration files.
+
+### V1 cleaning and research access
+
+- The canonical research tables and original `access_raw` content are unchanged by diagnostic interpretation releases; `research` retains typed source observations and internal FK keys.
+- `analysis.individual_traits_standardised`: tattoo-based sex and first-capture age, with originals and missingness; **067B remains CUB pending evidence**.
+- `analysis.capture_traits_standardised`: all 17,586 captures, capture year and quarter, original/standardised individual traits, years elapsed since first capture and a distinctly labelled **approximate** age only when age_first_capture=CUB. This must not be mistaken for validated chronological age.
+- `analysis.culture_results_standardised`: 48,699 sample records with M.BOVIS-positive, negative, other organism, missing, invalid, pending or untested status; nullable binary indicator.
+- `analysis.stat_pak_results_standardised`: all 2,851 Stat-Pak results, lookup-supported interpretation **P positive, N negative, C invalid/no clotted sample**.
+- `analysis.diagnostic_interpretation_standardised`: all **76,051** diagnostic observations from six assay families, including Stat-Pak; one row per source test/sample. Preserve `source_record_id` within test family, interpreted status, tattoo, capture ID and captured date.
+- `analysis.capture_diagnostic_summary_standardised`: **17,586** captures; number of test records, positive, negative, indeterminate and a descriptive any-positive flag. The sum of per-capture test counts matches **76,051**.
+
+### Repeatable refresh audit infrastructure
+
+Applied `sql/migrations/woodchester_v1_access_refresh_audit_infrastructure_20261023.sql`. A private `ingest` schema contains:
+1. `ingest.access_refresh_batches`: source file hash, export date, status and Git version.
+2. `ingest.access_refresh_table_audits`: per-batch source and comparison counts, failures and exception evidence.
+3. `ingest.canonical_cleaning_decisions`: proposed/approved rejected source correction decisions with source value, canonical value, evidence, reviewer and commit.
+
+**Important limitation:** these are a versioned *audit ledger and review infrastructure*, not an installed/operating Access ETL. No automatic pull from encrypted Access exists. Future refreshes require an authenticated export, stable source-row identity mapping, staged rows, comparison/review, a tested transactional upsert, and a new source snapshot. No future refresh has yet been executed with the infrastructure.
+
+### V1 verification gate and outstanding items
+
+Post-migration SQL confirms 76,051 standardised test rows, 17,586 one-per-capture summaries, 17,586 standardised capture traits and 2,851 Stat-Pak rows. The baseline does **not** warrant certification of original Access full completeness or assay-science validation. Outstanding: reconcile all 62 original Access tables, review all historical correction rules including age 067B and IFN date 2919, reconcile row-level assay source/capture linkage, confirm original Access extract method and implement the full staged ETL, verify coauthor accounts and R end-to-end run.
+
+**Versioning convention:** future rules use V1.x releases/migrations; every change includes reviewed evidence, Git migration SQL, affected row counts and post-migration regression checks. Never edit or delete historical migration SQL.
