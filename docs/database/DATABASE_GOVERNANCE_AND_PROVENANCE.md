@@ -77,3 +77,12 @@ These are matching-key and selected-field checks. A complete value-by-value assa
 Implemented SQL is preserved under `sql/migrations/`. The executable checks are under `sql/audit/`. The table-and-field reference is [DATA_DICTIONARY.md](DATA_DICTIONARY.md); the current location-data interpretation is [SETT_SOCIAL_GROUP_RULES.md](SETT_SOCIAL_GROUP_RULES.md).
 
 **Status:** Working baseline. Version 1 will be signed off following the remaining Access migration integrity checks and database documentation review.
+
+
+## Consistent V1 location fields (23 October 2026)
+
+I use `analysis.capture_history_v1` for researcher-facing capture history and `analysis.capture_traits_v1` for standardised capture traits. Both retain their existing columns and add `sett_name`, `location_type`, `location_easting`, `location_northing`, `location_crs`, `location_coordinate_basis` and `location_class` by capture ID. The shared implementation is `analysis.capture_location_fields_v1`. Legacy `analysis.capture_history` and `analysis.capture_traits_standardised` remain unchanged for compatibility with running models and earlier analyses.
+
+The standardised `sett_name` is **NULL unless the record has an established canonical sett**. Grid-referenced PM locations have `location_type = 'PM_GRID_REFERENCE'`, `sett_name = NULL`, and provisional grid-square south-west-corner coordinates in the separate `location_easting` and `location_northing` fields. These are not sett coordinates or precise recovery points. Other classifications are `SETT`, `PM_LOCATION_UNRESOLVED`, `UNMATCHED_CAPTURE_LOCATION` and `NOT_RECORDED`. Original `recorded_sett_name`, `os_ref`, `capture_location_text` and `sett_id` remain unchanged.
+
+Validation: 17,586 unique captures in the V1 traits view; capture history V1: 16,337 known-sett rows (16,034 with sett coordinates), 710 grid-referenced PM recovery rows (all have parsed coordinates and **no sett name**), 343 PM location unresolved, 170 other unmatched captures and 26 missing location. The V1 label and initial 23 October baseline remain unchanged; remaining names and spatial-validation questions are explicitly deferred.
