@@ -65,6 +65,13 @@ The **scientific audit of physical sett identities, historical coordinates and t
 
 The private `ingest` schema contains `access_refresh_batches`, `access_refresh_table_audits` and `canonical_cleaning_decisions` for recording source checksums, table comparisons and accepted cleaning decisions. These audit tables are installed; **the automatic Access-to-research refresh/import process has not yet been implemented**. SQL analysis views calculate standardised values against the current research tables and will therefore reflect future validated imports.
 
+
+## Verified source-to-canonical integrity checks
+
+The initial read-only audit matched all 3,791 original imported badger tattoos to canonical individuals, with **zero differences** in recorded sex or age at first capture. All **17,586** imported capture rows matched distinct canonical records on tattoo, capture date and PM status, with no duplicate canonical tattoo/date/PM combinations and no missing capture dates. All 3,316 DPP research records have a matching original imported row through `source_raw_row_id`. Canonical captures include 1,288 post-mortem records. Reproducible audit SQL: `sql/audit/Woodchester_v1_capture_identity_integrity.sql`.
+
+These are matching-key and selected-field checks. A complete value-by-value assay audit, verification of culture and other diagnostic capture associations, full field coverage and the 62-table Access inventory reconciliation remain outside the verified scope.
+
 ## Reproducibility
 
 Implemented SQL is preserved under `sql/migrations/`. The executable checks are under `sql/audit/`. The table-and-field reference is [DATA_DICTIONARY.md](DATA_DICTIONARY.md); the current location-data interpretation is [SETT_SOCIAL_GROUP_RULES.md](SETT_SOCIAL_GROUP_RULES.md).
