@@ -84,7 +84,7 @@ LOG_MOVE_MIN <- log(0.5)
 LOG_MOVE_MAX <- log(2500)
 
 # Centred annual-coordinate sampler check: no annual NC reference density.
-# Biology and priors are unchanged; only annual trajectory coordinates differ.
+# Annual coordinates remain centred; V11R fixes the unresolved resident baseline scale.
 
 encounter_file <- "data/badger_encounters_useful.rds"
 individual_file <- "data/badger_individuals.rds"
@@ -634,7 +634,7 @@ code_V11_collapsed <- nimbleCode({
   # ---------------------------------------------------------------------------
   # Resolution-aware parameterisation.
   #
-  # The reference/female resident component is fixed because V11R showed that
+  # The reference/female resident component is fixed because V11S showed that
   # its exact 2--20 m scale was below useful data resolution and formed a stable
   # ridge with the relocation contrast. RESIDENT_MEAN_M is supplied as a model
   # constant and is varied only in the pre-specified 25/50/100 m sensitivity.
@@ -1149,7 +1149,9 @@ make_inits <- function(chain) {
   )
 }
 
-inits <- make_inits(CHAIN_ID)\n\n# ---- collapsed-HMM algebra self-check ---------------------------------------
+inits <- make_inits(CHAIN_ID)
+
+# ---- collapsed-HMM algebra self-check ---------------------------------------
 # Verify the sequential forward factorisation against brute-force summation for
 # a short synthetic state sequence. This is a code-level identity check, not a
 # model comparison.
@@ -1546,7 +1548,9 @@ saveRDS(
       niter = NITER,
       nburn = NBURN,
       thin = THIN,
-      init_from_fit = if (nzchar(INIT_FROM_FIT)) INIT_FROM_FIT else NA_character_
+      resident_mean_m = RESIDENT_MEAN_M,
+      resident_sigma = RESIDENT_SIGMA,
+      resident_scale_fixed = TRUE
     ),
     ids = ids,
     individual_ids = individual_ids,
