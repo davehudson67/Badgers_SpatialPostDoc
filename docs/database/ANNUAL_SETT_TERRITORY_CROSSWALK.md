@@ -64,3 +64,9 @@ The aggregate represents linked captures only. The summary cannot infer a full u
 Script 09 supersedes scripts 07/08 for canonical-ID-based evidence. Those earlier scripts are retained unchanged as provenance. **Do not merge newly inferred group IDs into the research schema** without evidence review.
 
 Run outcome is not yet verified on Exeter; R is unavailable in this assistant's environment.
+
+## 2026-10-23 canonical-name collision encountered on Exeter
+
+Live PostgreSQL connection succeeded (178 canonical setts, 17,586 captures, session read-only). Original Script 09 stopped on a normalised-name collision. Live read-only inspection identified two canonical sett records: `sett_id=158, TODD'S` and `sett_id=538, TODDS`; both produce normalised key `TODDS`. The historical coordinate file contains no duplicated cleaned name keys. They cannot be assumed to refer to one physical sett solely from punctuation-based normalisation.
+
+Script 09 now writes `03b_ambiguous_coordinate_identity_review.csv`, preserves both canonical IDs and leaves their coordinate associations **AMBIGUOUS_NAME_KEY**. This allows the remaining unequivocal matches to proceed. Resolve the collision through archived sett records or documented expert review before proposing any canonical-ID consolidation; do not automatically merge them in the research database. The full Exeter crosswalk run remains to be verified.
