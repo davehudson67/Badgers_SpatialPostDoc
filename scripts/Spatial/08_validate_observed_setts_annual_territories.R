@@ -28,6 +28,9 @@ observed <- ev %>% group_by(year,sett_key) %>%
  modal_share=max(sg_share),n_modal=sum(abs(sg_share-max(sg_share))<1e-9),
  modal_sg=if(n_modal==1) sg_key[which.max(sg_share)] else NA_character_,
  recorded_sgs=paste(sort(unique(sg_key)),collapse=" | "),.groups="drop")
+# Restrict to annual territory map coverage, not capture-only years (1976/2026).
+map_years <- sort(unique(status$year))
+observed <- observed %>% filter(year %in% map_years)
 observed <- observed %>% left_join(
  status %>% select(year,sett_key,n_polygon_matches,spatial_status),
  by=c("year","sett_key")) %>%
@@ -68,7 +71,7 @@ polygon_report <- poly %>% select(year,source_polygon_id,territory_name) %>%
 write_csv(polygon_report,file.path(out,"04_polygon_observed_evidence_review.csv"))
 annual <- observed %>% group_by(year) %>%
  summarise(n_setts_observed=n(),n_capture_records=sum(n_capture_records),
- n_setts_outside=sum(n_polygon_matches==0),
+ n_setts_outside=sum(spatial_status=="OUTSIDE_ALL"),
  n_setts_in_one=sum(n_polygon_matches==1),
  n_setts_in_multiple=sum(n_polygon_matches>1),
  n_setts_with_competing_recorded_SGs=sum(n_recorded_sgs>1),
