@@ -110,6 +110,32 @@ joined <- canonical %>% left_join(co_safe,by="name_key",relationship="many-to-on
  TRUE~"EXACT_NORMALISED_NAME"))
 if(nrow(joined)!=nrow(canonical) || anyDuplicated(joined$sett_id))
  stop("Coordinate merge violated canonical sett_id uniqueness")
+# Investigator-approved aliases link canonical sett IDs to differently labelled
+# coordinate rows; never infer social-group membership from these aliases.
+alias_path <- "data/spatial/canonical_sett_coordinate_aliases.csv"
+if (file.exists(alias_path)) {
+  alias <- read_csv(alias_path,show_col_types=FALSE)
+  needed <- c("sett_id","canonical_sett_name","coordinate_source_name")
+  if (!all(needed %in% names(alias))) stop("Alias file missing required columns")
+  if (anyDuplicated(alias$sett_id)) stop("Duplicate canonical sett IDs in alias file")
+  for (j in seq_len(nrow(alias))) {
+    i <- match(alias$sett_id[j],joined$sett_id)
+    k <- clean(alias$coordinate_source_name[j])
+    candidates <- co[!is.na(co$name_key) & co$name_key == k,]
+    if (is.na(i) || nrow(candidates)!=1L) stop("Unresolved alias at row ",j)
+    if (clean(alias$canonical_sett_name[j])!=clean(joined$sett_name[i]))
+      stop("Alias canonical name inconsistent at row ",j)
+    if (joined$coord_status[i]!="NO_COORDINATE")
+      stop("Alias would overwrite an existing coordinate at row ",j)
+    if (is.na(candidates$east[1]) || is.na(candidates$north[1]))
+      stop("Alias coordinate is missing at row ",j)
+    joined$east[i] <- candidates$east[1]
+    joined$north[i] <- candidates$north[1]
+    joined$coordinate_name[i] <- candidates$coordinate_name[1]
+    joined$coord_status[i] <- "APPROVED_COORDINATE_ALIAS"
+  }
+  write_csv(alias,file.path(out,"03c_applied_coordinate_aliases.csv"))
+}
 write_csv(joined,file.path(out,"04_canonical_coordinate_match.csv"))
 write_csv(co %>% anti_join(canonical,by="name_key"),file.path(out,"05_coordinate_names_not_canonical.csv"))
 # Crucially, we NEVER turn an unmatched capture name into a settled ID.
@@ -118,7 +144,7 @@ summary <- tibble(
  "n_canonical_without_coordinates","n_canonical_ambiguous_name_keys","n_captures_1977_2025",
  "n_captures_with_sett_id","n_captures_without_sett_id",
  "n_captures_with_sg_id"),
- value=c(nrow(canonical),sum(joined$coord_status=="EXACT_NORMALISED_NAME"),
+ value=c(nrow(canonical),sum(joined$coord_status %in% c("EXACT_NORMALISED_NAME","APPROVED_COORDINATE_ALIAS")),
  sum(joined$coord_status=="NO_COORDINATE"),sum(joined$coord_status=="AMBIGUOUS_NAME_KEY"),sum(captures$n_captures),
  sum(captures$n_captures[!is.na(captures$sett_id)]),NA_integer_,
  sum(captures$n_captures[!is.na(captures$recorded_social_group_id)])))
@@ -141,7 +167,7 @@ if(!all(need %in% names(polys))) stop("Polygon fields missing: ",paste(setdiff(n
 polys <- polys %>% mutate(year=as.integer(year),
  polygon_uid=paste(year,polygon_id,sep=":"))
 if(anyDuplicated(polys$polygon_uid)) stop("Duplicate year:polygon_id; cannot audit reliably")
-setts <- joined %>% filter(coord_status=="EXACT_NORMALISED_NAME") %>%
+setts <- joined %>% filter(coord_status %in% c("EXACT_NORMALISED_NAME","APPROVED_COORDINATE_ALIAS")) %>%
  st_as_sf(coords=c("east","north"),crs=27700,remove=FALSE)
 years <- sort(unique(polys$year))
 hits <- map_dfr(years,function(y) {
@@ -157,7 +183,7 @@ write_csv(hits,file.path(out,"09_sett_polygon_all_matches.csv"))
 all_years <- crossing(year=years,joined %>% select(sett_id,sett_name,coord_status))
 status <- all_years %>% left_join(hits %>% count(year,sett_id,name="n_polygons"),
  by=c("year","sett_id")) %>% mutate(n_polygons=coalesce(n_polygons,0L),
- status=case_when(coord_status!="EXACT_NORMALISED_NAME"~coord_status,
+ status=case_when(!coord_status %in% c("EXACT_NORMALISED_NAME","APPROVED_COORDINATE_ALIAS")~coord_status,
  n_polygons==0~"OUTSIDE_ALL",n_polygons==1~"ONE_POLYGON",TRUE~"MULTIPLE_POLYGONS"))
 write_csv(status,file.path(out,"10_all_sett_year_status.csv"))
 # 'Observed' means captured at least once that year, NOT proof of biological occupancy.
