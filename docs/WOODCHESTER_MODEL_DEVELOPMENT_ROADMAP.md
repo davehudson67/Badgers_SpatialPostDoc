@@ -3550,3 +3550,105 @@ is justified before changing model biology.
 5. If local-scale R-hat/ESS and the remaining transition/age terms fail to
    improve materially, stop sampler engineering and simplify/reparameterize the
    annual movement estimand rather than repeatedly refitting the same biology.
+
+
+## V11S long continuation — structural ridge confirmed — 23 October 2026
+
+The terminal-state restart / long continuation was completed for all three
+full-data chains. The result is decisive: additional chain length did **not**
+resolve convergence and instead exposed a stable annual local/high movement
+ridge.
+
+Three-chain scorecard after continuation:
+
+- max R-hat = 3.91;
+- median R-hat = 1.20;
+- 14/17 key parameters have R-hat > 1.05;
+- 12/17 have R-hat > 1.10.
+
+Most importantly, the annual local movement scale occupies sharply different,
+internally persistent chain regions:
+
+- female local mean:
+  - chain 1 ~21.2 m;
+  - chain 2 ~17.0 m;
+  - chain 3 ~2.4 m;
+  - R-hat 3.91;
+- male local mean:
+  - chain 1 ~13.4 m;
+  - chain 2 ~10.6 m;
+  - chain 3 ~1.57 m;
+  - R-hat 3.78.
+
+By contrast, the high-movement scale remains broadly similar across chains:
+
+- female high ~1,118, 1,178, 1,184 m;
+- male high ~702, 732, 775 m;
+- alpha_logmove_high ~6.79--6.85.
+
+The key ridge is almost exact compensation between alpha_logmove and
+beta_move_high, especially chains 2 and 3 (correlations approximately -0.99
+and -0.97), while alpha_logmove_high stays nearly invariant.
+
+Half-chain diagnostics show that chains 1 and 3 are largely stable within their
+own local-scale regions; chain 2 still drifts but does not collapse the
+between-chain separation. Therefore this is no longer plausibly explained by
+insufficient chain length.
+
+### State inference remains much more stable than the nuisance scale decomposition
+
+Despite parameter nonconvergence, recovered high-mobility probabilities are
+remarkably consistent for most intervals:
+
+- 6,316 annual intervals;
+- median cross-chain range ~0.00047;
+- 95th percentile ~0.063;
+- 187/6316 = 2.96% have range >0.25;
+- 127/6316 = 2.01% >0.50;
+- 72/6316 = 1.14% >0.80.
+
+Thus the model agrees on most annual high-mobility classifications while being
+unable to identify the exact sub-resolution local process scale.
+
+### Interpretation
+
+The local annual AC displacement component is being estimated at roughly
+1--20 m, whereas the quarterly observation / activity-centre scale is about
+150--160 m. The data therefore cannot reliably distinguish very small annual
+AC shifts within an otherwise stable resident range. The exact local movement
+scale is a nuisance parameter below the effective resolution of this model.
+
+The high-scale relocation process (~1 km) is much better identified.
+
+### Decision
+
+**Stop extending V11S chains. Do not combine or report the unconverged
+parameter posterior as a final model.**
+
+The next model should target the biologically identifiable estimand:
+
+> stable annual residency versus large-scale relocation/high mobility,
+
+rather than trying to estimate an exact local annual displacement scale below
+the observation resolution.
+
+Preferred next architecture:
+
+1. retain one annual activity centre and the direct quarterly multi-location
+   observation model;
+2. retain a large-scale relocation component whose displacement scale is
+   estimated;
+3. treat resident-state process noise as a nuisance quantity that is fixed or
+   strongly anchored, with a small pre-specified sensitivity grid rather than
+   freely estimated;
+4. initially retain the simplest identifiable relocation-propensity structure
+   (sex + age + persistent individual heterogeneity);
+5. only retain Markov RD/DD persistence if observed/posterior-predictive
+   evidence demonstrates that it adds biologically useful serial dependence;
+6. validate recovered relocation events against independently reconstructed
+   annual resident-group changes and observed inter-group movement/prospecting.
+
+This is a change in parameterisation/estimand, not an attempt to fit a new
+biological story after seeing coefficient significance. It follows directly
+from the demonstrated resolution limit and the previously defined roadmap rule
+against repeated fit-fishing.
