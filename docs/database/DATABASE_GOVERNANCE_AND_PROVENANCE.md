@@ -541,3 +541,31 @@ The five public-facing core/model views now contain **tattoo rather than individ
 The repository `DataPrep_fromSupaBase.R` was updated to use tattoo-only identity checks and joins, standard `analysis.capture_history` / `analysis.diagnostic_results` view names, and omit `individual_id` from its analytical products. Once pulled, run the normal R preparation pipeline and compare output/diagnostic row counts with the previous snapshot. Record model-output consequences before replacing published results.
 
 Earlier prose in this document referring to existing `coauthor_*` views describes a **now-retired intermediate state** and should not be interpreted as live schema documentation.
+
+
+## Source-cleaning centralisation review — 23 October 2026
+
+**Review rule:** move *universal, source-supported transformations* upstream into version-controlled PostgreSQL; retain biological analysis choices (occasion collapse, case selection, infection evidence integration, model-specific age/sex eligibility, movement selection) as explicit versioned analysis products, not destructive modifications to raw observations.
+
+Reviewed code:
+- `scripts/OLD_data_prep/01_build_clean_capture_diagnostic_dataset.R`
+- `scripts/setup/DataPrep.R`
+- `DataPrep_fromSupaBase.R`
+
+| Historical R operation | Live source evidence / current situation | Centralisation decision |
+|---|---|---|
+| Standardise tattoo case and trim spaces; explicit `040l` → `040L` | All 3791 canonical tattoos unique. Original four lowercase culture records remain, tied to 2011-01-25 canonical 040L encounter | Already canonically resolved; preserve exact raw form and correction provenance. Review any *other* aliases individually |
+| `067B` `age_fc` overridden to `ADULT` in older R | Both `access_raw.tbl_badger.age_fc` and `research.individuals.age_first_capture` say `CUB` | **DO NOT change canonical DB** without primary evidence for manual correction. Mark conflicting historical rule for scientific review |
+| Missing sex coded `UNKNOWN` | Live canonical `FEMALE` 1,982; `MALE` 1,772; literal `UNKNOWN` 17; SQL NULL 20 | Prefer standardised *analysis-facing* explicit unknown category plus flag `sex_was_missing`; preserve NULL in canonical record pending semantics sign-off |
+| `year_fc='0'` → missing | Seen in `scripts/setup/DataPrep.R` | Candidate documented universal missing-value interpretation; inspect source and current typed parse before adding or changing canonical values |
+| `pm` YES/NO variations → Boolean | `research.captures.is_pm` already Boolean | Existing transformation; audit raw-by-research exceptions instead of reapplying indiscriminately |
+| Free-text sett/SG case and punctuation normalisation | Canonical IDs and recorded original strings coexist; 464 named captures lack canonical sett and 3 named SG records lack ID | Keep recorded original; review unresolved values and evidence before editing canonical IDs |
+| DPP P/PX versus N/Nx visual-line rule | Old scripts differ in construction of positivity and how unspecified/failed results are handled | Candidate derived indicator with explicit missing/QC categories, **not** overwrite of source visual-line codes |
+| Culture `M.BOVIS` positive and sample `OA`/`TA`/`URINE`/`FAECES`/other | Original and research culture result frequency distributions exactly match by category: NEGATIVE 46,400; M.BOVIS 1,058; NULL 1,218; smaller non-diagnostic / non-bovis codes persist | Candidate standard derived `is_m_bovis_culture_positive` and `culture_result_status` views with explicit missing, contaminated, failed, pending, not tested and other-organism classes. **Do not** collapse all non-M.BOVIS results into negative |
+| IFN `2919`→`2019` date correction in historical R | A legacy script includes this string substitution | **Do not** apply blanket replacement; first locate source row, confirm actual date and existing canonical parse |
+| Quarter, cohort age at capture, first/last capture, same-day fusion, modal sett/SG | Analysis-dependent decisions and possible multiple encounters per period | Keep in documented derived views or R modelling pipeline, not changes to canonical capture table |
+| Per-quarter culture/DPP/IFN positivity and any-positive summaries | Old scripts aggregate multiple tests and assume particular positivity rules | Candidate centrally versioned *analysis* summaries once scientific definition and test QC logic are approved; retain test-level tables intact |
+
+Additional live checks: `research.captures` has 17,586 records; 1,246 have no sett ID (only 464 also contain a recorded nonblank sett), 685 have no recorded SG ID (only 3 also contain recorded nonblank SG). `research.captures` currently has 369 nonnull `location_cleaning_note` entries, so earlier documentation of only three exceptional changes is incomplete and needs a classified audit. `research.sett_social_group_history` still has zero rows with a nonnull historical validity bound.
+
+**Audit posture:** At this stage the exploratory queries above did *not* alter the primary `research` data. The required next database additions are versioned, reproducible source-to-canonical exception reports and explicitly defined derived columns/views; biological recodes must not be silently backfilled into source fields.
