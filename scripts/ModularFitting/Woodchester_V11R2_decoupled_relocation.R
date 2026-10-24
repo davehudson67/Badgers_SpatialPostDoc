@@ -291,7 +291,6 @@ sett_xy <- sett_xy_raw %>%
 live_all <- enc %>%
   mutate(
     tattoo = toupper(trimws(as.character(tattoo))),
-    individual_id = as.integer(individual_id),
     primary_year = as.integer(primary_year),
     trap_season = as.integer(trap_season),
     capture_date = as.Date(capture_date),
