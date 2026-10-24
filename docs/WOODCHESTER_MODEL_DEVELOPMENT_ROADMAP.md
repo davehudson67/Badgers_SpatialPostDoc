@@ -1,7 +1,7 @@
 # Woodchester Badger Modelling Development Roadmap
 
 **Status:** Living project document  
-**Last updated:** 23 October 2026  
+**Last updated:** 24 October 2026  
 **Purpose:** Prevent duplicated modelling, preserve decisions across chat windows, and keep the route from movement modelling to demography, infectiousness and social structure explicit.
 
 ---
@@ -3923,3 +3923,138 @@ Decision gate after the nine full fits:
 Do not choose the resident scale merely because one sensitivity has a slightly
 better likelihood or posterior fit. The resident scale is intentionally treated
 as unresolved nuisance process noise.
+
+
+## V11R full resolution sensitivity result and V11R2 decision — 24 October 2026
+
+The full V11R 25/50/100 m resident-resolution sensitivity completed for all
+1,932 movement-eligible badgers with three chains per sensitivity.
+
+### Within-scale convergence
+
+The fixed resident baseline removed the catastrophic V11S local-scale ridge,
+but convergence still depended strongly on the assumed unresolved resident
+scale.
+
+25 m:
+- max R-hat 1.74;
+- median R-hat 1.07;
+- 11/17 key parameters >1.05;
+- 5/17 >1.10;
+- strongest failure beta_age_2 R-hat 1.74.
+
+50 m:
+- max R-hat 1.40;
+- median R-hat 1.04;
+- 6/17 >1.05;
+- 4/17 >1.10;
+- remaining failure concentrated in DD persistence and some age terms.
+
+100 m:
+- max R-hat 1.08;
+- median R-hat 1.00;
+- 4/17 >1.05;
+- 0/17 >1.10.
+
+Do **not** select 100 m simply because it converges best. The three resident
+scales were pre-specified as nuisance-resolution sensitivities, not competing
+biological models.
+
+### Relocation-state robustness
+
+Across 6,316 annual intervals:
+
+- robust resident at all three sensitivities: 5,979;
+- robust relocation at all three sensitivities: 200;
+- sensitivity-dependent classification: 137 (2.17%);
+- median cross-sensitivity probability range: 0.00287;
+- 95th percentile range: 0.188;
+- 63 intervals differed by >0.50 across sensitivities.
+
+Pairwise posterior relocation-probability correlations:
+
+- 25 vs 50 m: 0.935;
+- 25 vs 100 m: 0.872;
+- 50 vs 100 m: 0.950.
+
+Thus the broad annual relocation history is substantially more robust than the
+V11S nuisance-scale decomposition, but a small biologically important subset of
+intervals remains resolution-sensitive.
+
+### Biological coefficient sensitivity
+
+Some signals are comparatively stable:
+
+- beta_age_2 remains near zero;
+- beta_age_3_5 remains around -0.7 to -0.8;
+- beta_age_6plus remains around -1.3 to -1.6;
+- persistent individual mover heterogeneity sigma_badger remains around
+  0.16--0.18;
+- detection/observation sigma remains around 150 m.
+
+Other quantities depend materially on the fixed resident scale:
+
+- female high-movement mean changes from about 1.08 to 1.49 km;
+- male high-movement mean changes from about 0.65 to 0.53 km;
+- beta_RD_sex changes from about 1.36 to 2.71;
+- alpha_DD changes from about -0.75 to +0.73;
+- beta_DD_sex becomes increasingly negative.
+
+### Interpretation
+
+This sensitivity is not evidence that the true resident displacement is 100 m.
+
+The remaining dependence is partly induced by the V11R parameterisation:
+
+1. the high/relocation log scale is expressed as a positive contrast from the
+   fixed resident scale;
+2. the same beta_move_sex modifies both resident and relocation scales.
+
+Therefore changing an intentionally arbitrary nuisance resident scale changes
+the coordinate system of the biologically interesting relocation scale and
+allows the sex-scale term to compensate.
+
+### Decision: V11R2 decoupled scale architecture
+
+Do not freeze V11R yet and do not continue its 25/50 m chains.
+
+Implement V11R2 with the smallest possible architecture change:
+
+1. keep continuous annual activity centres;
+2. keep direct quarterly multi-location observations;
+3. keep the collapsed two-state annual resident/relocation HMM;
+4. keep initial, RD and DD transition biology;
+5. keep chronological age;
+6. keep sex effects on relocation probability;
+7. keep persistent individual mover propensity;
+8. fix resident process noise at 25/50/100 m sensitivities, but make it
+   **sex-neutral** because it is unresolved nuisance process noise;
+9. estimate the **absolute relocation scale directly** from the same prior in
+   every sensitivity rather than as a contrast from the resident scale;
+10. allow a separate sex effect on relocation distance only.
+
+V11R2 uses:
+
+- alpha_logmove = fixed resident log-sigma;
+- alpha_logmove_high ~ Normal(log(800 m Gaussian sigma), 1), identical across
+  resident sensitivities;
+- beta_highscale_sex ~ Normal(0, 0.5), affecting high/relocation distance only.
+
+The exact prior should be reported transparently. Its role is weak
+regularisation of the identifiable large-scale component, not selection of a
+preferred resident scale.
+
+### Decision gate after V11R2
+
+Run the same 25/50/100 m sensitivity.
+
+Freeze the movement engine only if:
+
+- all three sensitivities have acceptable three-chain convergence;
+- absolute high-movement scales are substantially more stable;
+- sex/age/persistent-mover and RD/DD coefficients no longer shift materially
+  with resident resolution;
+- relocation histories remain robust for the large majority of intervals.
+
+Only then overlay the dynamic annual social-group polygons and capture-derived
+resident-group histories and proceed to V12 demography.
