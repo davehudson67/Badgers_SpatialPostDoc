@@ -64,7 +64,8 @@ fit <- readRDS(chain_file)
 accepted_models <- c(
   "V11_RD_SCR_MULTILOC_IID_AGE_BADGERRE_COLLAPSED_HMM",
   "V11_RD_SCR_ANNUALAC_MULTILOC_AGE_BADGERRE_COLLAPSED_HMM",
-  "V11R_RD_SCR_ANNUALAC_FIXEDRES_MULTILOC_AGE_BADGERRE_COLLAPSED_HMM"
+  "V11R_RD_SCR_ANNUALAC_FIXEDRES_MULTILOC_AGE_BADGERRE_COLLAPSED_HMM",
+  "V11R2_RD_SCR_ANNUALAC_DECOUPLED_MULTILOC_AGE_BADGERRE_COLLAPSED_HMM"
 )
 
 if (!fit$model %in% accepted_models) {
@@ -73,6 +74,11 @@ if (!fit$model %in% accepted_models) {
     fit$model
   )
 }
+
+is_v11r2 <- identical(
+  fit$model,
+  "V11R2_RD_SCR_ANNUALAC_DECOUPLED_MULTILOC_AGE_BADGERRE_COLLAPSED_HMM"
+)
 
 required_fit_fields <- c(
   "sex_data",
@@ -131,21 +137,39 @@ if (MIN_RAW_ITER > 0L) {
 disp_index <- fit$disp_index
 annual_index <- fit$annual_state_index
 
-required_global <- c(
-  "alpha_logmove",
-  "beta_move_sex",
-  "beta_move_high",
-  "alpha_disp_init",
-  "beta_disp_init_sex",
-  "alpha_RD",
-  "beta_RD_sex",
-  "beta_age_2",
-  "beta_age_3_5",
-  "beta_age_6plus",
-  "beta_age_unknown",
-  "alpha_DD",
-  "beta_DD_sex"
-)
+required_global <- if (is_v11r2) {
+  c(
+    "alpha_logmove",
+    "alpha_logmove_high",
+    "beta_highscale_sex",
+    "alpha_disp_init",
+    "beta_disp_init_sex",
+    "alpha_RD",
+    "beta_RD_sex",
+    "beta_age_2",
+    "beta_age_3_5",
+    "beta_age_6plus",
+    "beta_age_unknown",
+    "alpha_DD",
+    "beta_DD_sex"
+  )
+} else {
+  c(
+    "alpha_logmove",
+    "beta_move_sex",
+    "beta_move_high",
+    "alpha_disp_init",
+    "beta_disp_init_sex",
+    "alpha_RD",
+    "beta_RD_sex",
+    "beta_age_2",
+    "beta_age_3_5",
+    "beta_age_6plus",
+    "beta_age_unknown",
+    "alpha_DD",
+    "beta_DD_sex"
+  )
+}
 
 missing_global <- setdiff(required_global, colnames(mm))
 if (length(missing_global)) {
@@ -209,13 +233,22 @@ forward_one_badger <- function(
     stop("Missing individual mover-effect posterior column: ", b_col)
   }
 
-  log_sig0 <-
-    mm[, "alpha_logmove"] +
-    mm[, "beta_move_sex"] * sex_i
+  if (is_v11r2) {
+    # V11R2: resident process noise is sex-neutral and fixed; sex affects
+    # relocation distance only.
+    log_sig0 <- mm[, "alpha_logmove"]
+    log_sig1 <-
+      mm[, "alpha_logmove_high"] +
+      mm[, "beta_highscale_sex"] * sex_i
+  } else {
+    log_sig0 <-
+      mm[, "alpha_logmove"] +
+      mm[, "beta_move_sex"] * sex_i
 
-  log_sig1 <-
-    log_sig0 +
-    mm[, "beta_move_high"]
+    log_sig1 <-
+      log_sig0 +
+      mm[, "beta_move_high"]
+  }
 
   sig0_raw <- exp(log_sig0)
   sig1_raw <- exp(log_sig1)
@@ -383,8 +416,13 @@ test_mm <- matrix(
 )
 
 test_mm[1, "alpha_logmove"] <- log(20)
-test_mm[1, "beta_move_sex"] <- 0
-test_mm[1, "beta_move_high"] <- log(500 / 20)
+if (is_v11r2) {
+  test_mm[1, "alpha_logmove_high"] <- log(500)
+  test_mm[1, "beta_highscale_sex"] <- 0
+} else {
+  test_mm[1, "beta_move_sex"] <- 0
+  test_mm[1, "beta_move_high"] <- log(500 / 20)
+}
 test_mm[1, "alpha_disp_init"] <- qlogis(0.07)
 test_mm[1, "beta_disp_init_sex"] <- 0
 test_mm[1, "alpha_RD"] <- qlogis(0.05)
@@ -570,7 +608,7 @@ cat(
 
 saveRDS(
   list(
-    model = "V11_RD_SCR_MULTILOC_IID_AGE_BADGERRE_COLLAPSED_HMM",
+    model = fit$model,
     source_chain = chain_file,
     chain_id = CHAIN_ID,
     ids = fit$ids,
