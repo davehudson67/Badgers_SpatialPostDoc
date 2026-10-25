@@ -814,6 +814,33 @@ if (!is.null(prospecting)) {
     )
 }
 
+# Keep a stable output schema even when optional supporting products are absent.
+if (!"resident_group_change" %in% names(master)) {
+  master <- master %>%
+    mutate(
+      resident_group_from = NA_character_,
+      resident_group_to = NA_character_,
+      resident_assignment_criterion_from = NA_integer_,
+      resident_assignment_criterion_to = NA_integer_,
+      resident_n_grouped_captures_from = NA_integer_,
+      resident_n_grouped_captures_to = NA_integer_,
+      resident_group_change = NA
+    )
+}
+
+if (!"closed_prospecting" %in% names(master)) {
+  master <- master %>%
+    mutate(
+      observed_extra_group_visit = NA,
+      closed_prospecting = NA,
+      n_extra_capture_days = NA_integer_,
+      n_closed_prospecting_bouts = NA_integer_,
+      closed_prospected_groups = NA_character_,
+      future_matches_closed_prospected_group = NA,
+      prospecting_pathway = NA_character_
+    )
+}
+
 # Conservative descriptive flags. These do not replace posterior probabilities.
 master <- master %>%
   mutate(
@@ -847,7 +874,6 @@ master <- master %>%
         "RESIDENT_SG_CHANGE_WITHOUT_CENTRAL_GEOGRAPHIC_RELOCATION",
 
       !central_relocation &
-        "closed_prospecting" %in% names(master) &
         coalesce(closed_prospecting, FALSE) ~
         "TEMPORARY_PROSPECTING_WITHOUT_CENTRAL_ANNUAL_RELOCATION",
 
