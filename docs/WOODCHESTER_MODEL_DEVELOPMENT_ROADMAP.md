@@ -1,7 +1,7 @@
 # Woodchester Badger Modelling Development Roadmap
 
 **Status:** Living project document  
-**Last updated:** 24 October 2026  
+**Last updated:** 25 October 2026  
 **Purpose:** Prevent duplicated modelling, preserve decisions across chat windows, and keep the route from movement modelling to demography, infectiousness and social structure explicit.
 
 ---
@@ -4058,3 +4058,136 @@ Freeze the movement engine only if:
 
 Only then overlay the dynamic annual social-group polygons and capture-derived
 resident-group histories and proceed to V12 demography.
+
+
+## V11R2 full sensitivity result — freeze geographic movement engine — 25 October 2026
+
+The full V11R2 decoupled 25/50/100 m sensitivity completed for all 1,932
+movement-eligible badgers with three chains per sensitivity.
+
+### Main result
+
+V11R2 successfully removed most of the artificial coupling between the nuisance
+resident scale and the biologically interesting relocation scale.
+
+The 25 m and 50 m fits give essentially the same relocation process:
+
+- female high-movement median: 1,079 m vs 1,081 m;
+- male high-movement median: 572 m vs 573 m;
+- beta_highscale_sex: -0.634 vs -0.634;
+- beta_RD_sex: 1.76 vs 1.83;
+- mean relocation occupancy: 0.0574 vs 0.0596;
+- intervals with posterior relocation probability >=0.5: 280 vs 280;
+- pairwise relocation-probability correlation: 0.972;
+- only 56/6,316 intervals (0.89%) change >=0.5 classification.
+
+Thus the important relocation result is stable across two clearly unresolved
+resident-noise assumptions.
+
+### Convergence
+
+25 m still mixes imperfectly for several transition/age parameters:
+
+- max R-hat 1.25;
+- median R-hat 1.05;
+- 8/17 >1.05;
+- 4/17 >1.10.
+
+50 m is acceptable for the intended biological use:
+
+- max R-hat 1.07;
+- median R-hat 1.03;
+- 4/17 >1.05;
+- 0/17 >1.10;
+- only 48/6,316 intervals have cross-chain relocation-probability range >0.25.
+
+100 m also converges well numerically:
+
+- max R-hat 1.07;
+- median R-hat 1.00;
+- 0/17 >1.10.
+
+Do not use numerical convergence alone to choose the biological model.
+
+### Why 100 m is treated as a stress test
+
+At 100 m the assumed resident process is no longer behaving as an effectively
+unresolved nuisance scale. It materially changes the latent decomposition:
+
+- mean relocation occupancy drops to 0.0408;
+- >=0.5 relocation intervals drop from 280 to 198;
+- female high-movement median rises to 1,266 m;
+- male high-movement median rises to 691 m;
+- alpha_RD shifts to -4.34;
+- alpha_DD shifts to +1.08;
+- sigma_badger rises to 0.345.
+
+The 25/50 plateau and 100 m departure are therefore interpreted as evidence that
+resident noise below roughly the 50 m scale is effectively nuisance variation,
+whereas forcing 100 m of annual resident-process movement begins to absorb
+biologically meaningful between-year relocation signal.
+
+This is a sensitivity-plateau argument, not model selection by likelihood or
+convergence.
+
+### Biological interpretation retained across 25/50 m
+
+Across the two primary sensitivities:
+
+- age 2 is close to the 0-1 reference;
+- ages 3-5 have lower resident->relocation transition probability;
+- ages 6+ have still lower transition probability;
+- males are substantially more likely than females to enter the relocation
+  state (positive beta_RD_sex);
+- males have a smaller high-movement displacement scale than females
+  (beta_highscale_sex about -0.63);
+- persistent individual mover heterogeneity remains present but modest.
+
+Using the 50 m central fit only for interpretation, the baseline female
+resident->relocation probability is approximately 2.8% per eligible annual
+transition, while the corresponding male probability is approximately 15.2%
+before age and individual-random-effect adjustments.
+
+### Decision
+
+Freeze **V11R2, resident mean 50 m** as the central geographic movement engine.
+
+Use **25 m** as the principal movement-resolution sensitivity.
+
+Retain **100 m** in the record as an upper stress test demonstrating where the
+resident-noise assumption starts to change the biological decomposition; do not
+average it into the central result.
+
+Do not hard-code movement state as mover/nonmover for downstream biology.
+Carry posterior relocation probability forward.
+
+For each annual interval retain:
+
+- central p_relocation from V11R2 50 m;
+- 25 m sensitivity p_relocation;
+- absolute 25-vs-50 difference;
+- robust classification flag;
+- explicit flag for the 56 intervals whose >=0.5 classification switches
+  between 25 and 50 m.
+
+### Next step
+
+Proceed to the dynamic annual social-group overlay.
+
+For each posterior annual activity centre / annual transition, combine:
+
+1. V11R2 geographic relocation probability;
+2. capture-derived annual resident social group;
+3. year-specific territory polygons;
+4. group assignment of A_t and A_t+1 under both the old-year and new-year maps.
+
+This must distinguish:
+
+- geographic relocation without social-group change;
+- social-group change associated with geographic relocation;
+- temporary inter-group visits/prospecting without annual relocation;
+- apparent group reassignment caused by changing territory boundaries;
+- outside/overlap/uncertain polygon membership.
+
+Only after this overlay should the programme proceed to V12
+entry/immigration/settlement/survival/apparent-emigration modelling.
