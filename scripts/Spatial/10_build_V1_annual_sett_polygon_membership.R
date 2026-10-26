@@ -68,9 +68,9 @@ stopifnot(n_distinct(crosswalk$year)==49L,n_distinct(crosswalk$sett_id)==176L,
  nrow(crosswalk)>=49L*176L,all(!is.na(crosswalk$match_status)),
  all(crosswalk$year %in% years))
 write_csv(crosswalk,file.path(output,"annual_sett_polygon_all_matches.csv"),na="")
-summary<-crosswalk %>% count(year,match_status,name="n_records")
+summary<-dplyr::count(crosswalk,year,match_status,name="n_records")
 write_csv(summary,file.path(output,"annual_sett_polygon_year_status.csv"))
-print(summary,n=Inf)
+print(as.data.frame(summary), row.names=FALSE)
 message("Exported ",nrow(crosswalk)," rows to ",output)
 if(identical(Sys.getenv("UPLOAD_ANNUAL_CROSSWALK"),"1")){
  # Only write on explicit opt-in; require write-enabled Supabase credentials.
