@@ -76,7 +76,7 @@ if(identical(Sys.getenv("UPLOAD_ANNUAL_CROSSWALK"),"1")){
  # Only write on explicit opt-in; require write-enabled Supabase credentials.
  DBI::dbWithTransaction(con,{
   DBI::dbExecute(con,"delete from research.sett_annual_territory_matches")
-  dbWriteTable(con,Id(schema="research",table="sett_annual_territory_matches"),
+  DBI::dbWriteTable(con,DBI::Id(schema="research",table="sett_annual_territory_matches"),
    crosswalk,append=TRUE,row.names=FALSE)
   after<-DBI::dbGetQuery(con,"select count(*) n from research.sett_annual_territory_matches")
   if(after$n!=nrow(crosswalk))stop("Upload row count mismatch; rolling back")
