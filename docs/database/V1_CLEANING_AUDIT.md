@@ -487,3 +487,15 @@ Key V1 implementation migrations are in `sql/migrations/`: `woodchester_working_
 - Verification on 17,586 capture rows: zero non-null cleaned sett names when `sett_id` NULL; zero missing cleaned sett names for non-null `sett_id`; zero missing SG cleaned names for non-null `recorded_social_group_id`.
 
 **Known qualification:** this trigger maintains labels when the capture foreign key changes, not if a canonical lookup's name itself is renamed without updating the referencing rows. Such rare canonical renames require a controlled migration and verification. Original Access-to-research field parity and consolidation of the 24 analysis views remain separate open work; no source records or dependent legacy views were deleted in this pass.
+
+
+## Capture detail consolidation — 26 October 2026
+
+Migration: `sql/migrations/woodchester_v1_consolidate_capture_fields_20261026.sql`.
+
+- Audited `research.capture_sampling`: 17,586 rows and 17,586 unique capture IDs.
+- Audited `research.capture_assessments`: 16,907 rows and 16,907 unique capture IDs.
+- Audited `research.capture_collars`: 2,440 rows and 2,440 unique capture IDs.
+- Added missing capture-detail columns to `research.captures` with the same underlying SQL types, copying each one-to-one value by `capture_id`; two column collisions were renamed: `notes` → `sampling_notes` and collar-table `transmitter` → `collar_transmitter`.
+- Post-migration: 17,586 unique capture rows, now 63 fields. Compared consolidated values against source research detail tables: `blood_taken_time` 0 mismatches, `collar_transmitter` 0 mismatches, `adverse_effects` 0 mismatches.
+- **Not completed:** exhaustive raw Access value-by-value comparison and complete 63-column split-source parity test; proof that no active code references the split tables; refactoring 24 analysis views to a minimal stable interface. No split table or dependent view was dropped, and the research schema has not been granted elevated coauthor write permissions. Current copies in `research.captures` and in the split tables could diverge on later edits; any future write pathway must be made single-source-of-truth before declaring the structure final.
