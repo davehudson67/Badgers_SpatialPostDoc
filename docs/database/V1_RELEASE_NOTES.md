@@ -50,8 +50,6 @@ Joined capture histories; one row per event.
 | `capture_id` | Unique capture or PM event identifier. |
 | `tattoo` | Scientific badger identifier. |
 | `elect_tag` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `historical_names` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `n_historical_names` | Original recorded or derived field; see original Access definition for exact codes/units. |
 | `sex` | Original recorded sex. |
 | `age_first_capture` | Original recorded age class at first capture. |
 | `year_first_capture` | Original recorded or derived field; see original Access definition for exact codes/units. |
@@ -592,6 +590,3 @@ Wounds recorded at captures; multiple rows can belong to one capture.
 
 I use `tattoo` as the scientific individual identifier and `capture_id` for capture events. A canonical sett name is only filled when the recorded location has been matched to a sett. PM grid references are recovery-location approximations, not known sett locations. Recorded social groups shouldn't automatically be treated as annual residence assignments. Infection probabilities are model outputs rather than diagnostic observations.
 
-### Historical names
-
-I keep original badger names in `research.individuals.historical_names` (names separated by ` | `) and their count in `n_historical_names`. These are names and nicknames from the Access captures, not corrections to tattoo codes. `TR` is preserved as recorded. The separate `individual_names` table has been retired.
