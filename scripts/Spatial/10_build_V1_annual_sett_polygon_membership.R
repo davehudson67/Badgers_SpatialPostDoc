@@ -51,9 +51,15 @@ for(k in seq_along(years)){
   boundary<-!(hit %in% inside[[pt_i]])
   status <- ifelse(boundary, "ON_BOUNDARY",
                    if (length(hit) > 1L) "MULTIPLE_POLYGONS" else "ONE_POLYGON")
-  rows[[i]]<-data.frame(year=y,sett_id=id,polygon_id=poly$polygon_id[hit],
-    territory_name=as.character(poly[[name_col]][hit]),match_status=status,
-    polygon_source=basename(shp),coordinate_source=setts$coordinate_source[i])
+  rows[[i]]<-data.frame(
+    year=rep(y,length(hit)),
+    sett_id=rep(id,length(hit)),
+    polygon_id=poly$polygon_id[hit],
+    territory_name=as.character(poly[[name_col]][hit]),
+    match_status=status,
+    polygon_source=rep(basename(shp),length(hit)),
+    coordinate_source=rep(setts$coordinate_source[i],length(hit))
+  )
  }
  results[[k]]<-bind_rows(rows)
 }
