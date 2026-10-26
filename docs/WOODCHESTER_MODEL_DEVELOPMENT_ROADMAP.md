@@ -4410,3 +4410,148 @@ These records remain a separate V12 evidence stream:
   unresolved.
 
 Do not assign a recovery road/grid square to the nearest sett or social group.
+
+### Integrated behavioural-pathway results — 26 October 2026
+
+The integrated pre-V12 behavioural-pathway analysis completed successfully for
+all 6,316 annual movement intervals.
+
+#### Primary annual pathways
+
+- STABLE_LOCAL_RESIDENCY: 2,669 (42.3%);
+- NO_GEOGRAPHIC_RELOCATION_SOCIAL_TERRITORY_UNRESOLVED: 2,449 (38.8%);
+- LOCAL_RESIDENCY_RESIDENT_SG_UNKNOWN: 749 (11.9%);
+- GEOGRAPHIC_RELOCATION_SOCIAL_DESTINATION_UNRESOLVED: 251 (3.97%);
+- LOCAL_SOCIAL_REASSIGNMENT_WITHOUT_GEOGRAPHIC_RELOCATION: 169 (2.68%);
+- SOCIAL_DISPERSAL_MULTI_EVIDENCE: 11 (0.174%);
+- GEOGRAPHIC_RELOCATION_WITH_LINEAGE_SWITCH_SG_NOT_CHANGED_OR_UNKNOWN: 10 (0.158%);
+- GEOGRAPHIC_RELOCATION_WITHIN_SUPPORTED_TERRITORY_LINEAGE: 8 (0.127%).
+
+The central V11R2-50 fit therefore identifies 280 annual geographic relocations:
+
+- 11 strict multi-evidence social dispersals;
+- 10 relocation + likely territory-lineage switch without confirmed resident-SG change;
+- 8 relocations within a supported continuing territory lineage;
+- 251 relocations whose social/territory destination remains unresolved.
+
+#### Movement-resolution robustness of pathway classes
+
+All 11 strict SOCIAL_DISPERSAL_MULTI_EVIDENCE intervals are ROBUST_RELOCATION
+under both the 25 m and 50 m V11R2 sensitivities.
+
+All 10 relocation + likely-lineage-switch intervals with resident SG unchanged
+or unknown are also ROBUST_RELOCATION.
+
+For the 251 socially unresolved relocations:
+
+- 225 (89.6%) are ROBUST_RELOCATION;
+- 26 (10.4%) are 25/50 classification switches.
+
+For the 8 relocations within supported territory lineage:
+
+- 6 are ROBUST_RELOCATION;
+- 2 are 25/50 classification switches.
+
+The local/non-relocation pathways are also overwhelmingly movement-resolution
+stable:
+
+- 2,666/2,669 stable local residencies are ROBUST_RESIDENT;
+- 162/169 local social reassignments are ROBUST_RESIDENT;
+- all 749 local-residency / resident-SG-unknown intervals are ROBUST_RESIDENT.
+
+This strongly supports the use of the 50 m central movement engine with 25 m
+sensitivity retained as an uncertainty flag rather than as a competing model.
+
+#### Social-dispersal evidence stack
+
+Across all intervals:
+
+- 2,669 have no dispersal signal and stable local evidence;
+- 3,026 have no central relocation but incomplete social/territory evidence;
+- 341 show resident-SG change without geographic relocation;
+- 125 show geographic relocation + resident-SG change but lineage unresolved
+  or continuing;
+- 79 show relocation with resident SG unknown;
+- 55 show relocation while resident SG remains the same;
+- 11 show relocation + lineage switch + resident-SG change;
+- 10 show relocation + lineage switch without confirmed resident-SG change.
+
+Thus capture-derived resident-SG change alone is not an adequate definition of
+dispersal: 341 resident-SG changes occur without central geographic relocation.
+
+#### Prospecting / temporary extra-group behaviour
+
+Of 6,316 annual intervals:
+
+- 4,253 had no strict prospecting window available;
+- 1,666 had a strict window with no observed extra-group use;
+- 181 had other extra-group use;
+- 141 had unclosed extra-group use;
+- 33 had closed prospecting but future residency was unavailable;
+- 31 had closed prospecting and remained resident in the baseline group;
+- 9 had closed prospecting followed by settlement in a visited/prospected group;
+- 2 had closed prospecting followed by settlement elsewhere.
+
+Among the 9 closed-prospecting -> visited-group settlement intervals, 8 were
+pure single-target prospecting followed by settlement in that same target.
+
+However, those 9 prospecting-before-settlement intervals do not map neatly onto
+the strict annual SOCIAL_DISPERSAL_MULTI_EVIDENCE class:
+
+- 4 are NO_GEOGRAPHIC_RELOCATION_SOCIAL_TERRITORY_UNRESOLVED;
+- 3 are LOCAL_SOCIAL_REASSIGNMENT_WITHOUT_GEOGRAPHIC_RELOCATION;
+- 2 are GEOGRAPHIC_RELOCATION_SOCIAL_DESTINATION_UNRESOLVED.
+
+This is biologically important rather than contradictory. Prospecting is an
+observed within-year social-space sequence, while V11R2 relocation is an annual
+activity-centre process and territory-lineage classification depends on
+historical polygon evidence. The three streams can legitimately disagree or
+have different temporal resolution.
+
+Do not redefine prospecting as annual relocation, and do not require annual
+relocation as a prerequisite for observed prospecting-before-settlement.
+
+#### Interpretation before V12
+
+The movement/social framework now separates at least four biologically distinct
+processes:
+
+1. stable local residency;
+2. local social reassignment / apparent resident-SG change without annual
+   geographic relocation;
+3. geographic relocation whose social destination remains uncertain;
+4. high-confidence social dispersal supported by geographic relocation +
+   likely territory-lineage switch + resident-SG change.
+
+Temporary prospecting / bridging is an orthogonal within-year behaviour that can
+precede any of these annual outcomes.
+
+### Updated V12 entry criterion
+
+The descriptive movement/social integration is now complete enough to proceed
+toward V12, but V12 should not attempt to re-estimate or redefine these
+movement/social pathways.
+
+V12 should instead model demographic state and fate using them as covariates /
+supporting latent-history evidence:
+
+- first appearance / entry;
+- settlement after entry;
+- retention / apparent survival;
+- disappearance / apparent emigration;
+- known death;
+- probable immigration versus within-study dispersal.
+
+Key V12 safeguards:
+
+- adult entry is not automatically immigration;
+- resident-SG change alone is not dispersal;
+- a grid-reference PM is known death plus uncertain recovery location, not a
+  sett or SG assignment;
+- PM recovery locations remain outside the V11R2 movement likelihood;
+- known death must be distinguished from disappearance;
+- posterior relocation probability should be carried forward rather than only
+  a binary mover/nonmover label;
+- the 25/50 movement-resolution robustness flag should remain available;
+- territory-lineage and resident-SG evidence should remain separate columns
+  rather than being collapsed into one social-state variable.
