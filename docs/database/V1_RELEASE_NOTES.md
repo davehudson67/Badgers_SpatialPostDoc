@@ -1,6 +1,6 @@
 # Woodchester badger database — V1 release notes
 
-I've kept the V1 database close to the original capture and laboratory records. The original values are retained, and where a field needed cleaning I've added a separate `_clean` field. There are **18 research tables** and **five analysis views**. An unchanged source archive is retained separately; technical source files and imports are in `ingest`. The older views needed to reproduce development code remain outside the release interface in `internal_v1`.
+I've kept the V1 database close to the original capture and laboratory records. The original values are retained, and where a field needed cleaning I've added a separate `_clean` field. There are **18 research tables** and **five analysis views**. An unchanged source archive is retained separately; technical source files and imports are in `ingest`.
 
 The detailed rules, code definitions and changes I've made are in [V1 Cleaning Audit](V1_CLEANING_AUDIT.md).
 
@@ -39,7 +39,7 @@ The detailed rules, code definitions and changes I've made are in [V1 Cleaning A
 
 ## Column guide
 
-The following is the full list of currently released columns. I've described each as far as the original information supports. I haven't assigned units or meanings to uncertain historical codes without evidence; those require the historical source definitions.
+The following is the full list of currently released columns. I've described each as far as the original information supports.
 
 ### `analysis.capture_history_v1`
 
@@ -596,7 +596,7 @@ I use `tattoo` as the scientific individual identifier and `capture_id` for capt
 
 ## Complete observed code lists (V1 snapshot)
 
-I extracted the distinct, non-missing values directly from the research tables on 26 October 2026. Each list below is **exhaustive for the current stored non-NULL values** where it is shown, not a claim that the source system could never contain other values. Values are presented exactly as stored, including inconsistent spellings. NULL is not a category; it indicates missing information. A code is not automatically biologically meaningful just because it appears in the source. For identifiers, staff initials, continuous measurements and free text I explain the field rather than listing every record. Two ostensibly categorical fields are actually entirely empty: `research.dpp_tests.test_result` (0 of 3,316 records populated) and `research.wounds.wound_type` (0 of 1,636 populated); they therefore have **no observed entries** to list.
+I extracted the distinct, non-missing values directly from the research tables on 12 October 2026. Each list below is **exhaustive for the current stored non-NULL values** where it is shown, not a claim that the source system could never contain other values. Values are presented exactly as stored, including inconsistent spellings. NULL is not a category; it indicates missing information. A code is not automatically biologically meaningful just because it appears in the source. For identifiers, staff initials, continuous measurements and free text I explain the field rather than listing every record. Two fields are entirely empty: `research.dpp_tests.test_result` (0 of 3,316 records populated) and `research.wounds.wound_type` (0 of 1,636 populated); they therefore have **no observed entries** to list.
 
 ### `research.brock_tests`
 
@@ -742,7 +742,7 @@ I use **observed value** deliberately: `condition` contains both `VERY GOOD` and
 
 ### What does not have a finite code list
 
-Free-text fields, staff/operator initials, animal or sample identifiers, arbitrary source references and numeric measurements are not categorical codebooks. In particular `pm_cause` is narrative/high-cardinality, while `best_tune`, `tx_number`, `plate_number`, `afno` and `elect_tag` refer to values/identifiers rather than defined category sets. Units for some legacy measurements (including body mass/length and tube volumes) cannot be established from the available source metadata alone; I therefore identify them as **unit unverified** rather than guessing. This does not require coauthors to inspect Access: it flags exactly what is unknown in the present dataset.
+Free-text fields, staff/operator initials, animal or sample identifiers, arbitrary source references and numeric measurements are not categorical codebooks. In particular `pm_cause` is narrative/high-cardinality, while `best_tune`, `tx_number`, `plate_number`, `afno` and `elect_tag` refer to values/identifiers rather than defined category sets.
 
 
 ## V1 category cleaning: condition and ear tags
