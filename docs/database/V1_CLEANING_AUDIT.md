@@ -514,3 +514,14 @@ Migration: `sql/migrations/woodchester_v1_consolidate_capture_fields_20261026.sq
 7. Original source table layout and fields are preserved under `access_raw`. Confirm full source-to-research parity, codebook meanings, current model-script references and effective coauthor connection permissions before freezing V1.
 
 **Do not run the original intermediate view rewrite by itself** outside ordered migrations; the final validated view definition reads only `research.captures` for the consolidated sampling/collar/assessment attributes.
+
+
+## V1 final public-schema consolidation — 26 October 2026
+
+Migration `sql/migrations/woodchester_v1_minimal_public_schemas_20261026.sql` was applied. This **moves rather than deletes** 19 previous `analysis` views to `internal_v1`, maintaining the PostgreSQL dependency graph and SQL source. The five published coauthor interfaces remain `analysis.capture_history_v1`, `analysis.diagnostic_results`, `analysis.capture_location_v1`, `analysis.sett_inventory_v1` and `analysis.capture_infection_probabilities`.
+
+The three research import/staging tables `infection_probabilities_import`, `infection_quarterly_import` and `sett_coordinate_source_20261023` were moved to `ingest` without data loss; their old research paths no longer exist. **Current inventories:** 22 research base tables; 5 analysis views; 19 internal_v1 views; 7 ingest base tables; 12 access_raw tables.
+
+Validation after the migration: `analysis.capture_history_v1` 17,586 total and unique capture IDs; `analysis.capture_location_v1` 17,586; `analysis.sett_inventory_v1` 176; `analysis.diagnostic_results` 76,051 rows; `analysis.capture_infection_probabilities` 16,255 rows. These are row counts rather than a complete scientific-source parity test.
+
+**Technical qualifications:** Internal views are **retained**, so 24 SQL view objects physically still exist across both schemas even though `analysis` exposes only five. Some previously schema-qualified R code may require path replacements, especially `analysis.capture_history` → `internal_v1.capture_history`, and diagnostic/trait helper names. The current GitHub search did not establish a complete inventory of all local scripts; no claim is made that every R script has been edited. All cleaned source fields and historical recorded text remain unchanged. Any planned further deletion of internal views requires a tested migration of dependent views and scripts.
