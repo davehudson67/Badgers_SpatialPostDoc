@@ -1,7 +1,7 @@
 # Woodchester Badger Modelling Development Roadmap
 
 **Status:** Living project document  
-**Last updated:** 25 October 2026  
+**Last updated:** 26 October 2026
 **Purpose:** Prevent duplicated modelling, preserve decisions across chat windows, and keep the route from movement modelling to demography, infectiousness and social structure explicit.
 
 ---
@@ -4191,3 +4191,222 @@ This must distinguish:
 
 Only after this overlay should the programme proceed to V12
 entry/immigration/settlement/survival/apparent-emigration modelling.
+
+## Dynamic territory lineage and integrated behavioural pathways — 26 October 2026
+
+The post-V11R2 social-landscape work is now sufficiently developed that annual
+geographic relocation, territory continuity, capture-derived annual residency
+and temporary prospecting can be treated as separate evidence layers.
+
+### V11R2 dynamic annual territory overlay
+
+The central V11R2-50 posterior annual activity centres were overlaid on the
+audited 1977--2025 annual territory polygons. V11R2-25 relocation probabilities
+were carried alongside as the primary movement-resolution sensitivity.
+
+For every annual transition t -> t+1, both activity centres were classified
+under both annual maps:
+
+- G_t(A_t);
+- G_t(A_{t+1});
+- G_{t+1}(A_t);
+- G_{t+1}(A_{t+1}).
+
+This explicitly separates stable-boundary crossing from apparent reassignment
+caused by changing annual territory geometry.
+
+The full overlay retained 6,316 movement intervals and the known 56
+25-vs-50 m relocation classification switches. With 75 posterior AC draws
+(25 per chain), the initial raw-polygon summary had:
+
+- mean central p(relocation): 0.0596;
+- mean p(stable territory cross): 0.0184;
+- mean p(boundary-change-only reassignment): 0.0852;
+- mean p(polygon ambiguous/outside): 0.3778.
+
+The high ambiguity fraction is predominantly caused by posterior activity
+centres lying outside the mapped annual territory union, not missing annual
+maps. Do not force outside or overlapping points into a group.
+
+### Historical polygon names are not biological SG identifiers
+
+The first boundary-change audit identified 521 intervals with
+p(boundary-change-only) >= 0.5.
+
+Consecutive-year polygon geometry showed:
+
+- 233 lower-continuity reconfiguration intervals;
+- 232 high-continuity different-label intervals;
+- 56 very-high-continuity different-label intervals.
+
+This exposed many historical composite or changing labels, including sequences
+around Top / Yew / Taxus / Wych Elm and recurring Box / Larch changes.
+
+Therefore:
+
+> **Do not create a global territory-name -> social-group alias dictionary.**
+
+A change in annual polygon label is not itself evidence of social dispersal.
+
+### Territory-lineage evidence
+
+Consecutive annual polygons were then compared using three independent evidence
+streams:
+
+1. geometric overlap;
+2. shared canonical sett IDs;
+3. capture-recorded social-group evidence at those setts.
+
+Among the 521 boundary-change intervals:
+
+- 216 (41.5%) were STRONG_MULTI_EVIDENCE_CONTINUITY;
+- 26 (5.0%) were VERY_STRONG_MULTI_EVIDENCE_CONTINUITY;
+- 30 (5.8%) had GEOMETRIC_CONTINUITY_ONLY;
+- 233 (44.7%) remained LOWER_GEOMETRIC_CONTINUITY;
+- 16 (3.1%) showed GEOMETRIC_CONTINUITY_BUT_DIFFERENT_STRONG_SG_EVIDENCE.
+
+Thus 242/521 (46.4%) have strong/very-strong multi-evidence support for
+continuity despite changing annual polygon labels.
+
+Examples such as Box -> Larch can retain many shared canonical setts and LARCH
+as the dominant capture-recorded SG on both sides. This demonstrates why raw
+polygon labels cannot be interpreted as fixed biological social-group IDs.
+
+No territory names, canonical sett IDs or social-group identities were changed.
+
+### Lineage-aware annual transitions
+
+Posterior annual transitions were reclassified using the territory-lineage
+evidence while preserving the raw annual polygon labels.
+
+Across 6,316 intervals:
+
+- 3,595 (56.9%) = SUPPORTED_SAME_TERRITORY_LINEAGE;
+- 2,144 (33.9%) = POLYGON_ASSIGNMENT_AMBIGUOUS;
+- 334 (5.29%) = UNRESOLVED_TERRITORY_RECONFIGURATION;
+- 206 (3.26%) = POSTERIOR_LINEAGE_UNCERTAIN;
+- 21 (0.332%) = LIKELY_TERRITORY_LINEAGE_SWITCH;
+- 16 (0.253%) = CONFLICTING_LINEAGE_EVIDENCE.
+
+The movement x lineage comparison is especially informative:
+
+- 3,587 = no central relocation + supported same lineage;
+- 2,449 = no central relocation + lineage uncertain;
+- 251 = geographic relocation + lineage uncertain;
+- 21 = geographic relocation + likely lineage switch;
+- 8 = geographic relocation within supported same lineage.
+
+All 21 likely territory-lineage switches occur within V11R2 central geographic
+relocations; none occurs among the non-relocation intervals.
+
+Capture-derived resident-SG evidence remains independent:
+
+- among the 21 relocation + likely-lineage-switch intervals:
+  - 11 have resident-SG change;
+  - 8 have resident-SG unchanged;
+  - 2 have resident-SG unknown;
+- among 251 relocation + lineage-uncertain intervals:
+  - 122 have resident-SG change;
+  - 50 have resident-SG unchanged;
+  - 79 have resident-SG unknown;
+- among 8 relocation + supported-same-lineage intervals:
+  - 3 have resident-SG change;
+  - 5 have resident-SG unchanged.
+
+This shows that geographic relocation, territory-lineage change and
+capture-derived resident-SG change are related but non-equivalent processes.
+
+### Integrated behavioural-pathway layer before V12
+
+A new descriptive pathway script has been added:
+
+scripts/behaviour/Woodchester_integrated_behavioural_pathways.R
+
+This is **not another latent-state model**. It combines:
+
+- central V11R2-50 p(relocation);
+- V11R2-25 sensitivity and relocation robustness;
+- lineage-aware annual territory transition;
+- capture-derived annual resident-SG change;
+- observed extra-group use / closed prospecting.
+
+Two complementary classifications are retained.
+
+#### 1. Primary annual pathway
+
+The annual y -> y+1 transition is classified into a small set of explicit
+biological pathways:
+
+- SOCIAL_DISPERSAL_MULTI_EVIDENCE:
+  geographic relocation + likely territory-lineage switch + resident-SG change;
+- GEOGRAPHIC_RELOCATION_WITH_LINEAGE_SWITCH_SG_NOT_CHANGED_OR_UNKNOWN;
+- GEOGRAPHIC_RELOCATION_WITHIN_SUPPORTED_TERRITORY_LINEAGE;
+- GEOGRAPHIC_RELOCATION_SOCIAL_DESTINATION_UNRESOLVED;
+- STABLE_LOCAL_RESIDENCY;
+- LOCAL_SOCIAL_REASSIGNMENT_WITHOUT_GEOGRAPHIC_RELOCATION;
+- LOCAL_RESIDENCY_RESIDENT_SG_UNKNOWN;
+- NO_GEOGRAPHIC_RELOCATION_SOCIAL_TERRITORY_UNRESOLVED.
+
+A resident-SG change without geographic relocation is deliberately **not**
+called dispersal.
+
+The central 50 m model defines the descriptive annual movement class, but the
+25/50 relocation robustness flag remains attached to every interval so
+resolution-sensitive cases can be identified rather than hidden.
+
+#### 2. Prospecting / temporary-extra-group sequence
+
+Prospecting in focal year y is aligned with the annual transition y -> y+1 and
+kept as a second, orthogonal classification:
+
+- closed prospecting -> later settlement in a visited/prospected group;
+- closed prospecting -> remained baseline resident;
+- closed prospecting -> later settlement elsewhere;
+- closed prospecting with future residency unknown;
+- unclosed extra-group use;
+- no observed extra-group use.
+
+This preserves the biologically important sequence:
+
+> resident A -> observed A-B-A prospecting -> later settlement in B
+
+without forcing the temporary excursion itself to be labelled annual dispersal.
+
+### Decision gate before V12
+
+Run the integrated behavioural-pathway script and quantify the resulting
+pathway counts.
+
+Before fitting V12, confirm:
+
+1. how many annual intervals meet the strict multi-evidence social-dispersal
+   definition;
+2. how many geographic relocations remain socially unresolved;
+3. how many relocations occur within a supported continuing territory lineage;
+4. how often resident-SG change occurs without geographic relocation;
+5. how prospecting-before-settlement maps onto the annual relocation and
+   lineage classes;
+6. whether the key social-dispersal pathways remain supported when the V11R2
+   25 m sensitivity is considered.
+
+Only then move to V12 entry / settlement / retention / survival /
+apparent-emigration / known-death modelling.
+
+The purpose of V12 is demographic inference. It should consume these movement
+and social-history products rather than redefining geographic relocation or
+territory identity.
+
+### PM / non-sett recovery locations remain separate
+
+The V11R2 territory-lineage overlay continues to exclude PM recovery locations,
+road locations and grid-reference-only recoveries from the annual activity-centre
+likelihood and territory assignment.
+
+These records remain a separate V12 evidence stream:
+
+- known-sett PM: known death plus established sett location;
+- grid-reference PM: known death plus uncertain recovery square;
+- unresolved descriptive PM location: known death with spatial location
+  unresolved.
+
+Do not assign a recovery road/grid square to the nearest sett or social group.
