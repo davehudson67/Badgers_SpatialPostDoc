@@ -1,6 +1,6 @@
 # Woodchester badger database — V1 release notes
 
-I've kept the V1 database close to the original Access structure. The original values are retained, and where a field needed cleaning I've added a separate `_clean` field. There are **19 research tables** and **five analysis views**. The original Access imports remain available in `access_raw`; technical source files and imports are in `ingest`. The older views needed to reproduce development code remain outside the release interface in `internal_v1`.
+I've kept the V1 database close to the original Access structure. The original values are retained, and where a field needed cleaning I've added a separate `_clean` field. There are **18 research tables** and **five analysis views**. The original Access imports remain available in `access_raw`; technical source files and imports are in `ingest`. The older views needed to reproduce development code remain outside the release interface in `internal_v1`.
 
 The detailed rules, code definitions and changes I've made are in [V1 Cleaning Audit](V1_CLEANING_AUDIT.md).
 
@@ -15,7 +15,6 @@ The detailed rules, code definitions and changes I've made are in [V1 Cleaning A
 | `dpp_tests` | DPP tests and visual lines. |
 | `elisa_tests` | ELISA diagnostic results. |
 | `ifn_gamma_elisa` | IFN-gamma assay records and replicate readings. |
-| `individual_names` | Original historical aliases; some animals have more than one. |
 | `individuals` | One badger per row, identified by tattoo. |
 | `infection_probabilities` | Additional model-derived infection probabilities. |
 | `infection_quarterly_probabilities` | Additional model-derived quarterly infection probabilities. |
@@ -437,17 +436,6 @@ IFN-gamma assay records and replicate readings.
 | `wellstage_96_nil_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
 | `wellstage_96_nil_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
 | `qc_note` | Original recorded or derived field; see original Access definition for exact codes/units. |
-### `research.individual_names`
-
-Original historical aliases; some animals have more than one.
-
-| Column | Meaning |
-|---|---|
-| `individual_name_id` | Record or lookup ID used for joins. |
-| `individual_id` | Internal key used to join badger records. |
-| `name` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `notes` | Historical notes or provenance in the context of this table. |
-| `created_at` | Database row creation timestamp. |
 ### `research.individuals`
 
 One badger per row, identified by tattoo.
@@ -603,3 +591,7 @@ Wounds recorded at captures; multiple rows can belong to one capture.
 ## Using these data
 
 I use `tattoo` as the scientific individual identifier and `capture_id` for capture events. A canonical sett name is only filled when the recorded location has been matched to a sett. PM grid references are recovery-location approximations, not known sett locations. Recorded social groups shouldn't automatically be treated as annual residence assignments. Infection probabilities are model outputs rather than diagnostic observations.
+
+### Historical names
+
+I keep original badger names in `research.individuals.historical_names` (names separated by ` | `) and their count in `n_historical_names`. These are names and nicknames from the Access captures, not corrections to tattoo codes. `TR` is preserved as recorded. The separate `individual_names` table has been retired.
