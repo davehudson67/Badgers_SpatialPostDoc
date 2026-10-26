@@ -28,10 +28,6 @@ I've recorded the decisions and SQL behind the cleaned version here. Original Ac
 
 I checked that `research.captures` and the retained combined capture view have 17,586 distinct capture IDs. The previous sampling, assessment and collar data had unique capture IDs and were copied into the main capture table before removing the split copies. Earlier checks found no differences in sampling time, collar transmitter and adverse-effects fields. The first V1 view read the consolidated fields correctly after removing the previous joins.
 
-I consolidated 151 historical name records for 149 badgers from `individual_names` into `individuals.historical_names` (plus `n_historical_names`), and retained the original Access source. `sett_social_group_history` (173 links for 160 setts), and `social_group_supergroup_history` (29 links). These hold information that could be lost by collapsing them into single current-value columns. I also retained the disease-status lookup because capture records refer to it by foreign key, and I retained separate diagnostic and model-result tables because they contain separate observations or genuinely new results.
 
 For full executable details I use the SQL migrations rather than duplicating code in this narrative. They also preserve the intermediate rules and corrections behind V1.
 
-## Historical names
-
-I checked the 151 entries: 149 animals have a name, 18 entries are `TR`, none simply match the tattoo, and A074 and X064 each have two recorded names. All 151 distinct per-animal names are preserved, including `TR`; all source notes were the same (`Historical name from tblCaptures`). I replaced the name-table join in `internal_v1.capture_history` with the names now stored in `individuals`, confirmed the main capture view still returns 17,586 unique events, and removed the duplicate name table. SQL: `woodchester_v1_consolidate_historical_names_20261026.sql`.
