@@ -2,12 +2,27 @@
 
 **V1 preparation snapshot: 26 October 2026.** This coauthor guide describes the **actual live schema**, not historical audit snapshots. For every cleaning decision, source mapping, executable transformation, verification result and outstanding discrepancy, see [V1 Cleaning Audit](V1_CLEANING_AUDIT.md) and the versioned SQL migrations. Definitions not supported by the original Access codebook are clearly marked for verification, rather than guessed.
 
+
+## V1 release layout — implemented 26 October 2026
+
+| Layer | Objects | What coauthors should use |
+|---|---:|---|
+| `research` | **22 tables** | Original Access-like observations and justifiable new data, with original and `*_clean` columns |
+| `analysis` | **5 views** | Only the five supported analysis interfaces below |
+| `internal_v1` | 19 views | Private-to-workflow helper and legacy views; retained, not endorsed for new analyses |
+| `ingest` | 7 tables | Internal staging, original coordinate source and import audit |
+| `access_raw` | 12 tables | Unmodified Access archive |
+
+**Five supported analysis views:** `analysis.capture_history_v1` (one row per capture), `analysis.diagnostic_results` (one row per recorded diagnostic result), `analysis.capture_location_v1` (capture versus PM location interpretation), `analysis.sett_inventory_v1` (sett coordinate availability and counts), `analysis.capture_infection_probabilities` (model-derived probability comparison per capture). Their original SQL dependencies have not been discarded. Columns and source values are unchanged by this schema move.
+
+**Do not confuse an uncluttered public schema with deletion of scientific evidence:** 19 dependent/compatibility views still exist in `internal_v1`; this was an intentional no-data-loss change. Some R scripts referencing moved views using their former `analysis.` names may require updating to `internal_v1.`. Coauthor read-only roles still need a real connection test.
+
 ## Database structure
 
 - `access_raw`: original 12 Access-derived tables, retained unchanged and not the everyday coauthor interface.
-- `research`: 25 base tables, **22 curated data/reference tables** plus three internal staging/source tables. A single `research.captures` table contains the sampling, assessment and collar fields that formerly lived in three one-to-one tables.
-- `analysis`: 24 existing views, including internal implementation dependencies; only the six primary interfaces listed below need be learned by most coauthors. Existing model-compatibility views are retained for now.
-- `ingest`: internal imports/audit/baseline metadata, maintainers only.
+- `research`: **22 curated base tables**, closely aligned with the original Access source entities, with cleaned fields alongside preserved recorded values.
+- `analysis`: **5 supported coauthor views**; 19 technical and historical views are in `internal_v1` to preserve dependencies and do not constitute released analytical datasets.
+- `ingest`: **7 internal base tables**, including three moved import/source-staging tables; maintainers only.
 
 Read-only access is intended for both research and analysis. The read-only database roles are configured, but a real end-user connection/security test is still required before release.
 
@@ -27,8 +42,8 @@ Read-only access is intended for both research and analysis. The read-only datab
 | `analysis.capture_location_v1` | Location semantics distinguishing named setts from recovered grid positions. |
 | `analysis.sett_inventory_v1` | Canonical sett list with mapped coordinate evidence and capture counts. |
 | `analysis.diagnostic_results` | Combined individual assay observations. |
-| `analysis.infection_probabilities` | Infection probability model outputs, long format. |
-| `analysis.infection_quarterly_probabilities` | Modelled infection probability at quarter level. |
+| `internal_v1.infection_probabilities` | Infection probability model outputs, long format. |
+| `internal_v1.infection_quarterly_probabilities` | Modelled infection probability at quarter level. |
 
 All other analysis views are supporting harmonizations, legacy model-compatibility aliases or location-parsing dependencies. They are inventoried below for accuracy, not advertised as separate alternative datasets. See the audit for derivations. No running model's referenced SQL view was removed in this cleanup.
 
@@ -477,9 +492,9 @@ Potentially multiple wound observations per capture.
 
 ## Analysis views and complete column dictionary
 
-The following inventories **all 24 live views** to avoid undocumented schema objects. Internal/helper views are not additional canonical data tables.
+The following historical inventory includes legacy technical views now in `internal_v1`, alongside the five released views to avoid undocumented schema objects. Internal/helper views are not additional canonical data tables.
 
-### `analysis.capture_diagnostic_summary_standardised` — Supporting/compatibility
+### `internal_v1.capture_diagnostic_summary_standardised` — Supporting/compatibility
 
 Counts of test results per capture.
 
@@ -495,7 +510,7 @@ Counts of test results per capture.
 | `uninterpretable_test_count` | `bigint` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 | `any_positive_test` | `boolean` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 
-### `analysis.capture_history` — Supporting/compatibility
+### `internal_v1.capture_history` — Supporting/compatibility
 
 Legacy joined capture history used by V1 chain.
 
@@ -679,7 +694,7 @@ Wide comparison of models' event infection predictions.
 | `all_tests_inferred` | `double precision` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 | `culture_only_fixed` | `double precision` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 
-### `analysis.capture_location_classified_v2` — Supporting/compatibility
+### `internal_v1.capture_location_classified_v2` — Supporting/compatibility
 
 Internal text/grid parser.
 
@@ -702,7 +717,7 @@ Internal text/grid parser.
 | `accompanying_location_description` | `text` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 | `positional_precision_note` | `text` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 
-### `analysis.capture_location_classified_v3` — Supporting/compatibility
+### `internal_v1.capture_location_classified_v3` — Supporting/compatibility
 
 Internal ST/SO parser.
 
@@ -727,7 +742,7 @@ Internal ST/SO parser.
 | `newly_parsed_grid_reference` | `text` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 | `newly_parsed_cell_width_m` | `integer` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 
-### `analysis.capture_location_fields_v1` — Supporting/compatibility
+### `internal_v1.capture_location_fields_v1` — Supporting/compatibility
 
 Shared V1 location-field helper.
 
@@ -769,7 +784,7 @@ Location semantics distinguishing named setts from recovered grid positions.
 | `positional_precision_note` | `text` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 | `spatial_interpretation` | `text` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 
-### `analysis.capture_pm_grid_reference_review` — Supporting/compatibility
+### `internal_v1.capture_pm_grid_reference_review` — Supporting/compatibility
 
 Internal numeric grid parsing.
 
@@ -790,7 +805,7 @@ Internal numeric grid parsing.
 | `inferred_crs` | `text` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 | `review_status` | `text` | Result or status; assay/source code meanings must be verified. |
 
-### `analysis.capture_sett_coordinate_inventory` — Supporting/compatibility
+### `internal_v1.capture_sett_coordinate_inventory` — Supporting/compatibility
 
 Internal sett coordinate/count derivation.
 
@@ -808,7 +823,7 @@ Internal sett coordinate/count derivation.
 | `coordinate_source` | `text` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 | `coordinate_status` | `text` | Result or status; assay/source code meanings must be verified. |
 
-### `analysis.capture_traits_standardised` — Supporting/compatibility
+### `internal_v1.capture_traits_standardised` — Supporting/compatibility
 
 Legacy standardized capture traits feeding V1.
 
@@ -833,7 +848,7 @@ Legacy standardized capture traits feeding V1.
 | `years_since_first_capture` | `integer` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 | `approximate_age_if_first_captured_as_cub` | `integer` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 
-### `analysis.capture_traits_v1` — Supporting/compatibility
+### `internal_v1.capture_traits_v1` — Supporting/compatibility
 
 Capture sex/age derivations with standardized V1 locations.
 
@@ -865,7 +880,7 @@ Capture sex/age derivations with standardized V1 locations.
 | `location_coordinate_basis` | `text` | Coordinate method/provenance (e.g. verified sett or provisional grid square). |
 | `location_class` | `text` | Detailed interpretation of historical capture-location text. |
 
-### `analysis.culture_results_standardised` — Supporting/compatibility
+### `internal_v1.culture_results_standardised` — Supporting/compatibility
 
 Interpreted culture outcomes.
 
@@ -886,7 +901,7 @@ Interpreted culture outcomes.
 | `spolprime` | `text` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 | `wgs_clade` | `text` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 
-### `analysis.diagnostic_interpretation_standardised` — Supporting/compatibility
+### `internal_v1.diagnostic_interpretation_standardised` — Supporting/compatibility
 
 Test interpretations in common outcome groups.
 
@@ -961,7 +976,7 @@ Combined individual assay observations.
 | `qc_note` | `text` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 | `comments` | `text` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 
-### `analysis.individual_traits_standardised` — Supporting/compatibility
+### `internal_v1.individual_traits_standardised` — Supporting/compatibility
 
 Individual-level standardized sex and first-capture age.
 
@@ -977,7 +992,7 @@ Individual-level standardized sex and first-capture age.
 | `sex_standardised` | `text` | Derived standardization; exact rule recorded in audit/SQL. |
 | `sex_missing` | `boolean` | Boolean indicator; NULL is not FALSE. |
 
-### `analysis.infection_probabilities` — Primary
+### `internal_v1.infection_probabilities` — Primary
 
 Infection probability model outputs, long format.
 
@@ -995,7 +1010,7 @@ Infection probability model outputs, long format.
 | `source_file` | `text` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 | `imported_at` | `timestamp with time zone` | Date/period or provenance timestamp. |
 
-### `analysis.infection_quarterly_probabilities` — Primary
+### `internal_v1.infection_quarterly_probabilities` — Primary
 
 Modelled infection probability at quarter level.
 
@@ -1012,7 +1027,7 @@ Modelled infection probability at quarter level.
 | `source_file` | `text` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 | `imported_at` | `timestamp with time zone` | Date/period or provenance timestamp. |
 
-### `analysis.sett_coordinate_source_name_review` — Supporting/compatibility
+### `internal_v1.sett_coordinate_source_name_review` — Supporting/compatibility
 
 Internal coordinate source naming reconciliation.
 
@@ -1025,7 +1040,7 @@ Internal coordinate source naming reconciliation.
 | `matched_canonical_sett` | `text` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 | `match_status` | `text` | Result or status; assay/source code meanings must be verified. |
 
-### `analysis.sett_coordinate_unmatched_v1` — Supporting/compatibility
+### `internal_v1.sett_coordinate_unmatched_v1` — Supporting/compatibility
 
 Unresolved source-coordinate names.
 
@@ -1037,7 +1052,7 @@ Unresolved source-coordinate names.
 | `northing` | `numeric` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 | `match_status` | `text` | Result or status; assay/source code meanings must be verified. |
 
-### `analysis.sett_coordinates_approved` — Supporting/compatibility
+### `internal_v1.sett_coordinates_approved` — Supporting/compatibility
 
 Approved coordinate points.
 
@@ -1070,7 +1085,7 @@ Canonical sett list with mapped coordinate evidence and capture counts.
 | `coordinate_source` | `text` | Recorded/derived field; exact units or historical codes need source codebook verification. |
 | `coordinate_status` | `text` | Result or status; assay/source code meanings must be verified. |
 
-### `analysis.sett_social_group_observed` — Supporting/compatibility
+### `internal_v1.sett_social_group_observed` — Supporting/compatibility
 
 Observed sett–SG pairs per year (not verified residence).
 
@@ -1085,7 +1100,7 @@ Observed sett–SG pairs per year (not verified residence).
 | `first_capture_date` | `date` | Date/period or provenance timestamp. |
 | `last_capture_date` | `date` | Date/period or provenance timestamp. |
 
-### `analysis.stat_pak_results_standardised` — Supporting/compatibility
+### `internal_v1.stat_pak_results_standardised` — Supporting/compatibility
 
 Interpreted Stat-Pak outcomes.
 
