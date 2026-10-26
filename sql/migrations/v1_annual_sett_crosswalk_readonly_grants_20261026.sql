@@ -1,0 +1,1 @@
+grant select on research.sett_annual_territory_matches to badger_readonly,badger_research_readonly;
