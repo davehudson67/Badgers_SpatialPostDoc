@@ -1,6 +1,6 @@
 # Woodchester badger database — V1 release notes
 
-I've kept the V1 database close to the original capture and laboratory records. The original values are retained, and where a field needed cleaning I've added a separate `_clean` field. There are **18 research tables** and **five analysis views**. An unchanged source archive is retained separately; technical source files and imports are in `ingest`.
+I've kept the V1 database close to the original capture and laboratory records. The original values are retained, and where a field needed cleaning I've added a separate `_clean` field. There are **17 research tables** and **five analysis views**. An unchanged source archive is retained separately; technical source files and imports are in `ingest`.
 
 The detailed rules, code definitions and changes I've made are in [V1 Cleaning Audit](V1_CLEANING_AUDIT.md).
 
@@ -18,8 +18,7 @@ The detailed rules, code definitions and changes I've made are in [V1 Cleaning A
 | `individuals` | One badger per row, identified by tattoo. |
 | `infection_probabilities` | Additional model-derived infection probabilities. |
 | `infection_quarterly_probabilities` | Additional model-derived quarterly infection probabilities. |
-| `sett_location_evidence` | Location evidence, coordinates and their sources. |
-| `sett_social_group_history` | Recorded sett/group links over time; more than one link can exist. |
+| `sett_social_group_links` | Undated sett–social group associations (173 links for 160 setts); these do not establish annual occupancy. |
 | `setts` | Canonical sett names. |
 | `social_group_supergroup_history` | Group/supergroup links over time. |
 | `social_groups` | Canonical social group names. |
@@ -485,7 +484,7 @@ Additional model-derived quarterly infection probabilities.
 | `model_run` | Identifies the model run. |
 | `source_file` | Source data file used for model-derived results. |
 | `imported_at` | Date/time data were imported. |
-### `research.sett_location_evidence`
+
 
 Location evidence, coordinates and their sources.
 
@@ -506,7 +505,20 @@ Location evidence, coordinates and their sources.
 | `reviewed_at` | Date, quarter, year or provenance timestamp. |
 | `notes` | Historical notes or provenance in the context of this table. |
 | `created_at` | Database row creation timestamp. |
-### `research.sett_social_group_history`
+### `research.sett_social_group_links`
+
+I retain the 173 undated lookup associations between setts and social groups; a sett can appear against more than one group. These records cannot be used as a time series of social-group occupancy.
+
+| Column | Meaning |
+|---|---|
+| `sett_social_group_id` | Unique identifier for a recorded sett–group association. |
+| `sett_id` | Links to `research.setts.sett_id`. |
+| `social_group_id` | Links to `research.social_groups.social_group_id`. |
+| `valid_from` | NULL in all 173 records: no known start date. |
+| `valid_to` | NULL in all 173 records: no known end date. |
+| `notes` | Source/interpretation of this undated link. |
+
+
 
 Recorded sett/group links over time; more than one link can exist.
 
@@ -519,6 +531,13 @@ Recorded sett/group links over time; more than one link can exist.
 | `valid_to` | Recorded valid to field; the available records do not establish a more precise definition. |
 | `notes` | Historical notes or provenance in the context of this table. |
 ### `research.setts`
+| `easting` | British National Grid easting (metres) from the supplied named-sett coordinate file. |
+| `northing` | British National Grid northing (metres) from the same source. |
+| `coordinate_system` | EPSG:27700 where coordinates are available. |
+| `accuracy_m` | Positional accuracy estimate; NULL because no measured accuracy was supplied. |
+| `coordinate_source` | Filename and named-sett label used to link the coordinate. |
+| `coordinate_observed_on` | Observation date; NULL because none was supplied. |
+
 
 Canonical sett names.
 
@@ -712,7 +731,7 @@ I extracted the distinct, non-missing values directly from the research tables o
 | `quarter` (4) | `1`, `2`, `3`, `4` |
 | `source_file` (1) | `p_infected_grid_all_tests_inferred.csv` |
 
-### `research.sett_location_evidence`
+
 
 | Field | All observed non-missing values |
 |---|---|
@@ -762,3 +781,8 @@ I keep the original values and use generated clean columns for obvious equivalen
 | `research.elisa_tests.test_result_clean` | N (13,297), P (1,554), I (163), ITT (15), BIT (2), NO SERUM (99: NO SERA/NO SERUM), NULL (32) |
 
 These fields are derived labels, not new observations. I have not interpreted I, ITT or BIT as equivalent diagnostic outcomes.
+
+
+## Interpreting setts and social groups by year
+
+I have one mapped coordinate for each of 159 setts, included in `research.setts`. The other 17 currently lack a matched coordinate. The 173 undated associations in `research.sett_social_group_links` remain distinct from spatial assignments. A year-specific sett–group assignment must be computed by testing each mapped sett point against the polygon for that year, preserving unmatched points, overlaps, boundary ambiguities and the polygon version. A point-in-polygon result describes territory membership in that year, not proof of a badger's social-group residency. The year-specific polygon result has not yet been imported into this V1 database.
