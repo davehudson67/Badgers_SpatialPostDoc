@@ -1,0 +1,4 @@
+alter table research.captures add column condition_clean text generated always as (case when condition is null then null when upper(btrim(condition)) in ('V.GOOD','VERY GOOD') then 'VERY GOOD' when upper(btrim(condition)) in ('GOOD','FAIR','POOR') then upper(btrim(condition)) else upper(btrim(condition)) end) stored;
+alter table research.captures add column eartags_clean text generated always as (case when eartags is null then null when upper(btrim(eartags)) in ('NEITHER','NONE','NOT TAGGED','NOT TAGûGED') then 'NONE' when upper(btrim(eartags))='RETAGGEûD' then 'RETAGGED' else upper(btrim(eartags)) end) stored;
+comment on column research.captures.condition_clean is 'V.GOOD standardised to VERY GOOD; original retained.';
+comment on column research.captures.eartags_clean is 'Spelling/coding variants: NEITHER/NONE/NOT TAGGED/NOT TAGûGED to NONE; RETAGGEûD to RETAGGED. REMOVED remains distinct. Original retained.';
