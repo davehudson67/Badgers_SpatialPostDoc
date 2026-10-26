@@ -45,3 +45,14 @@ I added `research.captures.collar_transmitter_clean` as a generated field: FIT/F
 I added `research.elisa_tests.test_result_clean` as a generated field: NO SERA/NO SERUM → NO SERUM. All other recorded codes, including I, ITT and BIT, remain unaltered; no clinical interpretation is inferred. Counts: N 13,297, P 1,554, I 163, ITT 15, BIT 2, NO SERUM 99, NULL 32.
 
 SQL: `sql/migrations/v1_collar_label_normalisation_20261026.sql` and `sql/migrations/v1_elisa_result_label_normalisation_20261026.sql`.
+
+
+## Fixed sett coordinates and undated group links
+
+I moved the 159 approved British National Grid coordinate pairs from the former one-row-per-sett evidence table into `research.setts`, retaining easting, northing, EPSG:27700 and the source-file/sett-name reference. There are 176 setts in total; 17 have no matching coordinate. The supplied coordinate source has no observation dates or stated accuracy estimates, so these remain NULL. I rebuilt the dependent coordinate inventory and approved-coordinate views, checked that both still return 176 and 159 rows respectively, then removed the redundant coordinate table.
+
+I renamed `research.sett_social_group_history` to `research.sett_social_group_links`. All 173 sett–group links remain (160 unique setts); none has a `valid_from` or `valid_to` date. These are undated lookup associations, not historical occupancy observations.
+
+A distinct **annual point-in-polygon** result is the appropriate next dataset: for each year, compare the mapped sett point with that year's social-group territory polygons, keep exact polygon source/year and all matches, and explicitly flag points outside every polygon, on boundaries or in overlaps. Do not silently force a single SG in ambiguous cases. The annual polygon inputs are not yet present as queryable tables in Supabase, so no year-specific membership has been generated here.
+
+SQL: `sql/migrations/v1_consolidate_sett_coordinates_and_rename_undated_links_20261026.sql`.
