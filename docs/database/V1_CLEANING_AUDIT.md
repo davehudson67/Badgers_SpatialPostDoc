@@ -56,3 +56,12 @@ I renamed `research.sett_social_group_history` to `research.sett_social_group_li
 A distinct **annual point-in-polygon** result is the appropriate next dataset: for each year, compare the mapped sett point with that year's social-group territory polygons, keep exact polygon source/year and all matches, and explicitly flag points outside every polygon, on boundaries or in overlaps. Do not silently force a single SG in ambiguous cases. The annual polygon inputs are not yet present as queryable tables in Supabase, so no year-specific membership has been generated here.
 
 SQL: `sql/migrations/v1_consolidate_sett_coordinates_and_rename_undated_links_20261026.sql`.
+
+
+## Annual sett–territory polygon calculation
+
+I use the 49 annual territory shapefiles (`data/spatial/social_group_boundaries/territories_1977.shp` through `territories_2025.shp`) to overlay the 159 mapped sett points. The script `scripts/Spatial/10_build_V1_annual_sett_polygon_membership.R` reads the fixed coordinates from `research.setts`, transforms shapefiles to British National Grid (EPSG:27700), and calculates the intersection for each of the 176 setts in each year. It retains multiple hits, boundary matches, sett-years outside all territories and sett-years without coordinates. Source polygon filename and its within-year feature index are recorded. Polygon labels are not automatically treated as canonical SG IDs, and matches are not proof of badger residency.
+
+The script writes an all-matches CSV and annual status counts to `outputs/V1_annual_sett_polygon_membership/`. By default this is an audit-only export; `UPLOAD_ANNUAL_CROSSWALK=1` additionally loads `research.sett_annual_territory_matches` in one transaction using a database connection with write permission. Source polygons are unchanged. The table has been created and read-only coauthor permissions granted, but it currently contains zero rows because the spatial script has not yet been executed against the local shapefiles. I do not fill it with inferred annual assignments.
+
+SQL: `sql/migrations/v1_annual_sett_polygon_crosswalk_20261026.sql`; `sql/migrations/v1_annual_sett_crosswalk_readonly_grants_20261026.sql`.
