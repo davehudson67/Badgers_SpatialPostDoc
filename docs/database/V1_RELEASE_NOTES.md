@@ -49,16 +49,16 @@ Joined capture histories; one row per event.
 |---|---|
 | `capture_id` | Unique capture or PM event identifier. |
 | `tattoo` | Scientific badger identifier. |
-| `elect_tag` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `elect_tag` | Electronic identification tag recorded for this badger. |
 | `sex` | Original recorded sex. |
 | `age_first_capture` | Original recorded age class at first capture. |
-| `year_first_capture` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `year_first_capture` | Year when individual first appeared in capture dataset. |
 | `capture_date` | Date of the capture/PM encounter. |
-| `capture_year` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `capture_quarter` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `capture_occasion` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `capture_year` | Calendar year extracted from capture_date. |
+| `capture_quarter` | Calendar quarter (1–4) extracted from capture_date. |
+| `capture_occasion` | Formatted quarter-year capture occasion. |
 | `is_pm` | Whether the event is a post-mortem record. |
-| `moc` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `moc` | Method or circumstances of encounter. Examples in the records include TRAP, RTA (road traffic accident), FOUND DEAD, SNARE, SHOT, NET and REMOVAL. |
 | `recorded_sett_name` | Original recorded location/sett wording; may not describe a sett. |
 | `sett_id` | Linked canonical sett ID, NULL when unresolved. |
 | `normalized_sett_name` | Derived/cleaned value; exact rule in the audit. |
@@ -68,23 +68,23 @@ Joined capture histories; one row per event.
 | `recorded_supergroup_name` | Original recorded supergroup text. |
 | `capture_location_text` | Original location description/category. |
 | `os_ref` | Original OS reference. |
-| `location_cleaning_note` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `location_cleaning_note` | Notes explaining a change or uncertainty in the event's location interpretation. |
 | `disease_status_id` | Record or lookup ID used for joins. |
 | `disease_status` | Recorded or interpreted result/status; see source test rules. |
-| `weight` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `weight` | Recorded body mass; measurement unit has not been confirmed in the available metadata. |
 | `body_length` | Measured value; original protocol determines units and coding. |
-| `temperature` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `toothwear` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `neck_diameter` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `condition` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `temperature` | Recorded body temperature; expected temperature measurement but unit not confirmed in metadata. |
+| `toothwear` | Recorded tooth-wear assessment; numerical/category scale not independently established. |
+| `neck_diameter` | Recorded neck diameter; measurement unit not established in available metadata. |
+| `condition` | Recorded body-condition category: GOOD, FAIR, POOR, VERY GOOD, or V.GOOD (a spelling variant of very good). |
 | `reproductive_status` | Recorded or interpreted result/status; see source test rules. |
-| `testes` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `eartags` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `retag` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `transmitter` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `tx_number` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `testes` | Recorded testes/reproductive assessment. |
+| `eartags` | Ear-tag information recorded at the encounter. |
+| `retag` | Indication or description of replacement/re-tagging. |
+| `transmitter` | Capture record transmitter description or identifier. |
+| `tx_number` | Transmitter number recorded at capture. |
 | `pm_status` | Recorded or interpreted result/status; see source test rules. |
-| `pm_cause` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `pm_cause` | Recorded circumstances or cause associated with a post-mortem event. |
 | `blood_sample_taken` | Measured value; original protocol determines units and coding. |
 | `blood_taken_time` | Measured value; original protocol determines units and coding. |
 | `red_tube_volume` | Measured value; original protocol determines units and coding. |
@@ -95,33 +95,33 @@ Joined capture histories; one row per event.
 | `hair_sample_taken` | Boolean flag. |
 | `fur_clip_taken` | Boolean flag. |
 | `whisker_sample_taken` | Boolean flag. |
-| `sampler` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `sampler` | Person recorded as collecting samples for the capture. |
 | `blood_sampler` | Measured value; original protocol determines units and coding. |
-| `recorder` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `sampling_notes` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `health_monitoring` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `ho_supervisor` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `severity_assessment` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `severity_initials` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `release_assessment` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `release_initials` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `adverse_effects` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `adverse_effect_sampler` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `adverse_effect_comment` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `recorder` | Person recorded as completing the capture record. |
+| `sampling_notes` | Original sampling-related free-text comments. |
+| `health_monitoring` | Recorded health monitoring notes associated with capture. |
+| `ho_supervisor` | Recorded Home Office supervisor field. |
+| `severity_assessment` | Recorded severity/welfare assessment made at the capture. |
+| `severity_initials` | Initials of person associated with severity assessment. |
+| `release_assessment` | Recorded fitness or welfare assessment relating to release. |
+| `release_initials` | Initials associated with release assessment. |
+| `adverse_effects` | Recorded adverse effects associated with handling or procedures. |
+| `adverse_effect_sampler` | Person associated with adverse-effects recording. |
+| `adverse_effect_comment` | Free-text description of any adverse effects. |
 | `collar_action_taken` | Boolean flag. |
-| `collar_action_taker` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `collar_checked_by` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `collar_scratch_no` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `collar_transmitter` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `best_tune` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `collar_impact_assessment` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `ppm` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `collar_action_taker` | Person who took the collar-related action. |
+| `collar_checked_by` | Person who inspected the collar. |
+| `collar_scratch_no` | Recorded identifying scratch number on the collar. |
+| `collar_transmitter` | Transmitter information recorded during collar check (distinct from general capture transmitter field). |
+| `best_tune` | Recorded best-tuning information for collar/radio equipment; scale not established. |
+| `collar_impact_assessment` | Recorded welfare/impact assessment relating to the collar. |
+| `ppm` | Recorded collar-related PPM field; abbreviation is not defined in available source material. |
 | `comment` | Recorded capture comment. |
-| `sett_name` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `sett_name` | Canonical, cleaned name identifying a sett. |
 | `location_type` | Derived distinction between sett, PM grid recovery and unresolved location. |
 | `location_easting` | OS easting; may be the southwest grid-square corner of a PM reference. |
 | `location_northing` | OS northing; may be the southwest grid-square corner of a PM reference. |
-| `location_crs` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `location_crs` | Coordinate reference system assigned to the spatial value, normally British National Grid (EPSG:27700) where identified. |
 | `location_coordinate_basis` | Provenance/type of coordinate. |
 | `location_class` | More detailed location classification. |
 ### `analysis.capture_infection_probabilities`
@@ -136,12 +136,12 @@ Comparison of model-derived infection probabilities at captures.
 | `year` | Date, quarter, year or provenance timestamp. |
 | `quarter` | Date, quarter, year or provenance timestamp. |
 | `model_run` | Identifies the model run. |
-| `diagnostic_fixed_prevalence` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `diagnostic_annual_prevalence` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `diagnostic_adjusted_annual` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `all_tests_fixed` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `all_tests_inferred` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `culture_only_fixed` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `diagnostic_fixed_prevalence` | Infection probability from diagnostic-only model using fixed prevalence assumptions. |
+| `diagnostic_annual_prevalence` | Infection probability from diagnostic-only model with annually varying prevalence. |
+| `diagnostic_adjusted_annual` | Infection probability from adjusted annual-prevalence diagnostic model. |
+| `all_tests_fixed` | Infection probability from all-tests model with fixed assumptions. |
+| `all_tests_inferred` | Infection probability from all-tests model with inferred parameters. |
+| `culture_only_fixed` | Infection probability from culture-only model with fixed assumptions. |
 ### `analysis.capture_location_v1`
 
 Recorded and interpreted capture locations, distinguishing true setts from PM grid squares.
@@ -153,79 +153,79 @@ Recorded and interpreted capture locations, distinguishing true setts from PM gr
 | `capture_date` | Date of the capture/PM encounter. |
 | `is_pm` | Whether the event is a post-mortem record. |
 | `sett_id` | Linked canonical sett ID, NULL when unresolved. |
-| `original_recorded_sett_name` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `canonical_sett_name` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `original_recorded_sett_name` | Original recorded sett/location text in the capture form; not necessarily a confirmed sett. |
+| `canonical_sett_name` | Canonical named sett matched to the record; NULL if no confirmed match. |
 | `location_class` | More detailed location classification. |
-| `location_display_category` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `location_display_category` | Human-readable category assigned to the recorded location. |
 | `capture_location_text` | Original location description/category. |
 | `os_ref` | Original OS reference. |
-| `reference_source` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `so_grid_six_digits` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `newly_parsed_grid_reference` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `grid_sw_easting` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `grid_sw_northing` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `newly_parsed_cell_width_m` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `accompanying_location_description` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `positional_precision_note` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `spatial_interpretation` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `reference_source` | Original field or source from which the location/grid reference was interpreted. |
+| `so_grid_six_digits` | Numeric six-figure grid portion parsed in the SO National Grid square; original text preserved elsewhere. |
+| `newly_parsed_grid_reference` | Grid-reference text extracted by the later PM location parser. |
+| `grid_sw_easting` | Easting of southwest corner of the grid square, not a precise recovery point. |
+| `grid_sw_northing` | Northing of southwest corner of the grid square, not a precise recovery point. |
+| `newly_parsed_cell_width_m` | Width of interpreted grid cell in metres; indicates positional precision. |
+| `accompanying_location_description` | Any descriptive location text recorded alongside a grid reference. |
+| `positional_precision_note` | Explanation of positional precision or limitations of the parsed reference. |
+| `spatial_interpretation` | Explanatory assessment of whether the event is a known sett, grid cell or unresolved location. |
 ### `analysis.diagnostic_results`
 
 All tests in one long-format output.
 
 | Column | Meaning |
 |---|---|
-| `source_table` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `source_table` | Original research table that supplied this diagnostic observation. |
 | `source_record_id` | Record or lookup ID used for joins. |
 | `capture_id` | Unique capture or PM event identifier. |
 | `tattoo` | Scientific badger identifier. |
 | `capture_date` | Date of the capture/PM encounter. |
 | `is_pm` | Whether the event is a post-mortem record. |
-| `test_family` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `test_type` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `sample_type` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `test_family` | Diagnostic assay family, for example culture, ELISA, IFN-gamma, DPP, Brock or Stat-Pak. |
+| `test_type` | Recorded variant/type of the assay. |
+| `sample_type` | Recorded specimen category used for the assay. |
 | `result` | Recorded or interpreted result/status; see source test rules. |
 | `result_code` | Recorded or interpreted result/status; see source test rules. |
-| `visual_line_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `visual_line_1` | First recorded DPP test-line designation. |
 | `visual_line_1_result` | Recorded or interpreted result/status; see source test rules. |
-| `optical_density_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `visual_line_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `optical_density_1` | Optical-density measurement associated with first line; dimensionless absorbance measurement. |
+| `visual_line_2` | Second recorded DPP test-line designation. |
 | `visual_line_2_result` | Recorded or interpreted result/status; see source test rules. |
-| `optical_density_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `optical_density_2` | Optical-density measurement associated with second line; dimensionless absorbance measurement. |
 | `reference_value` | Measured value; original protocol determines units and coding. |
 | `mean_od` | Measured value; original protocol determines units and coding. |
-| `blot_cf` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `blotson` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `blot_cf` | Original ELISA blot_cf assay field; exact code interpretation not established. |
+| `blotson` | Original ELISA blotson assay field; exact code interpretation not established. |
 | `brock_test_od` | Measured value; original protocol determines units and coding. |
-| `no_clotted` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `afno` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `lesions` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `abscesses` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `spoligo` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `spolprime` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `wgs_clade` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `plate_number` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `no_clotted` | Flag recording absence/failure of a clotted specimen. |
+| `afno` | Recorded AF number/identifier associated with culture sample; full abbreviation unconfirmed. |
+| `lesions` | Recorded lesion observations associated with the sample/post-mortem. |
+| `abscesses` | Recorded abscess observations. |
+| `spoligo` | Recorded spoligotype result for isolate. |
+| `spolprime` | Recorded spoligotype-associated field from source. |
+| `wgs_clade` | Whole-genome sequencing clade assignment. |
+| `plate_number` | Assay plate identification number. |
 | `experiment_date` | Date, quarter, year or provenance timestamp. |
 | `nil_value` | Measured value; original protocol determines units and coding. |
 | `avian_ppd_value` | Measured value; original protocol determines units and coding. |
 | `bovine_ppd_value` | Measured value; original protocol determines units and coding. |
 | `pwm_value` | Measured value; original protocol determines units and coding. |
-| `bovine_minus_nil` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `avian_minus_nil` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `bovine_minus_avian` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `pwm_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `pwm_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `ppd_a_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `ppd_a_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `ppd_b_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `ppd_b_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `nil_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `nil_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `retest` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `test_failed` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `test_info` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `bovine_minus_nil` | Derived bovine-PPD response minus nil control. |
+| `avian_minus_nil` | Derived avian-PPD response minus nil control. |
+| `bovine_minus_avian` | Derived bovine-PPD response minus avian-PPD response. |
+| `pwm_1` | First or second replicate for PWM assay control/stimulus; scale from assay import. |
+| `pwm_2` | First or second replicate for PWM assay control/stimulus; scale from assay import. |
+| `ppd_a_1` | First or second replicate for PPD_A assay control/stimulus; scale from assay import. |
+| `ppd_a_2` | First or second replicate for PPD_A assay control/stimulus; scale from assay import. |
+| `ppd_b_1` | First or second replicate for PPD_B assay control/stimulus; scale from assay import. |
+| `ppd_b_2` | First or second replicate for PPD_B assay control/stimulus; scale from assay import. |
+| `nil_1` | First or second replicate for NIL assay control/stimulus; scale from assay import. |
+| `nil_2` | First or second replicate for NIL assay control/stimulus; scale from assay import. |
+| `retest` | Recorded retest indicator or note. |
+| `test_failed` | Recorded test-failure flag/comment. |
+| `test_info` | Original free-text assay interpretation/information. |
 | `blood_quality` | Measured value; original protocol determines units and coding. |
-| `qc_note` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `comments` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `qc_note` | Quality-control comment on the assay. |
+| `comments` | Original free-text note related to . |
 ### `analysis.sett_inventory_v1`
 
 Sett coordinates and capture counts.
@@ -233,16 +233,16 @@ Sett coordinates and capture counts.
 | Column | Meaning |
 |---|---|
 | `sett_id` | Linked canonical sett ID, NULL when unresolved. |
-| `canonical_sett_name` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `capture_count` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `n_pm_records` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `canonical_sett_name` | Canonical named sett matched to the record; NULL if no confirmed match. |
+| `capture_count` | Number of capture in this record or summary. |
+| `n_pm_records` | Number of pm records in this record or summary. |
 | `first_capture_date` | Date, quarter, year or provenance timestamp. |
 | `last_capture_date` | Date, quarter, year or provenance timestamp. |
-| `easting` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `northing` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `coordinate_system` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `accuracy_m` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `coordinate_source` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `easting` | British National Grid easting of mapped location (metres). |
+| `northing` | British National Grid northing of mapped location (metres). |
+| `coordinate_system` | Spatial coordinate reference system attached to the source measurement. |
+| `accuracy_m` | Stated spatial accuracy of the source observation in metres. |
+| `coordinate_source` | Provenance of selected coordinate. |
 | `coordinate_status` | Recorded or interpreted result/status; see source test rules. |
 ### `research.brock_tests`
 
@@ -254,8 +254,8 @@ Brock assay records.
 | `capture_id` | Unique capture or PM event identifier. |
 | `brock_test_od` | Measured value; original protocol determines units and coding. |
 | `test_result` | Original coded assay outcome; meaning depends on test. |
-| `no_clotted` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `comments` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `no_clotted` | Flag recording absence/failure of a clotted specimen. |
+| `comments` | Original free-text note related to . |
 | `created_at` | Database row creation timestamp. |
 ### `research.captures`
 
@@ -272,31 +272,31 @@ One row per live capture or PM record. Sampling, collar and assessments are incl
 | `recorded_sett_name` | Original recorded location/sett wording; may not describe a sett. |
 | `recorded_social_group_name` | Original recorded social group wording. |
 | `recorded_supergroup_name` | Original recorded supergroup text. |
-| `moc` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `moc` | Method or circumstances of encounter. Examples in the records include TRAP, RTA (road traffic accident), FOUND DEAD, SNARE, SHOT, NET and REMOVAL. |
 | `capture_location_text` | Original location description/category. |
-| `weight` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `weight` | Recorded body mass; measurement unit has not been confirmed in the available metadata. |
 | `body_length` | Measured value; original protocol determines units and coding. |
-| `temperature` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `toothwear` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `neck_diameter` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `condition` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `temperature` | Recorded body temperature; expected temperature measurement but unit not confirmed in metadata. |
+| `toothwear` | Recorded tooth-wear assessment; numerical/category scale not independently established. |
+| `neck_diameter` | Recorded neck diameter; measurement unit not established in available metadata. |
+| `condition` | Recorded body-condition category: GOOD, FAIR, POOR, VERY GOOD, or V.GOOD (a spelling variant of very good). |
 | `reproductive_status` | Recorded or interpreted result/status; see source test rules. |
-| `testes` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `eartags` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `retag` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `transmitter` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `tx_number` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `testes` | Recorded testes/reproductive assessment. |
+| `eartags` | Ear-tag information recorded at the encounter. |
+| `retag` | Indication or description of replacement/re-tagging. |
+| `transmitter` | Capture record transmitter description or identifier. |
+| `tx_number` | Transmitter number recorded at capture. |
 | `pm_status` | Recorded or interpreted result/status; see source test rules. |
-| `pm_cause` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `pm_cause` | Recorded circumstances or cause associated with a post-mortem event. |
 | `comment` | Recorded capture comment. |
 | `created_at` | Database row creation timestamp. |
-| `location_cleaning_note` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `location_cleaning_note` | Notes explaining a change or uncertainty in the event's location interpretation. |
 | `disease_status_id` | Record or lookup ID used for joins. |
 | `os_ref` | Original OS reference. |
 | `sett_name_clean` | Confirmed sett name from sett_id; NULL for unidentified setts. |
 | `social_group_name_clean` | Standardised label for the recorded group; not a residence assignment. |
-| `sampler` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `recorder` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `sampler` | Person recorded as collecting samples for the capture. |
+| `recorder` | Person recorded as completing the capture record. |
 | `blood_taken_time` | Measured value; original protocol determines units and coding. |
 | `red_tube_volume` | Measured value; original protocol determines units and coding. |
 | `green_tube_volume` | Measured value; original protocol determines units and coding. |
@@ -305,27 +305,27 @@ One row per live capture or PM record. Sampling, collar and assessments are incl
 | `hair_sample_taken` | Boolean flag. |
 | `fur_clip_taken` | Boolean flag. |
 | `whisker_sample_taken` | Boolean flag. |
-| `sampling_notes` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `sampling_notes` | Original sampling-related free-text comments. |
 | `blood_sampler` | Measured value; original protocol determines units and coding. |
 | `yellow_tube_volume` | Measured value; original protocol determines units and coding. |
 | `blood_sample_taken` | Measured value; original protocol determines units and coding. |
-| `health_monitoring` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `ho_supervisor` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `severity_assessment` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `severity_initials` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `release_assessment` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `release_initials` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `adverse_effects` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `adverse_effect_sampler` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `adverse_effect_comment` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `health_monitoring` | Recorded health monitoring notes associated with capture. |
+| `ho_supervisor` | Recorded Home Office supervisor field. |
+| `severity_assessment` | Recorded severity/welfare assessment made at the capture. |
+| `severity_initials` | Initials of person associated with severity assessment. |
+| `release_assessment` | Recorded fitness or welfare assessment relating to release. |
+| `release_initials` | Initials associated with release assessment. |
+| `adverse_effects` | Recorded adverse effects associated with handling or procedures. |
+| `adverse_effect_sampler` | Person associated with adverse-effects recording. |
+| `adverse_effect_comment` | Free-text description of any adverse effects. |
 | `collar_action_taken` | Boolean flag. |
-| `collar_action_taker` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `collar_checked_by` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `collar_scratch_no` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `collar_transmitter` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `best_tune` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `collar_impact_assessment` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `ppm` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `collar_action_taker` | Person who took the collar-related action. |
+| `collar_checked_by` | Person who inspected the collar. |
+| `collar_scratch_no` | Recorded identifying scratch number on the collar. |
+| `collar_transmitter` | Transmitter information recorded during collar check (distinct from general capture transmitter field). |
+| `best_tune` | Recorded best-tuning information for collar/radio equipment; scale not established. |
+| `collar_impact_assessment` | Recorded welfare/impact assessment relating to the collar. |
+| `ppm` | Recorded collar-related PPM field; abbreviation is not defined in available source material. |
 ### `research.cultures`
 
 Culture tests and related typing information.
@@ -334,17 +334,17 @@ Culture tests and related typing information.
 |---|---|
 | `culture_id` | Record or lookup ID used for joins. |
 | `capture_id` | Unique capture or PM event identifier. |
-| `sample_type` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `afno` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `sample_type` | Recorded specimen category used for the assay. |
+| `afno` | Recorded AF number/identifier associated with culture sample; full abbreviation unconfirmed. |
 | `culture_result` | Recorded or interpreted result/status; see source test rules. |
-| `lesions` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `abscesses` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `spoligo` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `spolprime` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `wgs_clade` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `sampler_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `sampler_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `comments` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `lesions` | Recorded lesion observations associated with the sample/post-mortem. |
+| `abscesses` | Recorded abscess observations. |
+| `spoligo` | Recorded spoligotype result for isolate. |
+| `spolprime` | Recorded spoligotype-associated field from source. |
+| `wgs_clade` | Whole-genome sequencing clade assignment. |
+| `sampler_1` | First/second test-line or assay replicate measurement as indicated by column name. |
+| `sampler_2` | First/second test-line or assay replicate measurement as indicated by column name. |
+| `comments` | Original free-text note related to . |
 | `created_at` | Database row creation timestamp. |
 ### `research.disease_statuses`
 
@@ -363,14 +363,14 @@ DPP tests and visual lines.
 | `dpp_test_id` | Record or lookup ID used for joins. |
 | `capture_id` | Unique capture or PM event identifier. |
 | `test_result` | Original coded assay outcome; meaning depends on test. |
-| `comments` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `comments` | Original free-text note related to . |
 | `created_at` | Database row creation timestamp. |
-| `test_type` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `sample_type` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `visual_line_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `optical_density_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `visual_line_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `optical_density_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `test_type` | Recorded variant/type of the assay. |
+| `sample_type` | Recorded specimen category used for the assay. |
+| `visual_line_1` | First recorded DPP test-line designation. |
+| `optical_density_1` | Optical-density measurement associated with first line; dimensionless absorbance measurement. |
+| `visual_line_2` | Second recorded DPP test-line designation. |
+| `optical_density_2` | Optical-density measurement associated with second line; dimensionless absorbance measurement. |
 | `source_raw_row_id` | Record or lookup ID used for joins. |
 | `visual_line_1_result` | Recorded or interpreted result/status; see source test rules. |
 | `visual_line_2_result` | Recorded or interpreted result/status; see source test rules. |
@@ -382,13 +382,13 @@ ELISA diagnostic results.
 |---|---|
 | `elisa_test_id` | Record or lookup ID used for joins. |
 | `capture_id` | Unique capture or PM event identifier. |
-| `elisa_type` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `reference` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `elisa_type` | Recorded elisa type field; the available records do not establish a more precise definition. |
+| `reference` | Recorded reference field; the available records do not establish a more precise definition. |
 | `test_result` | Original coded assay outcome; meaning depends on test. |
 | `mean_od` | Measured value; original protocol determines units and coding. |
-| `blot_cf` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `blotson` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `comments` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `blot_cf` | Original ELISA blot_cf assay field; exact code interpretation not established. |
+| `blotson` | Original ELISA blotson assay field; exact code interpretation not established. |
+| `comments` | Original free-text note related to . |
 | `created_at` | Database row creation timestamp. |
 ### `research.ifn_gamma_elisa`
 
@@ -398,42 +398,42 @@ IFN-gamma assay records and replicate readings.
 |---|---|
 | `ifn_test_id` | Record or lookup ID used for joins. |
 | `capture_id` | Unique capture or PM event identifier. |
-| `plate_number` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `plate_number` | Assay plate identification number. |
 | `experiment_date` | Date, quarter, year or provenance timestamp. |
-| `import_filename` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `import_filename` | Recorded import filename field; the available records do not establish a more precise definition. |
 | `imported_at` | Date/time data were imported. |
 | `blood_quality` | Measured value; original protocol determines units and coding. |
 | `nil_value` | Measured value; original protocol determines units and coding. |
 | `avian_ppd_value` | Measured value; original protocol determines units and coding. |
 | `bovine_ppd_value` | Measured value; original protocol determines units and coding. |
 | `pwm_value` | Measured value; original protocol determines units and coding. |
-| `bovine_minus_nil` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `avian_minus_nil` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `bovine_minus_avian` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `test_info` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `bovine_minus_nil` | Derived bovine-PPD response minus nil control. |
+| `avian_minus_nil` | Derived avian-PPD response minus nil control. |
+| `bovine_minus_avian` | Derived bovine-PPD response minus avian-PPD response. |
+| `test_info` | Original free-text assay interpretation/information. |
 | `test_result` | Original coded assay outcome; meaning depends on test. |
-| `comments` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `comments` | Original free-text note related to . |
 | `created_at` | Database row creation timestamp. |
-| `pwm_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `pwm_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `ppd_a_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `ppd_a_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `ppd_b_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `ppd_b_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `nil_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `nil_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `retest` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `test_failed` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `pwm_1` | First or second replicate for PWM assay control/stimulus; scale from assay import. |
+| `pwm_2` | First or second replicate for PWM assay control/stimulus; scale from assay import. |
+| `ppd_a_1` | First or second replicate for PPD_A assay control/stimulus; scale from assay import. |
+| `ppd_a_2` | First or second replicate for PPD_A assay control/stimulus; scale from assay import. |
+| `ppd_b_1` | First or second replicate for PPD_B assay control/stimulus; scale from assay import. |
+| `ppd_b_2` | First or second replicate for PPD_B assay control/stimulus; scale from assay import. |
+| `nil_1` | First or second replicate for NIL assay control/stimulus; scale from assay import. |
+| `nil_2` | First or second replicate for NIL assay control/stimulus; scale from assay import. |
+| `retest` | Recorded retest indicator or note. |
+| `test_failed` | Recorded test-failure flag/comment. |
 | `capture_datetime` | Date, quarter, year or provenance timestamp. |
-| `wellstage_96_pwm_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `wellstage_96_pwm_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `wellstage_96_ppda_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `wellstage_96_ppda_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `wellstage_96_ppdb_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `wellstage_96_ppdb_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `wellstage_96_nil_1` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `wellstage_96_nil_2` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `qc_note` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `wellstage_96_pwm_1` | Plate-stage recorded value for pwm 1; verify assay scale before numerical comparison. |
+| `wellstage_96_pwm_2` | Plate-stage recorded value for pwm 2; verify assay scale before numerical comparison. |
+| `wellstage_96_ppda_1` | Plate-stage recorded value for ppda 1; verify assay scale before numerical comparison. |
+| `wellstage_96_ppda_2` | Plate-stage recorded value for ppda 2; verify assay scale before numerical comparison. |
+| `wellstage_96_ppdb_1` | Plate-stage recorded value for ppdb 1; verify assay scale before numerical comparison. |
+| `wellstage_96_ppdb_2` | Plate-stage recorded value for ppdb 2; verify assay scale before numerical comparison. |
+| `wellstage_96_nil_1` | Plate-stage recorded value for nil 1; verify assay scale before numerical comparison. |
+| `wellstage_96_nil_2` | Plate-stage recorded value for nil 2; verify assay scale before numerical comparison. |
+| `qc_note` | Quality-control comment on the assay. |
 ### `research.individuals`
 
 One badger per row, identified by tattoo.
@@ -442,9 +442,9 @@ One badger per row, identified by tattoo.
 |---|---|
 | `individual_id` | Internal key used to join badger records. |
 | `tattoo` | Scientific badger identifier. |
-| `elect_tag` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `elect_tag` | Electronic identification tag recorded for this badger. |
 | `age_first_capture` | Original recorded age class at first capture. |
-| `year_first_capture` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `year_first_capture` | Year when individual first appeared in capture dataset. |
 | `sex` | Original recorded sex. |
 | `notes` | Historical notes or provenance in the context of this table. |
 | `created_at` | Database row creation timestamp. |
@@ -491,16 +491,16 @@ Location evidence, coordinates and their sources.
 |---|---|
 | `evidence_id` | Record or lookup ID used for joins. |
 | `sett_id` | Linked canonical sett ID, NULL when unresolved. |
-| `easting` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `northing` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `coordinate_system` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `accuracy_m` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `evidence_type` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `source_reference` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `observed_on` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `easting` | British National Grid easting of mapped location (metres). |
+| `northing` | British National Grid northing of mapped location (metres). |
+| `coordinate_system` | Spatial coordinate reference system attached to the source measurement. |
+| `accuracy_m` | Stated spatial accuracy of the source observation in metres. |
+| `evidence_type` | Recorded evidence type field; the available records do not establish a more precise definition. |
+| `source_reference` | Recorded source reference supporting the coordinate or dataset. |
+| `observed_on` | Date associated with the source coordinate observation. |
 | `recorded_by` | Original recorded value, preserved. |
 | `review_status` | Recorded or interpreted result/status; see source test rules. |
-| `reviewed_by` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `reviewed_by` | Recorded reviewed by field; the available records do not establish a more precise definition. |
 | `reviewed_at` | Date, quarter, year or provenance timestamp. |
 | `notes` | Historical notes or provenance in the context of this table. |
 | `created_at` | Database row creation timestamp. |
@@ -513,8 +513,8 @@ Recorded sett/group links over time; more than one link can exist.
 | `sett_social_group_id` | Record or lookup ID used for joins. |
 | `sett_id` | Linked canonical sett ID, NULL when unresolved. |
 | `social_group_id` | Record or lookup ID used for joins. |
-| `valid_from` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `valid_to` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `valid_from` | Recorded valid from field; the available records do not establish a more precise definition. |
+| `valid_to` | Recorded valid to field; the available records do not establish a more precise definition. |
 | `notes` | Historical notes or provenance in the context of this table. |
 ### `research.setts`
 
@@ -523,7 +523,7 @@ Canonical sett names.
 | Column | Meaning |
 |---|---|
 | `sett_id` | Linked canonical sett ID, NULL when unresolved. |
-| `sett_name` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `sett_name` | Canonical, cleaned name identifying a sett. |
 | `notes` | Historical notes or provenance in the context of this table. |
 | `created_at` | Database row creation timestamp. |
 ### `research.social_group_supergroup_history`
@@ -535,8 +535,8 @@ Group/supergroup links over time.
 | `social_group_supergroup_id` | Record or lookup ID used for joins. |
 | `social_group_id` | Record or lookup ID used for joins. |
 | `supergroup_id` | Record or lookup ID used for joins. |
-| `valid_from` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `valid_to` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `valid_from` | Recorded valid from field; the available records do not establish a more precise definition. |
+| `valid_to` | Recorded valid to field; the available records do not establish a more precise definition. |
 | `notes` | Historical notes or provenance in the context of this table. |
 ### `research.social_groups`
 
@@ -545,7 +545,7 @@ Canonical social group names.
 | Column | Meaning |
 |---|---|
 | `social_group_id` | Record or lookup ID used for joins. |
-| `social_group_name` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `social_group_name` | Name or label of social group. |
 | `notes` | Historical notes or provenance in the context of this table. |
 | `created_at` | Database row creation timestamp. |
 ### `research.stat_pak_tests`
@@ -557,7 +557,7 @@ Stat-Pak tests.
 | `stat_pak_test_id` | Record or lookup ID used for joins. |
 | `capture_id` | Unique capture or PM event identifier. |
 | `test_result` | Original coded assay outcome; meaning depends on test. |
-| `comments` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `comments` | Original free-text note related to . |
 | `created_at` | Database row creation timestamp. |
 | `stat_pak_id` | Record or lookup ID used for joins. |
 ### `research.supergroups`
@@ -567,7 +567,7 @@ Canonical supergroup names.
 | Column | Meaning |
 |---|---|
 | `supergroup_id` | Record or lookup ID used for joins. |
-| `supergroup_name` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `supergroup_name` | Name or label of supergroup. |
 | `notes` | Historical notes or provenance in the context of this table. |
 | `created_at` | Database row creation timestamp. |
 ### `research.wounds`
@@ -578,11 +578,11 @@ Wounds recorded at captures; multiple rows can belong to one capture.
 |---|---|
 | `wound_id` | Record or lookup ID used for joins. |
 | `capture_id` | Unique capture or PM event identifier. |
-| `wound_area` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `wound_amount` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `wound_age` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `wound_size` | Original recorded or derived field; see original Access definition for exact codes/units. |
-| `wound_type` | Original recorded or derived field; see original Access definition for exact codes/units. |
+| `wound_area` | Recorded wound area field; the available records do not establish a more precise definition. |
+| `wound_amount` | Recorded wound amount field; the available records do not establish a more precise definition. |
+| `wound_age` | Recorded wound age field; the available records do not establish a more precise definition. |
+| `wound_size` | Recorded wound size field; the available records do not establish a more precise definition. |
+| `wound_type` | Recorded wound type field; the available records do not establish a more precise definition. |
 | `notes` | Historical notes or provenance in the context of this table. |
 | `created_at` | Database row creation timestamp. |
 
