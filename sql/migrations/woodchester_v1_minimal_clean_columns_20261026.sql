@@ -1,0 +1,11 @@
+alter table research.individuals add column if not exists sex_clean text generated always as (case when upper(btrim(coalesce(sex,''))) in ('MALE','FEMALE') then upper(btrim(sex)) else 'UNKNOWN' end) stored;
+alter table research.individuals add column if not exists age_first_capture_clean text generated always as (case when upper(btrim(coalesce(age_first_capture,''))) in ('CUB','YEARLING','ADULT') then upper(btrim(age_first_capture)) else 'UNKNOWN' end) stored;
+alter table research.captures add column if not exists sett_name_clean text;
+alter table research.captures add column if not exists social_group_name_clean text;
+update research.captures c set sett_name_clean=s.sett_name from research.setts s where c.sett_id=s.sett_id and c.sett_name_clean is distinct from s.sett_name;
+update research.captures set sett_name_clean=null where sett_id is null and sett_name_clean is not null;
+update research.captures c set social_group_name_clean=s.social_group_name from research.social_groups s where c.recorded_social_group_id=s.social_group_id and c.social_group_name_clean is distinct from s.social_group_name;
+comment on column research.individuals.sex_clean is 'V1 standardised sex MALE FEMALE UNKNOWN; original retained.';
+comment on column research.individuals.age_first_capture_clean is 'V1 standardised CUB YEARLING ADULT UNKNOWN; original retained.';
+comment on column research.captures.sett_name_clean is 'V1 canonical sett name from sett_id, NULL without resolved sett; independent of recovery location.';
+comment on column research.captures.social_group_name_clean is 'V1 standardised label of recorded social group ID, not inferred annual residency.';
