@@ -1358,3 +1358,17 @@ This is a column-by-column inventory checked against the live schema, covering a
 | `wound_type` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
 | `notes` | `text` | Source or record-specific notes |
 | `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+
+
+## Implemented V1 cleaned columns (26 October 2026)
+
+The following **exist in the live `research` tables**, alongside the original columns. They are not merely proposals. Exact SQL and verification are in [V1_CLEANING_AUDIT.md](V1_CLEANING_AUDIT.md).
+
+| Table | Original field | New cleaned field | Meaning and accepted values |
+|---|---|---|---|
+| `research.individuals` | `sex` | `sex_clean` | Uppercase `MALE`, `FEMALE`; other/missing → `UNKNOWN`. Automatically generated. |
+| `research.individuals` | `age_first_capture` | `age_first_capture_clean` | Uppercase `CUB`, `YEARLING`, `ADULT`; other/missing → `UNKNOWN`. Automatically generated. |
+| `research.captures` | `recorded_sett_name` | `sett_name_clean` | Canonical label from `sett_id`; `NULL` if unassigned, including PM grid recoveries. Trigger-maintained. |
+| `research.captures` | `recorded_social_group_name` | `social_group_name_clean` | Canonical label from `recorded_social_group_id`; `NULL` if unassigned. Trigger-maintained; not proof of residency. |
+
+**Important:** Cleaned `UNKNOWN` sex/age is an explicit category and is not the same as the original column being NULL. Existing calculated `analysis.*standardised` views were retained for model compatibility, not because coauthors should prefer them. The 57-column original Access capture table has not yet been fully reconstructed from split research capture/sampling/assessment/collar tables, so we have **not** dropped or merged those tables. The 24 analysis views have also not yet been physically reduced because several support current V1 interfaces or running models; the recommended subset remains identified above. This is a safe additive V1 clean-up, rather than a completed destructive restructure.
