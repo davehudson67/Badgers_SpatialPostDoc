@@ -369,3 +369,992 @@ Validation: 17,586 unique captures in the V1 traits view; capture history V1: 16
 ## V1 coauthor schema clean-up — 26 October 2026
 
 For the current coauthor-facing structure and permission checks, see [`V1_RELEASE_NOTES.md`](V1_RELEASE_NOTES.md). Seven interim diagnostic/review views were retired on 26 October; the core V1 researcher-facing views, base research tables, raw Access tables and versioned SQL migration records were retained. The historical references to old review-view names elsewhere in this document record the original workflow, not live endpoints. The working baseline is still **V1**.
+
+
+## Complete live V1 column inventory (26 October 2026)
+
+This is a column-by-column inventory checked against the live schema, covering all 28 research tables and 24 currently deployed analysis views. It includes internal technical views **only to accurately describe the current database**, not to recommend them to coauthors. Specific confirmed meanings are described; legacy field meanings and measurement units not evidenced by source documentation are marked for verification. For cleaning decisions, approved aliases, data migrations and derivations see [V1_CLEANING_AUDIT.md](V1_CLEANING_AUDIT.md). The original source codebook must govern ambiguous fields.
+
+### `analysis.capture_diagnostic_summary_standardised`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `tattoo` | `text` | Scientific badger identifier |
+| `capture_date` | `date` | Encounter date |
+| `is_pm` | `boolean` | Post-mortem versus live encounter indicator |
+| `diagnostic_test_count` | `bigint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `positive_test_count` | `bigint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `negative_test_count` | `bigint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `uninterpretable_test_count` | `bigint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `any_positive_test` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+
+### `analysis.capture_history`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `tattoo` | `text` | Scientific badger identifier |
+| `elect_tag` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `historical_names` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `n_historical_names` | `bigint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `sex` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `age_first_capture` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `year_first_capture` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `capture_date` | `date` | Encounter date |
+| `capture_year` | `integer` | Year extracted from capture date |
+| `capture_quarter` | `integer` | Calendar quarter extracted from capture date |
+| `capture_occasion` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `is_pm` | `boolean` | Post-mortem versus live encounter indicator |
+| `moc` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `recorded_sett_name` | `text` | Verbatim original location/sett text |
+| `sett_id` | `bigint` | Resolved canonical sett key; NULL if unsettled |
+| `normalized_sett_name` | `text` | Derived cleaned/standardised field; consult audit |
+| `recorded_social_group_name` | `text` | Original reported SG name (not necessarily resident SG) |
+| `recorded_social_group_id` | `bigint` | Row/foreign key; inspect parent table |
+| `normalized_social_group_name` | `text` | Derived cleaned/standardised field; consult audit |
+| `recorded_supergroup_name` | `text` | Original reported supergroup name |
+| `capture_location_text` | `text` | Original type/location such as SETT, FIELD, BOUNDARY |
+| `os_ref` | `text` | Original OS reference as entered |
+| `location_cleaning_note` | `text` | Original descriptive comments/notes |
+| `disease_status_id` | `integer` | Row/foreign key; inspect parent table |
+| `disease_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `weight` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `body_length` | `numeric` | Quantitative value; measurement units require source validation |
+| `temperature` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `toothwear` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `neck_diameter` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `condition` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `reproductive_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `testes` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `eartags` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `retag` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `transmitter` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `tx_number` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `pm_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `pm_cause` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `blood_sample_taken` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+| `blood_taken_time` | `time without time zone` | Quantitative value; measurement units require source validation |
+| `red_tube_volume` | `numeric` | Quantitative value; measurement units require source validation |
+| `green_tube_volume` | `numeric` | Quantitative value; measurement units require source validation |
+| `purple_tube_volume` | `numeric` | Quantitative value; measurement units require source validation |
+| `yellow_tube_volume` | `numeric` | Quantitative value; measurement units require source validation |
+| `peach_tube_volume` | `numeric` | Quantitative value; measurement units require source validation |
+| `hair_sample_taken` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+| `fur_clip_taken` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+| `whisker_sample_taken` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+| `sampler` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `blood_sampler` | `text` | Quantitative value; measurement units require source validation |
+| `recorder` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `sampling_notes` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `health_monitoring` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `ho_supervisor` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `severity_assessment` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `severity_initials` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `release_assessment` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `release_initials` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `adverse_effects` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `adverse_effect_sampler` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `adverse_effect_comment` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `collar_action_taken` | `text` | Boolean indicator (NULL distinct from FALSE) |
+| `collar_action_taker` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `collar_checked_by` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `collar_scratch_no` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `collar_transmitter` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `best_tune` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `collar_impact_assessment` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `ppm` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `comment` | `text` | Original descriptive comments/notes |
+
+### `analysis.capture_history_v1`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `tattoo` | `text` | Scientific badger identifier |
+| `elect_tag` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `historical_names` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `n_historical_names` | `bigint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `sex` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `age_first_capture` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `year_first_capture` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `capture_date` | `date` | Encounter date |
+| `capture_year` | `integer` | Year extracted from capture date |
+| `capture_quarter` | `integer` | Calendar quarter extracted from capture date |
+| `capture_occasion` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `is_pm` | `boolean` | Post-mortem versus live encounter indicator |
+| `moc` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `recorded_sett_name` | `text` | Verbatim original location/sett text |
+| `sett_id` | `bigint` | Resolved canonical sett key; NULL if unsettled |
+| `normalized_sett_name` | `text` | Derived cleaned/standardised field; consult audit |
+| `recorded_social_group_name` | `text` | Original reported SG name (not necessarily resident SG) |
+| `recorded_social_group_id` | `bigint` | Row/foreign key; inspect parent table |
+| `normalized_social_group_name` | `text` | Derived cleaned/standardised field; consult audit |
+| `recorded_supergroup_name` | `text` | Original reported supergroup name |
+| `capture_location_text` | `text` | Original type/location such as SETT, FIELD, BOUNDARY |
+| `os_ref` | `text` | Original OS reference as entered |
+| `location_cleaning_note` | `text` | Original descriptive comments/notes |
+| `disease_status_id` | `integer` | Row/foreign key; inspect parent table |
+| `disease_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `weight` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `body_length` | `numeric` | Quantitative value; measurement units require source validation |
+| `temperature` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `toothwear` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `neck_diameter` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `condition` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `reproductive_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `testes` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `eartags` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `retag` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `transmitter` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `tx_number` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `pm_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `pm_cause` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `blood_sample_taken` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+| `blood_taken_time` | `time without time zone` | Quantitative value; measurement units require source validation |
+| `red_tube_volume` | `numeric` | Quantitative value; measurement units require source validation |
+| `green_tube_volume` | `numeric` | Quantitative value; measurement units require source validation |
+| `purple_tube_volume` | `numeric` | Quantitative value; measurement units require source validation |
+| `yellow_tube_volume` | `numeric` | Quantitative value; measurement units require source validation |
+| `peach_tube_volume` | `numeric` | Quantitative value; measurement units require source validation |
+| `hair_sample_taken` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+| `fur_clip_taken` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+| `whisker_sample_taken` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+| `sampler` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `blood_sampler` | `text` | Quantitative value; measurement units require source validation |
+| `recorder` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `sampling_notes` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `health_monitoring` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `ho_supervisor` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `severity_assessment` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `severity_initials` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `release_assessment` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `release_initials` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `adverse_effects` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `adverse_effect_sampler` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `adverse_effect_comment` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `collar_action_taken` | `text` | Boolean indicator (NULL distinct from FALSE) |
+| `collar_action_taker` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `collar_checked_by` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `collar_scratch_no` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `collar_transmitter` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `best_tune` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `collar_impact_assessment` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `ppm` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `comment` | `text` | Original descriptive comments/notes |
+| `sett_name` | `text` | Canonical name when confirmed |
+| `location_type` | `text` | Derived location category; not itself sett identity |
+| `location_easting` | `numeric` | Coordinate: mapped sett point or provisional PM grid-square SW corner |
+| `location_northing` | `numeric` | Coordinate: mapped sett point or provisional PM grid-square SW corner |
+| `location_crs` | `text` | Assigned spatial CRS; source confirmation pending |
+| `location_coordinate_basis` | `text` | Type/provenance of coordinate |
+| `location_class` | `text` | Detailed derived location class |
+
+### `analysis.capture_infection_probabilities`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `tattoo` | `text` | Scientific badger identifier |
+| `sample_date` | `date` | Date or timestamp; provenance/context from owning table |
+| `year` | `smallint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `quarter` | `smallint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `model_run` | `text` | Quantitative value; measurement units require source validation |
+| `diagnostic_fixed_prevalence` | `double precision` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `diagnostic_annual_prevalence` | `double precision` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `diagnostic_adjusted_annual` | `double precision` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `all_tests_fixed` | `double precision` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `all_tests_inferred` | `double precision` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `culture_only_fixed` | `double precision` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+
+### `analysis.capture_location_classified_v2`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `tattoo` | `text` | Scientific badger identifier |
+| `capture_date` | `date` | Encounter date |
+| `is_pm` | `boolean` | Post-mortem versus live encounter indicator |
+| `sett_id` | `bigint` | Resolved canonical sett key; NULL if unsettled |
+| `original_recorded_sett_name` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `os_ref` | `text` | Original OS reference as entered |
+| `capture_location_text` | `text` | Original type/location such as SETT, FIELD, BOUNDARY |
+| `location_class` | `text` | Detailed derived location class |
+| `location_display_category` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `reference_source` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `so_grid_six_digits` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `grid_sw_easting` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `grid_sw_northing` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `accompanying_location_description` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `positional_precision_note` | `text` | Original descriptive comments/notes |
+
+### `analysis.capture_location_classified_v3`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `tattoo` | `text` | Scientific badger identifier |
+| `capture_date` | `date` | Encounter date |
+| `is_pm` | `boolean` | Post-mortem versus live encounter indicator |
+| `sett_id` | `bigint` | Resolved canonical sett key; NULL if unsettled |
+| `original_recorded_sett_name` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `os_ref` | `text` | Original OS reference as entered |
+| `capture_location_text` | `text` | Original type/location such as SETT, FIELD, BOUNDARY |
+| `location_class` | `text` | Detailed derived location class |
+| `location_display_category` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `reference_source` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `so_grid_six_digits` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `grid_sw_easting` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `grid_sw_northing` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `accompanying_location_description` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `positional_precision_note` | `text` | Original descriptive comments/notes |
+| `newly_parsed_grid_reference` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `newly_parsed_cell_width_m` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+
+### `analysis.capture_location_fields_v1`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `sett_name` | `text` | Canonical name when confirmed |
+| `location_type` | `text` | Derived location category; not itself sett identity |
+| `location_easting` | `numeric` | Coordinate: mapped sett point or provisional PM grid-square SW corner |
+| `location_northing` | `numeric` | Coordinate: mapped sett point or provisional PM grid-square SW corner |
+| `location_crs` | `text` | Assigned spatial CRS; source confirmation pending |
+| `location_coordinate_basis` | `text` | Type/provenance of coordinate |
+| `location_class` | `text` | Detailed derived location class |
+
+### `analysis.capture_location_v1`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `tattoo` | `text` | Scientific badger identifier |
+| `capture_date` | `date` | Encounter date |
+| `is_pm` | `boolean` | Post-mortem versus live encounter indicator |
+| `sett_id` | `bigint` | Resolved canonical sett key; NULL if unsettled |
+| `original_recorded_sett_name` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `canonical_sett_name` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `location_class` | `text` | Detailed derived location class |
+| `location_display_category` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `capture_location_text` | `text` | Original type/location such as SETT, FIELD, BOUNDARY |
+| `os_ref` | `text` | Original OS reference as entered |
+| `reference_source` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `so_grid_six_digits` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `newly_parsed_grid_reference` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `grid_sw_easting` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `grid_sw_northing` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `newly_parsed_cell_width_m` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `accompanying_location_description` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `positional_precision_note` | `text` | Original descriptive comments/notes |
+| `spatial_interpretation` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+
+### `analysis.capture_pm_grid_reference_review`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `capture_date` | `date` | Encounter date |
+| `is_pm` | `boolean` | Post-mortem versus live encounter indicator |
+| `sett_id` | `bigint` | Resolved canonical sett key; NULL if unsettled |
+| `recorded_sett_name` | `text` | Verbatim original location/sett text |
+| `capture_location_text` | `text` | Original type/location such as SETT, FIELD, BOUNDARY |
+| `os_ref` | `text` | Original OS reference as entered |
+| `so_six_digits` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `grid_reference_source` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `grid_cell_easting` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `grid_cell_northing` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `grid_cell_width_m` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `inferred_crs` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `review_status` | `text` | Coordinate evidence review state |
+
+### `analysis.capture_sett_coordinate_inventory`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `sett_name` | `text` | Canonical name when confirmed |
+| `n_captures` | `bigint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `n_pm_records` | `bigint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `first_capture_date` | `date` | Date or timestamp; provenance/context from owning table |
+| `last_capture_date` | `date` | Date or timestamp; provenance/context from owning table |
+| `easting` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `northing` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `coordinate_system` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `accuracy_m` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `coordinate_source` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `coordinate_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+
+### `analysis.capture_traits_standardised`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `tattoo` | `text` | Scientific badger identifier |
+| `capture_date` | `date` | Encounter date |
+| `capture_year` | `integer` | Year extracted from capture date |
+| `capture_quarter` | `integer` | Calendar quarter extracted from capture date |
+| `is_pm` | `boolean` | Post-mortem versus live encounter indicator |
+| `sett_id` | `bigint` | Resolved canonical sett key; NULL if unsettled |
+| `recorded_sett_name` | `text` | Verbatim original location/sett text |
+| `recorded_social_group_id` | `bigint` | Row/foreign key; inspect parent table |
+| `recorded_social_group_name` | `text` | Original reported SG name (not necessarily resident SG) |
+| `sex_recorded` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `sex_standardised` | `text` | Derived cleaned/standardised field; consult audit |
+| `sex_missing` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+| `age_first_capture_recorded` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `age_first_capture_standardised` | `text` | Derived cleaned/standardised field; consult audit |
+| `year_first_capture` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `years_since_first_capture` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `approximate_age_if_first_captured_as_cub` | `integer` | Derived proxy; not a measured exact age |
+
+### `analysis.capture_traits_v1`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `tattoo` | `text` | Scientific badger identifier |
+| `capture_date` | `date` | Encounter date |
+| `capture_year` | `integer` | Year extracted from capture date |
+| `capture_quarter` | `integer` | Calendar quarter extracted from capture date |
+| `is_pm` | `boolean` | Post-mortem versus live encounter indicator |
+| `sett_id` | `bigint` | Resolved canonical sett key; NULL if unsettled |
+| `recorded_sett_name` | `text` | Verbatim original location/sett text |
+| `recorded_social_group_id` | `bigint` | Row/foreign key; inspect parent table |
+| `recorded_social_group_name` | `text` | Original reported SG name (not necessarily resident SG) |
+| `sex_recorded` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `sex_standardised` | `text` | Derived cleaned/standardised field; consult audit |
+| `sex_missing` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+| `age_first_capture_recorded` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `age_first_capture_standardised` | `text` | Derived cleaned/standardised field; consult audit |
+| `year_first_capture` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `years_since_first_capture` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `approximate_age_if_first_captured_as_cub` | `integer` | Derived proxy; not a measured exact age |
+| `sett_name` | `text` | Canonical name when confirmed |
+| `location_type` | `text` | Derived location category; not itself sett identity |
+| `location_easting` | `numeric` | Coordinate: mapped sett point or provisional PM grid-square SW corner |
+| `location_northing` | `numeric` | Coordinate: mapped sett point or provisional PM grid-square SW corner |
+| `location_crs` | `text` | Assigned spatial CRS; source confirmation pending |
+| `location_coordinate_basis` | `text` | Type/provenance of coordinate |
+| `location_class` | `text` | Detailed derived location class |
+
+### `analysis.culture_results_standardised`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `tattoo` | `text` | Scientific badger identifier |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `culture_id` | `bigint` | Row/foreign key; inspect parent table |
+| `capture_date` | `date` | Encounter date |
+| `is_pm` | `boolean` | Post-mortem versus live encounter indicator |
+| `sample_type_recorded` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `sample_group` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `culture_result_recorded` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `culture_result_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `is_m_bovis_detected` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+| `afno` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `spoligo` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `spolprime` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `wgs_clade` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+
+### `analysis.diagnostic_interpretation_standardised`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `tattoo` | `text` | Scientific badger identifier |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `capture_date` | `date` | Encounter date |
+| `is_pm` | `boolean` | Post-mortem versus live encounter indicator |
+| `test_family` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `source_record_id` | `bigint` | Row/foreign key; inspect parent table |
+| `recorded_result` | `text` | Historical recorded value; preserved |
+| `interpreted_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `test_positive` | `boolean` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+
+### `analysis.diagnostic_results`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `source_table` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `source_record_id` | `bigint` | Row/foreign key; inspect parent table |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `tattoo` | `text` | Scientific badger identifier |
+| `capture_date` | `date` | Encounter date |
+| `is_pm` | `boolean` | Post-mortem versus live encounter indicator |
+| `test_family` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `test_type` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `sample_type` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `result` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `result_code` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `visual_line_1` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `visual_line_1_result` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `optical_density_1` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `visual_line_2` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `visual_line_2_result` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `optical_density_2` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `reference_value` | `numeric` | Quantitative value; measurement units require source validation |
+| `mean_od` | `numeric` | Quantitative value; measurement units require source validation |
+| `blot_cf` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `blotson` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `brock_test_od` | `numeric` | Quantitative value; measurement units require source validation |
+| `no_clotted` | `boolean` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `afno` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `lesions` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `abscesses` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `spoligo` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `spolprime` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `wgs_clade` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `plate_number` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `experiment_date` | `timestamp without time zone` | Date or timestamp; provenance/context from owning table |
+| `nil_value` | `numeric` | Quantitative value; measurement units require source validation |
+| `avian_ppd_value` | `numeric` | Quantitative value; measurement units require source validation |
+| `bovine_ppd_value` | `numeric` | Quantitative value; measurement units require source validation |
+| `pwm_value` | `numeric` | Quantitative value; measurement units require source validation |
+| `bovine_minus_nil` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `avian_minus_nil` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `bovine_minus_avian` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `pwm_1` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `pwm_2` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `ppd_a_1` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `ppd_a_2` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `ppd_b_1` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `ppd_b_2` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `nil_1` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `nil_2` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `retest` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `test_failed` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `test_info` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `blood_quality` | `text` | Quantitative value; measurement units require source validation |
+| `qc_note` | `text` | Original descriptive comments/notes |
+| `comments` | `text` | Original descriptive comments/notes |
+
+### `analysis.individual_traits_standardised`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `tattoo` | `text` | Scientific badger identifier |
+| `elect_tag` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `age_first_capture_recorded` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `age_first_capture_standardised` | `text` | Derived cleaned/standardised field; consult audit |
+| `age_first_capture_missing` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+| `year_first_capture` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `sex_recorded` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `sex_standardised` | `text` | Derived cleaned/standardised field; consult audit |
+| `sex_missing` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+
+### `analysis.infection_probabilities`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `infection_probability_id` | `bigint` | Row/foreign key; inspect parent table |
+| `tattoo` | `text` | Scientific badger identifier |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `sample_date` | `date` | Date or timestamp; provenance/context from owning table |
+| `year` | `smallint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `quarter` | `smallint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `model_variant` | `text` | Named infection-model variant |
+| `infection_probability` | `double precision` | Model-estimated infection probability; not direct test |
+| `model_run` | `text` | Quantitative value; measurement units require source validation |
+| `source_file` | `text` | Source filename recorded during import |
+| `imported_at` | `timestamp with time zone` | Import provenance timestamp |
+
+### `analysis.infection_quarterly_probabilities`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `infection_quarterly_id` | `bigint` | Row/foreign key; inspect parent table |
+| `tattoo` | `text` | Scientific badger identifier |
+| `quarter_date` | `date` | Date or timestamp; provenance/context from owning table |
+| `year` | `smallint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `quarter` | `smallint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `model_variant` | `text` | Named infection-model variant |
+| `infection_probability` | `double precision` | Model-estimated infection probability; not direct test |
+| `model_run` | `text` | Quantitative value; measurement units require source validation |
+| `source_file` | `text` | Source filename recorded during import |
+| `imported_at` | `timestamp with time zone` | Import provenance timestamp |
+
+### `analysis.sett_coordinate_source_name_review`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `source_name` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `source_display_name` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `easting` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `northing` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `matched_canonical_sett` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `match_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+
+### `analysis.sett_coordinate_unmatched_v1`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `source_name` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `source_display_name` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `easting` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `northing` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `match_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+
+### `analysis.sett_coordinates_approved`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `sett_name` | `text` | Canonical name when confirmed |
+| `easting` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `northing` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `coordinate_system` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `accuracy_m` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `source_reference` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `observed_on` | `date` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+
+### `analysis.sett_inventory_v1`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `sett_id` | `bigint` | Resolved canonical sett key; NULL if unsettled |
+| `canonical_sett_name` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `capture_count` | `bigint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `n_pm_records` | `bigint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `first_capture_date` | `date` | Date or timestamp; provenance/context from owning table |
+| `last_capture_date` | `date` | Date or timestamp; provenance/context from owning table |
+| `easting` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `northing` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `coordinate_system` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `accuracy_m` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `coordinate_source` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `coordinate_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+
+### `analysis.sett_social_group_observed`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `sett_id` | `bigint` | Resolved canonical sett key; NULL if unsettled |
+| `sett_name` | `text` | Canonical name when confirmed |
+| `social_group_id` | `bigint` | Row/foreign key; inspect parent table |
+| `social_group_name` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `year` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `n_captures` | `bigint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `first_capture_date` | `date` | Date or timestamp; provenance/context from owning table |
+| `last_capture_date` | `date` | Date or timestamp; provenance/context from owning table |
+
+### `analysis.stat_pak_results_standardised`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `tattoo` | `text` | Scientific badger identifier |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `stat_pak_test_id` | `bigint` | Row/foreign key; inspect parent table |
+| `capture_date` | `date` | Encounter date |
+| `original_result_code` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `original_result_text` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `result_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `test_positive` | `boolean` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+
+### `research.brock_tests`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `brock_test_id` | `bigint` | Row/foreign key; inspect parent table |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `brock_test_od` | `numeric` | Quantitative value; measurement units require source validation |
+| `test_result` | `text` | Recorded test result; codes vary by assay |
+| `no_clotted` | `boolean` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `comments` | `text` | Original descriptive comments/notes |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+
+### `research.capture_assessments`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `capture_assessment_id` | `bigint` | Row/foreign key; inspect parent table |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `health_monitoring` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `ho_supervisor` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `severity_assessment` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `severity_initials` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `release_assessment` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `release_initials` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `adverse_effects` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `adverse_effect_sampler` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `adverse_effect_comment` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+
+### `research.capture_collars`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `capture_collar_id` | `bigint` | Row/foreign key; inspect parent table |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `collar_action_taken` | `text` | Boolean indicator (NULL distinct from FALSE) |
+| `collar_action_taker` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `collar_checked_by` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `collar_scratch_no` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `transmitter` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `best_tune` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `collar_impact_assessment` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `ppm` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+
+### `research.capture_sampling`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `capture_sampling_id` | `bigint` | Row/foreign key; inspect parent table |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `sampler` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `recorder` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `blood_taken_time` | `time without time zone` | Quantitative value; measurement units require source validation |
+| `red_tube_volume` | `numeric` | Quantitative value; measurement units require source validation |
+| `green_tube_volume` | `numeric` | Quantitative value; measurement units require source validation |
+| `purple_tube_volume` | `numeric` | Quantitative value; measurement units require source validation |
+| `peach_tube_volume` | `numeric` | Quantitative value; measurement units require source validation |
+| `hair_sample_taken` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+| `fur_clip_taken` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+| `whisker_sample_taken` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+| `notes` | `text` | Source or record-specific notes |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+| `blood_sampler` | `text` | Quantitative value; measurement units require source validation |
+| `yellow_tube_volume` | `numeric` | Quantitative value; measurement units require source validation |
+| `blood_sample_taken` | `boolean` | Boolean indicator (NULL distinct from FALSE) |
+
+### `research.captures`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `individual_id` | `bigint` | Internal link to badger record |
+| `capture_date` | `date` | Encounter date |
+| `is_pm` | `boolean` | Post-mortem versus live encounter indicator |
+| `sett_id` | `bigint` | Resolved canonical sett key; NULL if unsettled |
+| `recorded_social_group_id` | `bigint` | Row/foreign key; inspect parent table |
+| `recorded_sett_name` | `text` | Verbatim original location/sett text |
+| `recorded_social_group_name` | `text` | Original reported SG name (not necessarily resident SG) |
+| `recorded_supergroup_name` | `text` | Original reported supergroup name |
+| `moc` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `capture_location_text` | `text` | Original type/location such as SETT, FIELD, BOUNDARY |
+| `weight` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `body_length` | `numeric` | Quantitative value; measurement units require source validation |
+| `temperature` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `toothwear` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `neck_diameter` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `condition` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `reproductive_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `testes` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `eartags` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `retag` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `transmitter` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `tx_number` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `pm_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `pm_cause` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `comment` | `text` | Original descriptive comments/notes |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+| `location_cleaning_note` | `text` | Original descriptive comments/notes |
+| `disease_status_id` | `integer` | Row/foreign key; inspect parent table |
+| `os_ref` | `text` | Original OS reference as entered |
+
+### `research.cultures`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `culture_id` | `bigint` | Row/foreign key; inspect parent table |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `sample_type` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `afno` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `culture_result` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `lesions` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `abscesses` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `spoligo` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `spolprime` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `wgs_clade` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `sampler_1` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `sampler_2` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `comments` | `text` | Original descriptive comments/notes |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+
+### `research.disease_statuses`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `disease_status_id` | `integer` | Row/foreign key; inspect parent table |
+| `disease_status` | `text` | Recorded/derived code or outcome; consult assay protocol |
+
+### `research.dpp_sample_types`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `sample_type` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+
+### `research.dpp_tests`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `dpp_test_id` | `bigint` | Row/foreign key; inspect parent table |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `test_result` | `text` | Recorded test result; codes vary by assay |
+| `comments` | `text` | Original descriptive comments/notes |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+| `test_type` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `sample_type` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `visual_line_1` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `optical_density_1` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `visual_line_2` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `optical_density_2` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `source_raw_row_id` | `bigint` | ID connecting DPP to original imported raw row |
+| `visual_line_1_result` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `visual_line_2_result` | `text` | Recorded/derived code or outcome; consult assay protocol |
+
+### `research.dpp_visual_line_results`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `result_code` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `result_label` | `text` | Recorded/derived code or outcome; consult assay protocol |
+
+### `research.elisa_tests`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `elisa_test_id` | `bigint` | Row/foreign key; inspect parent table |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `elisa_type` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `reference` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `test_result` | `text` | Recorded test result; codes vary by assay |
+| `mean_od` | `numeric` | Quantitative value; measurement units require source validation |
+| `blot_cf` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `blotson` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `comments` | `text` | Original descriptive comments/notes |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+
+### `research.ifn_gamma_elisa`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `ifn_test_id` | `bigint` | Row/foreign key; inspect parent table |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `plate_number` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `experiment_date` | `timestamp without time zone` | Date or timestamp; provenance/context from owning table |
+| `import_filename` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `imported_at` | `timestamp without time zone` | Import provenance timestamp |
+| `blood_quality` | `text` | Quantitative value; measurement units require source validation |
+| `nil_value` | `numeric` | Quantitative value; measurement units require source validation |
+| `avian_ppd_value` | `numeric` | Quantitative value; measurement units require source validation |
+| `bovine_ppd_value` | `numeric` | Quantitative value; measurement units require source validation |
+| `pwm_value` | `numeric` | Quantitative value; measurement units require source validation |
+| `bovine_minus_nil` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `avian_minus_nil` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `bovine_minus_avian` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `test_info` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `test_result` | `text` | Recorded test result; codes vary by assay |
+| `comments` | `text` | Original descriptive comments/notes |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+| `pwm_1` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `pwm_2` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `ppd_a_1` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `ppd_a_2` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `ppd_b_1` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `ppd_b_2` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `nil_1` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `nil_2` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `retest` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `test_failed` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `capture_datetime` | `timestamp without time zone` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `wellstage_96_pwm_1` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `wellstage_96_pwm_2` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `wellstage_96_ppda_1` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `wellstage_96_ppda_2` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `wellstage_96_ppdb_1` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `wellstage_96_ppdb_2` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `wellstage_96_nil_1` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `wellstage_96_nil_2` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `qc_note` | `text` | Original descriptive comments/notes |
+
+### `research.individual_names`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `individual_name_id` | `bigint` | Row/foreign key; inspect parent table |
+| `individual_id` | `bigint` | Internal link to badger record |
+| `name` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `notes` | `text` | Source or record-specific notes |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+
+### `research.individuals`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `individual_id` | `bigint` | Internal link to badger record |
+| `tattoo` | `text` | Scientific badger identifier |
+| `elect_tag` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `age_first_capture` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `year_first_capture` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `sex` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `notes` | `text` | Source or record-specific notes |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+
+### `research.infection_probabilities`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `infection_probability_id` | `bigint` | Row/foreign key; inspect parent table |
+| `individual_id` | `bigint` | Internal link to badger record |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `sample_date` | `date` | Date or timestamp; provenance/context from owning table |
+| `year` | `smallint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `quarter` | `smallint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `model_variant` | `text` | Named infection-model variant |
+| `infection_probability` | `double precision` | Model-estimated infection probability; not direct test |
+| `model_run` | `text` | Quantitative value; measurement units require source validation |
+| `source_file` | `text` | Source filename recorded during import |
+| `imported_at` | `timestamp with time zone` | Import provenance timestamp |
+
+### `research.infection_probabilities_import`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `tattoo` | `text` | Scientific badger identifier |
+| `date` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `year` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `quarter` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `diagnostic_fixed_prevalence` | `double precision` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `diagnostic_annual_prevalence` | `double precision` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `diagnostic_adjusted_annual` | `double precision` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `all_tests_fixed` | `double precision` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `all_tests_inferred` | `double precision` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `culture_only_fixed` | `double precision` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+
+### `research.infection_quarterly_import`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `tattoo` | `text` | Scientific badger identifier |
+| `quarter_date` | `date` | Date or timestamp; provenance/context from owning table |
+| `year` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `quarter` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `infection_probability` | `double precision` | Model-estimated infection probability; not direct test |
+
+### `research.infection_quarterly_probabilities`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `infection_quarterly_id` | `bigint` | Row/foreign key; inspect parent table |
+| `individual_id` | `bigint` | Internal link to badger record |
+| `quarter_date` | `date` | Date or timestamp; provenance/context from owning table |
+| `year` | `smallint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `quarter` | `smallint` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `model_variant` | `text` | Named infection-model variant |
+| `infection_probability` | `double precision` | Model-estimated infection probability; not direct test |
+| `model_run` | `text` | Quantitative value; measurement units require source validation |
+| `source_file` | `text` | Source filename recorded during import |
+| `imported_at` | `timestamp with time zone` | Import provenance timestamp |
+
+### `research.sett_coordinate_source_20261023`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `source_name` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `source_display_name` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `easting` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `northing` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `source_file` | `text` | Source filename recorded during import |
+| `coordinate_system` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `imported_on` | `date` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+
+### `research.sett_location_evidence`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `evidence_id` | `bigint` | Row/foreign key; inspect parent table |
+| `sett_id` | `bigint` | Resolved canonical sett key; NULL if unsettled |
+| `easting` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `northing` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `coordinate_system` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `accuracy_m` | `numeric` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `evidence_type` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `source_reference` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `observed_on` | `date` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `recorded_by` | `text` | Historical recorded value; preserved |
+| `review_status` | `text` | Coordinate evidence review state |
+| `reviewed_by` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `reviewed_at` | `timestamp with time zone` | Date or timestamp; provenance/context from owning table |
+| `notes` | `text` | Source or record-specific notes |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+
+### `research.sett_social_group_history`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `sett_social_group_id` | `bigint` | Row/foreign key; inspect parent table |
+| `sett_id` | `bigint` | Resolved canonical sett key; NULL if unsettled |
+| `social_group_id` | `bigint` | Row/foreign key; inspect parent table |
+| `valid_from` | `date` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `valid_to` | `date` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `notes` | `text` | Source or record-specific notes |
+
+### `research.setts`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `sett_id` | `bigint` | Resolved canonical sett key; NULL if unsettled |
+| `sett_name` | `text` | Canonical name when confirmed |
+| `notes` | `text` | Source or record-specific notes |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+
+### `research.social_group_supergroup_history`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `social_group_supergroup_id` | `bigint` | Row/foreign key; inspect parent table |
+| `social_group_id` | `bigint` | Row/foreign key; inspect parent table |
+| `supergroup_id` | `bigint` | Row/foreign key; inspect parent table |
+| `valid_from` | `date` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `valid_to` | `date` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `notes` | `text` | Source or record-specific notes |
+
+### `research.social_groups`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `social_group_id` | `bigint` | Row/foreign key; inspect parent table |
+| `social_group_name` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `notes` | `text` | Source or record-specific notes |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+
+### `research.stat_pak_results`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `result_code` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `result_label` | `text` | Recorded/derived code or outcome; consult assay protocol |
+| `display_order` | `integer` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+
+### `research.stat_pak_tests`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `stat_pak_test_id` | `bigint` | Row/foreign key; inspect parent table |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `test_result` | `text` | Recorded test result; codes vary by assay |
+| `comments` | `text` | Original descriptive comments/notes |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+| `stat_pak_id` | `text` | Row/foreign key; inspect parent table |
+
+### `research.supergroups`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `supergroup_id` | `bigint` | Row/foreign key; inspect parent table |
+| `supergroup_name` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `notes` | `text` | Source or record-specific notes |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
+
+### `research.wounds`
+
+| Column | SQL type | Meaning / caution |
+|---|---|---|
+| `wound_id` | `bigint` | Row/foreign key; inspect parent table |
+| `capture_id` | `bigint` | Unique capture or PM event key |
+| `wound_area` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `wound_amount` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `wound_age` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `wound_size` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `wound_type` | `text` | Field retained in named source/derived view; consult source definitions for exact coding/units |
+| `notes` | `text` | Source or record-specific notes |
+| `created_at` | `timestamp with time zone` | Database insertion/provenance timestamp |
