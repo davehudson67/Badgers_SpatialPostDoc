@@ -174,10 +174,26 @@ if (anyDuplicated(master[c("tattoo","year_from","year_to")])) {
   stop("Master lineage table is not unique by tattoo + annual transition.")
 }
 
+# The lineage master already carries several prospecting fields from the earlier
+# dynamic-SG overlay. Rejoining the full prospecting table would create .x/.y
+# suffixes and remove the unsuffixed variables used below. Add only prospecting
+# fields that are not already present in the master, plus the join keys.
+prospecting_add_cols <- setdiff(
+  names(prospecting),
+  c("tattoo", "focal_year", names(master))
+)
+
+prospecting_add <- prospecting %>%
+  select(
+    tattoo,
+    focal_year,
+    all_of(prospecting_add_cols)
+  )
+
 # Prospecting in focal year y is aligned with the annual transition y -> y+1.
 x <- master %>%
   left_join(
-    prospecting,
+    prospecting_add,
     by = c("tattoo", "year_from" = "focal_year"),
     relationship = "many-to-one"
   ) %>%
