@@ -750,3 +750,15 @@ Free-text fields, staff/operator initials, animal or sample identifiers, arbitra
 I've kept the original `condition` and `eartags` fields and added generated `condition_clean` and `eartags_clean` columns so the standardised values update automatically. In `condition_clean`, `V.GOOD` → `VERY GOOD`; `FAIR`, `GOOD` and `POOR` are unchanged. The complete cleaned condition distribution is FAIR **4,789**, GOOD **8,809**, POOR **1,281**, VERY GOOD **1,768** (including 700 originally marked V.GOOD), and missing **939**.
 
 For `eartags_clean`, `NEITHER`, `NONE`, `NOT TAGGED`, and the encoding variant `NOT TAGûGED` all become `NONE`. `RETAGGEûD` becomes `RETAGGED`. `BOTH`, `LEFT`, `RIGHT`, and `REMOVED` remain distinct. The original field is still available if a researcher needs the exact entry. Missing entries stay missing.
+
+
+## Cleaned collar status and ELISA availability
+
+I keep the original values and use generated clean columns for obvious equivalent labels.
+
+| Field | Standardised value and observed count |
+|---|---|
+| `research.captures.collar_transmitter_clean` | FITTED (668: FIT/FITTED), PRESENT (355: PRES/PRESENT), REPLACED (193: REPL/REPLACED), REMOVAL (127), LOST (29), NULL (16,214) |
+| `research.elisa_tests.test_result_clean` | N (13,297), P (1,554), I (163), ITT (15), BIT (2), NO SERUM (99: NO SERA/NO SERUM), NULL (32) |
+
+These fields are derived labels, not new observations. I have not interpreted I, ITT or BIT as equivalent diagnostic outcomes.
