@@ -21,9 +21,11 @@ for(k in seq_along(years)){
  shp<-file.path(base,sprintf("territories_%04d.shp",y))
  if(!file.exists(shp))stop("Missing: ",shp)
  poly<-st_read(shp,quiet=TRUE)
- if(is.na(st_crs(poly)))stop("CRS missing: ",shp)
+ if(is.na(st_crs(poly))) { warning("Missing polygon CRS, assuming EPSG:27700 as in existing 01 boundary audit: ",shp);st_crs(poly)<-27700 }
  poly<-st_transform(poly,27700)
- if(!"Sett" %in% names(poly))stop("Expected territory label field Sett missing: ",shp,
+ name_candidates<-c("SocialName","Sett","SETT","Social_grp")
+ name_col<-name_candidates[name_candidates %in% names(poly)][1]
+ if(is.na(name_col))stop("No known territory label field: ",shp,
  "; available: ",paste(names(poly),collapse=","))
  poly$polygon_id<-as.character(seq_len(nrow(poly)))
  if(any(!st_is_valid(poly)))stop("Invalid polygons in ",shp)
@@ -49,7 +51,7 @@ for(k in seq_along(years)){
   boundary<-!(hit %in% inside[[pt_i]])
   status<-ifelse(boundary,"ON_BOUNDARY",if(length(hit)>1,"MULTIPLE_POLYGONS","ONE_POLYGON"))
   rows[[i]]<-data.frame(year=y,sett_id=id,polygon_id=poly$polygon_id[hit],
-    territory_name=as.character(poly$Sett[hit]),match_status=status,
+    territory_name=as.character(poly[[name_col]][hit]),match_status=status,
     polygon_source=basename(shp),coordinate_source=setts$coordinate_source[i])
  }
  results[[k]]<-bind_rows(rows)
