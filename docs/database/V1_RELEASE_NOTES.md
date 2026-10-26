@@ -70,20 +70,20 @@ Joined capture histories; one row per event.
 | `os_ref` | Original OS reference. |
 | `location_cleaning_note` | Notes explaining a change or uncertainty in the event's location interpretation. |
 | `disease_status_id` | Record or lookup ID used for joins. |
-| `disease_status` | Recorded or interpreted result/status; see source test rules. |
+| `disease_status` | Recorded disease classification. The lookup contains Negative, Exposed, Excretor and Super excretor. |
 | `weight` | Recorded body mass; measurement unit has not been confirmed in the available metadata. |
 | `body_length` | Measured value; original protocol determines units and coding. |
 | `temperature` | Recorded body temperature; expected temperature measurement but unit not confirmed in metadata. |
 | `toothwear` | Recorded tooth-wear assessment; numerical/category scale not independently established. |
 | `neck_diameter` | Recorded neck diameter; measurement unit not established in available metadata. |
 | `condition` | Recorded body-condition category: GOOD, FAIR, POOR, VERY GOOD, or V.GOOD (a spelling variant of very good). |
-| `reproductive_status` | Recorded or interpreted result/status; see source test rules. |
+| `reproductive_status` | Observed reproductive condition/status recorded at capture; retain source descriptions as entered. |
 | `testes` | Recorded testes/reproductive assessment. |
 | `eartags` | Ear-tag information recorded at the encounter. |
 | `retag` | Indication or description of replacement/re-tagging. |
 | `transmitter` | Capture record transmitter description or identifier. |
 | `tx_number` | Transmitter number recorded at capture. |
-| `pm_status` | Recorded or interpreted result/status; see source test rules. |
+| `pm_status` | Post-mortem status category recorded for this event. |
 | `pm_cause` | Recorded circumstances or cause associated with a post-mortem event. |
 | `blood_sample_taken` | Measured value; original protocol determines units and coding. |
 | `blood_taken_time` | Measured value; original protocol determines units and coding. |
@@ -183,13 +183,13 @@ All tests in one long-format output.
 | `test_family` | Diagnostic assay family, for example culture, ELISA, IFN-gamma, DPP, Brock or Stat-Pak. |
 | `test_type` | Recorded variant/type of the assay. |
 | `sample_type` | Recorded specimen category used for the assay. |
-| `result` | Recorded or interpreted result/status; see source test rules. |
-| `result_code` | Recorded or interpreted result/status; see source test rules. |
+| `result` | Original diagnostic result value for the applicable assay. |
+| `result_code` | Original diagnostic result code, interpreted in the context of the assay family. |
 | `visual_line_1` | First recorded DPP test-line designation. |
-| `visual_line_1_result` | Recorded or interpreted result/status; see source test rules. |
+| `visual_line_1_result` | Recorded result category for the first DPP visual line. |
 | `optical_density_1` | Optical-density measurement associated with first line; dimensionless absorbance measurement. |
 | `visual_line_2` | Second recorded DPP test-line designation. |
-| `visual_line_2_result` | Recorded or interpreted result/status; see source test rules. |
+| `visual_line_2_result` | Recorded result category for the second DPP visual line. |
 | `optical_density_2` | Optical-density measurement associated with second line; dimensionless absorbance measurement. |
 | `reference_value` | Measured value; original protocol determines units and coding. |
 | `mean_od` | Measured value; original protocol determines units and coding. |
@@ -243,7 +243,7 @@ Sett coordinates and capture counts.
 | `coordinate_system` | Spatial coordinate reference system attached to the source measurement. |
 | `accuracy_m` | Stated spatial accuracy of the source observation in metres. |
 | `coordinate_source` | Provenance of selected coordinate. |
-| `coordinate_status` | Recorded or interpreted result/status; see source test rules. |
+| `coordinate_status` | Whether a sett has a mapped, approved or unresolved coordinate. |
 ### `research.brock_tests`
 
 Brock assay records.
@@ -280,13 +280,13 @@ One row per live capture or PM record. Sampling, collar and assessments are incl
 | `toothwear` | Recorded tooth-wear assessment; numerical/category scale not independently established. |
 | `neck_diameter` | Recorded neck diameter; measurement unit not established in available metadata. |
 | `condition` | Recorded body-condition category: GOOD, FAIR, POOR, VERY GOOD, or V.GOOD (a spelling variant of very good). |
-| `reproductive_status` | Recorded or interpreted result/status; see source test rules. |
+| `reproductive_status` | Observed reproductive condition/status recorded at capture; retain source descriptions as entered. |
 | `testes` | Recorded testes/reproductive assessment. |
 | `eartags` | Ear-tag information recorded at the encounter. |
 | `retag` | Indication or description of replacement/re-tagging. |
 | `transmitter` | Capture record transmitter description or identifier. |
 | `tx_number` | Transmitter number recorded at capture. |
-| `pm_status` | Recorded or interpreted result/status; see source test rules. |
+| `pm_status` | Post-mortem status category recorded for this event. |
 | `pm_cause` | Recorded circumstances or cause associated with a post-mortem event. |
 | `comment` | Recorded capture comment. |
 | `created_at` | Database row creation timestamp. |
@@ -336,7 +336,7 @@ Culture tests and related typing information.
 | `capture_id` | Unique capture or PM event identifier. |
 | `sample_type` | Recorded specimen category used for the assay. |
 | `afno` | Recorded AF number/identifier associated with culture sample; full abbreviation unconfirmed. |
-| `culture_result` | Recorded or interpreted result/status; see source test rules. |
+| `culture_result` | Recorded culture test outcome; distinguish laboratory growth result from modelled infection status. |
 | `lesions` | Recorded lesion observations associated with the sample/post-mortem. |
 | `abscesses` | Recorded abscess observations. |
 | `spoligo` | Recorded spoligotype result for isolate. |
@@ -353,7 +353,7 @@ Original disease status codes used by captures.
 | Column | Meaning |
 |---|---|
 | `disease_status_id` | Record or lookup ID used for joins. |
-| `disease_status` | Recorded or interpreted result/status; see source test rules. |
+| `disease_status` | Recorded disease classification. The lookup contains Negative, Exposed, Excretor and Super excretor. |
 ### `research.dpp_tests`
 
 DPP tests and visual lines.
@@ -372,8 +372,8 @@ DPP tests and visual lines.
 | `visual_line_2` | Second recorded DPP test-line designation. |
 | `optical_density_2` | Optical-density measurement associated with second line; dimensionless absorbance measurement. |
 | `source_raw_row_id` | Record or lookup ID used for joins. |
-| `visual_line_1_result` | Recorded or interpreted result/status; see source test rules. |
-| `visual_line_2_result` | Recorded or interpreted result/status; see source test rules. |
+| `visual_line_1_result` | Recorded result category for the first DPP visual line. |
+| `visual_line_2_result` | Recorded result category for the second DPP visual line. |
 ### `research.elisa_tests`
 
 ELISA diagnostic results.
@@ -499,7 +499,7 @@ Location evidence, coordinates and their sources.
 | `source_reference` | Recorded source reference supporting the coordinate or dataset. |
 | `observed_on` | Date associated with the source coordinate observation. |
 | `recorded_by` | Original recorded value, preserved. |
-| `review_status` | Recorded or interpreted result/status; see source test rules. |
+| `review_status` | Review decision/status assigned to this spatial evidence item. |
 | `reviewed_by` | Recorded reviewed by field; the available records do not establish a more precise definition. |
 | `reviewed_at` | Date, quarter, year or provenance timestamp. |
 | `notes` | Historical notes or provenance in the context of this table. |
