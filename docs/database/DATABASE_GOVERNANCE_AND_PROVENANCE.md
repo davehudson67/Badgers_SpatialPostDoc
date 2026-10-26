@@ -90,4 +90,4 @@ Validation: 17,586 unique captures in the V1 traits view; capture history V1: 16
 
 ## V1 coauthor schema clean-up — 26 October 2026
 
-For the current coauthor-facing structure and permission checks, see [`WOODCHESTER_V1_COAUTHOR_RELEASE_AUDIT_20261026.md`](WOODCHESTER_V1_COAUTHOR_RELEASE_AUDIT_20261026.md). Seven interim diagnostic/review views were retired on 26 October; the core V1 researcher-facing views, base research tables, raw Access tables and versioned SQL migration records were retained. The historical references to old review-view names elsewhere in this document record the original workflow, not live endpoints. The working baseline is still **V1**.
+For the current coauthor-facing structure and permission checks, see [`V1_RELEASE_NOTES.md`](V1_RELEASE_NOTES.md). Seven interim diagnostic/review views were retired on 26 October; the core V1 researcher-facing views, base research tables, raw Access tables and versioned SQL migration records were retained. The historical references to old review-view names elsewhere in this document record the original workflow, not live endpoints. The working baseline is still **V1**.
