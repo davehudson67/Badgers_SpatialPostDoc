@@ -1,6 +1,6 @@
 # Woodchester badger database — V1 release notes
 
-I've kept the V1 database close to the original Access structure. The original values are retained, and where a field needed cleaning I've added a separate `_clean` field. There are **18 research tables** and **five analysis views**. The original Access imports remain available in `access_raw`; technical source files and imports are in `ingest`. The older views needed to reproduce development code remain outside the release interface in `internal_v1`.
+I've kept the V1 database close to the original capture and laboratory records. The original values are retained, and where a field needed cleaning I've added a separate `_clean` field. There are **18 research tables** and **five analysis views**. An unchanged source archive is retained separately; technical source files and imports are in `ingest`. The older views needed to reproduce development code remain outside the release interface in `internal_v1`.
 
 The detailed rules, code definitions and changes I've made are in [V1 Cleaning Audit](V1_CLEANING_AUDIT.md).
 
@@ -39,7 +39,7 @@ The detailed rules, code definitions and changes I've made are in [V1 Cleaning A
 
 ## Column guide
 
-The following is the full list of currently released columns. I've described each as far as the original information supports. I haven't assigned units or meanings to uncertain historical codes without evidence; those require the original Access field definitions.
+The following is the full list of currently released columns. I've described each as far as the original information supports. I haven't assigned units or meanings to uncertain historical codes without evidence; those require the historical source definitions.
 
 ### `analysis.capture_history_v1`
 
@@ -76,10 +76,12 @@ Joined capture histories; one row per event.
 | `temperature` | Recorded body temperature; expected temperature measurement but unit not confirmed in metadata. |
 | `toothwear` | Recorded tooth-wear assessment; numerical/category scale not independently established. |
 | `neck_diameter` | Recorded neck diameter; measurement unit not established in available metadata. |
-| `condition` | Recorded body-condition category: GOOD, FAIR, POOR, VERY GOOD, or V.GOOD (a spelling variant of very good). |
+| `condition` | Original body-condition categories: FAIR, GOOD, POOR, V.GOOD, VERY GOOD. Values retained as recorded. |
+| `condition_clean` | Standardised condition: FAIR, GOOD, POOR, VERY GOOD; V.GOOD and VERY GOOD both become VERY GOOD; missing stays missing. |
 | `reproductive_status` | Observed reproductive condition/status recorded at capture; retain source descriptions as entered. |
 | `testes` | Recorded testes/reproductive assessment. |
-| `eartags` | Ear-tag information recorded at the encounter. |
+| `eartags` | Original ear-tag field. Observed: BOTH, LEFT, NEITHER, NONE, NOT TAGGED, NOT TAGûGED, REMOVED, RETAGGEûD, RIGHT. |
+| `eartags_clean` | Standardised tag categories: BOTH, LEFT, RIGHT, NONE, REMOVED, RETAGGED. NEITHER/NONE/NOT TAGGED/NOT TAGûGED become NONE, RETAGGEûD becomes RETAGGED; REMOVED remains distinct. Missing stays missing. |
 | `retag` | Indication or description of replacement/re-tagging. |
 | `transmitter` | Capture record transmitter description or identifier. |
 | `tx_number` | Transmitter number recorded at capture. |
@@ -741,3 +743,10 @@ I use **observed value** deliberately: `condition` contains both `VERY GOOD` and
 ### What does not have a finite code list
 
 Free-text fields, staff/operator initials, animal or sample identifiers, arbitrary source references and numeric measurements are not categorical codebooks. In particular `pm_cause` is narrative/high-cardinality, while `best_tune`, `tx_number`, `plate_number`, `afno` and `elect_tag` refer to values/identifiers rather than defined category sets. Units for some legacy measurements (including body mass/length and tube volumes) cannot be established from the available source metadata alone; I therefore identify them as **unit unverified** rather than guessing. This does not require coauthors to inspect Access: it flags exactly what is unknown in the present dataset.
+
+
+## V1 category cleaning: condition and ear tags
+
+I've kept the original `condition` and `eartags` fields and added generated `condition_clean` and `eartags_clean` columns so the standardised values update automatically. In `condition_clean`, `V.GOOD` → `VERY GOOD`; `FAIR`, `GOOD` and `POOR` are unchanged. The complete cleaned condition distribution is FAIR **4,789**, GOOD **8,809**, POOR **1,281**, VERY GOOD **1,768** (including 700 originally marked V.GOOD), and missing **939**.
+
+For `eartags_clean`, `NEITHER`, `NONE`, `NOT TAGGED`, and the encoding variant `NOT TAGûGED` all become `NONE`. `RETAGGEûD` becomes `RETAGGED`. `BOTH`, `LEFT`, `RIGHT`, and `REMOVED` remain distinct. The original field is still available if a researcher needs the exact entry. Missing entries stay missing.
