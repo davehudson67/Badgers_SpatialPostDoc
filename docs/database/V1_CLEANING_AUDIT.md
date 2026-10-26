@@ -474,3 +474,16 @@ For the current coauthor-facing structure and permission checks, see [`WOODCHEST
 Key V1 implementation migrations are in `sql/migrations/`: `woodchester_working_v1_definitive_sett_coordinate_matching_20261023.sql`, `woodchester_v1_coordinate_alias_review_20261023.sql`, `woodchester_v1_capture_pm_grid_ref_review_20261023.sql`, `woodchester_v1_embedded_pm_grid_refs_20261023.sql`, `woodchester_v1_pm_so_st_gridrefs_20261023.sql`, `woodchester_v1_baseline_stable_interfaces_20261023.sql`, `woodchester_v1_capture_location_consistent_research_views_20261023.sql`, and `woodchester_v1_coauthor_both_schemas_readonly_20261026.sql`. Follow the versioned SQL definitions and original data evidence for exact executable rules. Earlier superseded classifier/review scripts are retained in Git history for reproducibility, not promoted as coauthor interfaces.
 
 **Audit principle:** every future `*_clean` field must record its source column, transformation SQL, allowed values, unmapped/null handling, affected row counts, reason for the decision, and verification query; no original recorded value should be discarded or overwritten.
+
+
+## Implemented original-plus-clean field transformation (26 October 2026)
+
+**Live migration:** `sql/migrations/woodchester_v1_minimal_clean_columns_20261026.sql`; future insert/update alignment: `sql/migrations/woodchester_v1_clean_names_trigger_20261026.sql`.
+
+- `research.individuals.sex_clean`: generated stored expression `CASE WHEN upper(btrim(coalesce(sex,''))) IN ('MALE','FEMALE') THEN upper(btrim(sex)) ELSE 'UNKNOWN' END`. All original values retained. Verification: FEMALE 1,982, MALE 1,772, original NULL to UNKNOWN 20, recorded UNKNOWN 17.
+- `research.individuals.age_first_capture_clean`: generated stored expression for `CUB`, `YEARLING`, `ADULT`; otherwise `UNKNOWN`. Verification: CUB 2,823, ADULT 769, YEARLING 85, source NULL to UNKNOWN 114.
+- `research.captures.sett_name_clean`: populated from `research.setts.sett_name` via existing `sett_id`; source `recorded_sett_name` not modified; NULL when no `sett_id`. Never replace with grid-square or territory-centre text.
+- `research.captures.social_group_name_clean`: populated from canonical `research.social_groups.social_group_name` via `recorded_social_group_id`; the recorded source text remains as-is. The new trigger synchronises both cleaned names if foreign key assignments are changed.
+- Verification on 17,586 capture rows: zero non-null cleaned sett names when `sett_id` NULL; zero missing cleaned sett names for non-null `sett_id`; zero missing SG cleaned names for non-null `recorded_social_group_id`.
+
+**Known qualification:** this trigger maintains labels when the capture foreign key changes, not if a canonical lookup's name itself is renamed without updating the referencing rows. Such rare canonical renames require a controlled migration and verification. Original Access-to-research field parity and consolidation of the 24 analysis views remain separate open work; no source records or dependent legacy views were deleted in this pass.
