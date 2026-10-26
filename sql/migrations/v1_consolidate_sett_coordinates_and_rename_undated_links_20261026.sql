@@ -1,0 +1,12 @@
+alter table research.setts add column easting numeric;
+alter table research.setts add column northing numeric;
+alter table research.setts add column coordinate_system text;
+alter table research.setts add column accuracy_m numeric;
+alter table research.setts add column coordinate_source text;
+alter table research.setts add column coordinate_observed_on date;
+update research.setts s set easting=e.easting,northing=e.northing,coordinate_system=e.coordinate_system,accuracy_m=e.accuracy_m,coordinate_source=e.source_reference,coordinate_observed_on=e.observed_on from research.sett_location_evidence e where e.sett_id=s.sett_id and e.review_status='APPROVED';
+create or replace view internal_v1.sett_coordinates_approved as select sett_name,easting,northing,coordinate_system,accuracy_m,coordinate_source as source_reference,coordinate_observed_on as observed_on from research.setts where easting is not null and northing is not null;
+create or replace view internal_v1.capture_sett_coordinate_inventory as select s.sett_name,count(c.capture_id) as n_captures,count(c.capture_id) filter(where c.is_pm) as n_pm_records,min(c.capture_date) as first_capture_date,max(c.capture_date) as last_capture_date,s.easting,s.northing,s.coordinate_system,s.accuracy_m,s.coordinate_source,case when s.easting is not null and s.northing is not null then 'COORDINATES_APPROVED'::text else 'COORDINATES_MISSING'::text end as coordinate_status from research.setts s left join research.captures c on c.sett_id=s.sett_id group by s.sett_id,s.sett_name,s.easting,s.northing,s.coordinate_system,s.accuracy_m,s.coordinate_source;
+drop table research.sett_location_evidence;
+alter table research.sett_social_group_history rename to sett_social_group_links;
+comment on table research.sett_social_group_links is 'Undated sett–social group associations from the original sett lookup, not annual territory assignment.';
