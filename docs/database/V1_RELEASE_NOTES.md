@@ -590,3 +590,154 @@ Wounds recorded at captures; multiple rows can belong to one capture.
 
 I use `tattoo` as the scientific individual identifier and `capture_id` for capture events. A canonical sett name is only filled when the recorded location has been matched to a sett. PM grid references are recovery-location approximations, not known sett locations. Recorded social groups shouldn't automatically be treated as annual residence assignments. Infection probabilities are model outputs rather than diagnostic observations.
 
+
+
+## Complete observed code lists (V1 snapshot)
+
+I extracted the distinct, non-missing values directly from the research tables on 26 October 2026. Each list below is **exhaustive for the current stored non-NULL values** where it is shown, not a claim that the source system could never contain other values. Values are presented exactly as stored, including inconsistent spellings. NULL is not a category; it indicates missing information. A code is not automatically biologically meaningful just because it appears in the source. For identifiers, staff initials, continuous measurements and free text I explain the field rather than listing every record.
+
+### `research.brock_tests`
+
+| Field | All observed non-missing values |
+|---|---|
+| `no_clotted` (2) | `false`, `true` |
+| `test_result` (2) | `N`, `P` |
+
+### `research.captures`
+
+| Field | All observed non-missing values |
+|---|---|
+| `adverse_effects` (2) | `No`, `Yes` |
+| `blood_sample_taken` (2) | `false`, `true` |
+| `collar_action_taken` (2) | `No`, `Yes` |
+| `collar_impact_assessment` (4) | `0`, `1`, `2`, `N/A` |
+| `collar_transmitter` (8) | `FIT`, `FITTED`, `LOST`, `PRES`, `PRESENT`, `REMOVAL`, `REPL`, `REPLACED` |
+| `condition` (5) | `FAIR`, `GOOD`, `POOR`, `V.GOOD`, `VERY GOOD` |
+| `eartags` (9) | `BOTH`, `LEFT`, `NEITHER`, `NONE`, `NOT TAGGED`, `NOT TAGûGED`, `REMOVED`, `RETAGGEûD`, `RIGHT` |
+| `fur_clip_taken` (2) | `false`, `true` |
+| `hair_sample_taken` (2) | `false`, `true` |
+| `health_monitoring` (3) | `N`, `No`, `Yes` |
+| `is_pm` (2) | `false`, `true` |
+| `moc` (14) | `DART GUN`, `DEAD SN/TR`, `FOUND DEAD`, `FOUND EXT`, `NET`, `ON ROAD`, `PUT DOWN`, `REMOVAL`, `REPORTED BY MEMBER OF THE PUBLIC`, `RTA`, `SHOT`, `SHOT (GP)`, `SNARE`, `TRAP` |
+| `pm_status` (2) | `NOT POSSIBLE`, `POSSIBLE` |
+| `ppm` (28) | `.9006`, `1 PER SEC`, `200`, `39`, `40`, `42`, `45`, `46`, `47`, `48`, `49`, `50`, `52`, `54`, `55`, `56`, `58`, `60`, `60 per min`, `61`, `62`, `65`, `68`, `69`, `70`, `71`, `72`, `HIGH` |
+| `release_assessment` (2) | `Death`, `Fit` |
+| `reproductive_status` (13) | `LACT P Y`, `LACTATING`, `LACTATING SOMETIME`, `LACTATING THIS YEAR`, `MID`, `N LACT T Y`, `NEVER LACTATING`, `NPTD`, `PREGNANT`, `TESTES ASCENDED`, `TESTES DESCENDED`, `UNKNOWN`, `UNSURE` |
+| `retag` (17) | `01`, `10`, `B81`, `B90`, `B97`, `G16`, `G40`, `K75`, `R01`, `R64`, `R95`, `W3`, `W90`, `W91`, `W92`, `W99`, `Y42` |
+| `severity_assessment` (1) | `Mild` |
+| `testes` (3) | `ASCENDED`, `DESCENDED`, `MID` |
+| `transmitter` (8) | `FIT`, `FITTED`, `LOST`, `PRES`, `PRESENT`, `REMOVAL`, `REPL`, `REPLACED` |
+| `whisker_sample_taken` (2) | `false`, `true` |
+
+### `research.cultures`
+
+| Field | All observed non-missing values |
+|---|---|
+| `abscesses` (6) | `CLOSED`, `HEALED`, `HEALING`, `NOT HEALED`, `OPEN`, `SINUS` |
+| `culture_result` (8) | `CONTAMINATED`, `FAILED`, `M.AVIUM`, `M.BOVIS`, `M.OTHER`, `NEGATIVE`, `NOT TESTED`, `PENDING` |
+| `lesions` (3) | `NA`, `NVL`, `VL` |
+| `sample_type` (46) | `AS`, `BI`, `BODY`, `BWB`, `BWH`, `BWN`, `BWR`, `CARCASE`, `EYE`, `FAECES`, `GUT`, `HEAD`, `JAW`, `KIDNEY`, `KIDNEYS`, `L SUB`, `L SUBM`, `LIMB`, `LIVER`, `LSWAB`, `LUNG`, `LUNG1`, `LYMPH NODE`, `LYMPH NODE 2`, `LYMPH NODE 3`, `LYMPH NODE 4`, `MESENTERIC LYMPH NODE`, `NECK`, `OA`, `OTHER`, `OTHER 1`, `PAW`, `POOLED`, `R SUB`, `R SUBM`, `RUMP`, `SHOULDER`, `SPLEEN`, `STANDARD`, `SW`, `TA`, `TL`, `TO`, `URINE`, `URINE TRAY`, `VE` |
+| `spoligo` (12) | `10`, `11`, `15`, `17`, `20`, `21`, `22`, `25`, `9`, `B6-11`, `FAIL`, `RETEST` |
+| `spolprime` (1) | `Y` |
+| `wgs_clade` (3) | `17:a`, `B6-11`, `NA` |
+
+### `research.disease_statuses`
+
+| Field | All observed non-missing values |
+|---|---|
+| `disease_status` (4) | `Excretor`, `Exposed`, `Negative`, `Super excretor` |
+
+### `research.dpp_tests`
+
+| Field | All observed non-missing values |
+|---|---|
+| `sample_type` (5) | `Serum`, `Serum Fresh`, `Serum Frozen`, `WB Field`, `Whole Blood` |
+| `test_type` (2) | `Double`, `Single` |
+| `visual_line_1` (4) | `N`, `Nx`, `P`, `Px` |
+| `visual_line_1_result` (4) | `Negative`, `NegativeX`, `Positive`, `PositiveX` |
+| `visual_line_2` (4) | `N`, `Nx`, `P`, `Px` |
+| `visual_line_2_result` (4) | `Negative`, `NegativeX`, `Positive`, `PositiveX` |
+
+### `research.elisa_tests`
+
+| Field | All observed non-missing values |
+|---|---|
+| `elisa_type` (2) | `BELT`, `INDIRECT` |
+| `test_result` (7) | `BIT`, `I`, `ITT`, `N`, `NO SERA`, `NO SERUM`, `P` |
+
+### `research.ifn_gamma_elisa`
+
+| Field | All observed non-missing values |
+|---|---|
+| `blood_quality` (2) | `F`, `P` |
+| `retest` (5) | `A OUTLIER`, `B & A`, `B OUTLIER`, `MISSING ODs`, `NIL AVG HIGH` |
+| `test_failed` (1) | `NO SAMPLE` |
+| `test_info` (1) | `LOW PWM` |
+| `test_result` (2) | `Negative`, `Positive` |
+| `wellstage_96_nil_1` (3) | `GD`, `IV`, `NS` |
+| `wellstage_96_nil_2` (4) | `CL`, `GD`, `IV`, `NS` |
+| `wellstage_96_ppda_1` (3) | `GD`, `IV`, `NS` |
+| `wellstage_96_ppda_2` (3) | `GD`, `IV`, `NS` |
+| `wellstage_96_ppdb_1` (3) | `GD`, `IV`, `NS` |
+| `wellstage_96_ppdb_2` (4) | `CL`, `GD`, `IV`, `NS` |
+| `wellstage_96_pwm_1` (4) | `CL`, `GD`, `IV`, `NS` |
+| `wellstage_96_pwm_2` (4) | `CL`, `GD`, `IV`, `NS` |
+
+### `research.individuals`
+
+| Field | All observed non-missing values |
+|---|---|
+| `age_first_capture` (3) | `ADULT`, `CUB`, `YEARLING` |
+| `age_first_capture_clean` (4) | `ADULT`, `CUB`, `UNKNOWN`, `YEARLING` |
+| `sex` (3) | `FEMALE`, `MALE`, `UNKNOWN` |
+| `sex_clean` (3) | `FEMALE`, `MALE`, `UNKNOWN` |
+
+### `research.infection_probabilities`
+
+| Field | All observed non-missing values |
+|---|---|
+| `model_run` (1) | `infection_probabilities_2026_08_27` |
+| `model_variant` (6) | `all_tests_fixed`, `all_tests_inferred`, `culture_only_fixed`, `diagnostic_adjusted_annual`, `diagnostic_annual_prevalence`, `diagnostic_fixed_prevalence` |
+| `quarter` (4) | `1`, `2`, `3`, `4` |
+| `source_file` (1) | `p_infected_per_capture.csv` |
+
+### `research.infection_quarterly_probabilities`
+
+| Field | All observed non-missing values |
+|---|---|
+| `model_run` (1) | `infection_probabilities_2026_08_27` |
+| `model_variant` (1) | `all_tests_inferred` |
+| `quarter` (4) | `1`, `2`, `3`, `4` |
+| `source_file` (1) | `p_infected_grid_all_tests_inferred.csv` |
+
+### `research.sett_location_evidence`
+
+| Field | All observed non-missing values |
+|---|---|
+| `coordinate_system` (1) | `EPSG:27700` |
+| `evidence_type` (1) | `OTHER` |
+| `review_status` (1) | `APPROVED` |
+| `reviewed_by` (1) | `Dave Hudson` |
+
+### `research.stat_pak_tests`
+
+| Field | All observed non-missing values |
+|---|---|
+| `test_result` (3) | `Negative`, `No Clotted Sample`, `Positive` |
+
+### `research.wounds`
+
+| Field | All observed non-missing values |
+|---|---|
+| `wound_age` (8) | `HEALED (scar)`, `HEALED (SCAR)`, `NEW`, `OLD`, `OPEN (fresh)`, `OPEN (FRESH)`, `OPEN (old)`, `OPEN (OLD)` |
+| `wound_amount` (5) | `FEW (2 or 3)`, `FEW (2 TO 3)`, `LOTS (>3)`, `NOT RECORDED`, `ONE` |
+| `wound_area` (6) | `BODY`, `HEAD`, `INGUI.`, `LIMB`, `NECK`, `RUMP` |
+| `wound_size` (7) | `LGE (gaping)`, `LGE (GAPING)`, `MED (gash)`, `MED (GASH)`, `NOT RECORDED`, `SML (puncture)`, `SML (PUNCTURE)` |
+
+### Interpreting recorded codes
+
+I use **observed value** deliberately: `condition` contains both `VERY GOOD` and `V.GOOD`, and `eartags` contains source encoding artefacts (`NOT TAGûGED`, `RETAGGEûD`). I have not silently translated those source strings. For DPP and Stat-Pak codes, I use the definitions given in the companion cleaning audit. Recording a code is not evidence that all code variants are valid in every assay/time period.
+
+### What does not have a finite code list
+
+Free-text fields, staff/operator initials, animal or sample identifiers, arbitrary source references and numeric measurements are not categorical codebooks. In particular `pm_cause` is narrative/high-cardinality, while `best_tune`, `tx_number`, `plate_number`, `afno` and `elect_tag` refer to values/identifiers rather than defined category sets. Units for some legacy measurements (including body mass/length and tube volumes) cannot be established from the available source metadata alone; I therefore identify them as **unit unverified** rather than guessing. This does not require coauthors to inspect Access: it flags exactly what is unknown in the present dataset.
