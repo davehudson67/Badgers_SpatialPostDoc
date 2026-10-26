@@ -1,6 +1,6 @@
 create or replace view analysis.location_review_767_v1 with (security_invoker=true) as
 with base as (
-select c.capture_id,c.individual_id,i.tattoo,c.capture_date,c.is_pm,c.recorded_sett_name,c.capture_location_text,c.os_ref,c.comment,c.location_cleaning_note,c.recorded_social_group_name,c.recorded_supergroup_name,c.sett_id,s.sett_name canonical_sett_name,s.notes sett_notes,c.location_type,c.location_coordinate_basis,c.location_easting,c.location_northing,
+select c.capture_id,r.individual_id,i.tattoo,c.capture_date,c.is_pm,c.recorded_sett_name,c.capture_location_text,c.os_ref,c.comment,c.location_cleaning_note,c.recorded_social_group_name,c.recorded_supergroup_name,c.sett_id,s.sett_name canonical_sett_name,s.notes sett_notes,c.location_type,c.location_coordinate_basis,c.location_easting,c.location_northing,
 case when c.sett_id is not null then '01_KNOWN_SETT_MISSING_COORDINATES' when c.is_pm then '03_PM_NO_MATCHED_SETT' else '02_ALIVE_UNMATCHED_CAPTURE' end review_group
 from analysis.capture_history_v1 c
 join research.captures r on r.capture_id=c.capture_id
