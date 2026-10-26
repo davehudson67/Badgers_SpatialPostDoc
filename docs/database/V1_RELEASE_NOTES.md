@@ -594,7 +594,7 @@ I use `tattoo` as the scientific individual identifier and `capture_id` for capt
 
 ## Complete observed code lists (V1 snapshot)
 
-I extracted the distinct, non-missing values directly from the research tables on 26 October 2026. Each list below is **exhaustive for the current stored non-NULL values** where it is shown, not a claim that the source system could never contain other values. Values are presented exactly as stored, including inconsistent spellings. NULL is not a category; it indicates missing information. A code is not automatically biologically meaningful just because it appears in the source. For identifiers, staff initials, continuous measurements and free text I explain the field rather than listing every record.
+I extracted the distinct, non-missing values directly from the research tables on 26 October 2026. Each list below is **exhaustive for the current stored non-NULL values** where it is shown, not a claim that the source system could never contain other values. Values are presented exactly as stored, including inconsistent spellings. NULL is not a category; it indicates missing information. A code is not automatically biologically meaningful just because it appears in the source. For identifiers, staff initials, continuous measurements and free text I explain the field rather than listing every record. Two ostensibly categorical fields are actually entirely empty: `research.dpp_tests.test_result` (0 of 3,316 records populated) and `research.wounds.wound_type` (0 of 1,636 populated); they therefore have **no observed entries** to list.
 
 ### `research.brock_tests`
 
