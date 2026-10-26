@@ -1,0 +1,1 @@
+alter table research.captures add column collar_transmitter_clean text generated always as (case when collar_transmitter in ('FIT','FITTED') then 'FITTED' when collar_transmitter in ('PRES','PRESENT') then 'PRESENT' when collar_transmitter in ('REPL','REPLACED') then 'REPLACED' else collar_transmitter end) stored;
