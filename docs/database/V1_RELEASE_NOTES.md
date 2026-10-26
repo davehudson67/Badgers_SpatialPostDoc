@@ -1,6 +1,6 @@
 # Woodchester badger database — V1 release notes
 
-I've kept the V1 database close to the original capture and laboratory records. The original values are retained, and where a field needed cleaning I've added a separate `_clean` field. There are **17 research tables** and **five analysis views**. An unchanged source archive is retained separately; technical source files and imports are in `ingest`.
+I've kept the V1 database close to the original capture and laboratory records. The original values are retained, and where a field needed cleaning I've added a separate `_clean` field. There are **18 research tables** and **five analysis views**. An unchanged source archive is retained separately; technical source files and imports are in `ingest`.
 
 The detailed rules, code definitions and changes I've made are in [V1 Cleaning Audit](V1_CLEANING_AUDIT.md).
 
@@ -18,6 +18,7 @@ The detailed rules, code definitions and changes I've made are in [V1 Cleaning A
 | `individuals` | One badger per row, identified by tattoo. |
 | `infection_probabilities` | Additional model-derived infection probabilities. |
 | `infection_quarterly_probabilities` | Additional model-derived quarterly infection probabilities. |
+| `sett_annual_territory_matches` | Year-by-year sett point matches to territory polygons, including overlaps and unmatched points (not evidence of individual residency). |
 | `sett_social_group_links` | Undated sett–social group associations (173 links for 160 setts); these do not establish annual occupancy. |
 | `setts` | Canonical sett names. |
 | `social_group_supergroup_history` | Group/supergroup links over time. |
@@ -785,4 +786,23 @@ These fields are derived labels, not new observations. I have not interpreted I,
 
 ## Interpreting setts and social groups by year
 
-I have one mapped coordinate for each of 159 setts, included in `research.setts`. The other 17 currently lack a matched coordinate. The 173 undated associations in `research.sett_social_group_links` remain distinct from spatial assignments. A year-specific sett–group assignment must be computed by testing each mapped sett point against the polygon for that year, preserving unmatched points, overlaps, boundary ambiguities and the polygon version. A point-in-polygon result describes territory membership in that year, not proof of a badger's social-group residency. The year-specific polygon result has not yet been imported into this V1 database.
+I have one mapped coordinate for each of 159 setts, included in `research.setts`. The other 17 currently lack a matched coordinate. The 173 undated associations in `research.sett_social_group_links` remain distinct from spatial assignments. A year-specific sett–group assignment must be computed by testing each mapped sett point against the polygon for that year, preserving unmatched points, overlaps, boundary ambiguities and the polygon version. A point-in-polygon result describes territory membership in that year, not proof of a badger's social-group residency. The year-specific result has its own table, `research.sett_annual_territory_matches`, and is populated by the spatial R script after reviewing its output. It contains no assignments until that script has been run.
+
+
+### `research.sett_annual_territory_matches`
+
+I use this table to keep the annual spatial relationship between a fixed sett point and its territory polygon(s). It is produced by `scripts/Spatial/10_build_V1_annual_sett_polygon_membership.R` using the 49 annual polygon shapefiles (1977–2025). This is **not** a verified social-group residence assignment. Each sett can have more than one row in a year when polygons overlap; setts without coordinates or outside all territories get an explicit unmatched row.
+
+| Column | Meaning |
+|---|---|
+| `match_id` | Database row ID. |
+| `year` | Polygon snapshot year, 1977–2025. |
+| `sett_id` | Canonical ID of the named sett, linked to `research.setts`. |
+| `polygon_id` | Identifier of the polygon within that year's shapefile; NULL for unmatched sett-years. Together with year and polygon source this identifies the source feature. |
+| `territory_name` | Social-group territory label in that year's original shapefile. This has not automatically been equated to a canonical social_group_id. |
+| `match_status` | ONE_POLYGON: point inside exactly one polygon; MULTIPLE_POLYGONS: inside more than one; ON_BOUNDARY: touches a polygon boundary; OUTSIDE_ALL: mapped point falls outside every polygon; NO_COORDINATE: no mapped sett point. |
+| `polygon_source` | Name of the annual shapefile used for the calculation, e.g. `territories_1985.shp`. |
+| `coordinate_source` | Named-sett coordinate CSV provenance copied from `research.setts`. |
+| `created_at` | Time the computed association was stored in Supabase. |
+
+The undated `research.sett_social_group_links` entries remain a separate dataset and are not used to overwrite these annual spatial matches. The annual crosswalk table has been created, but **it contains no calculated matches until the script has run and its results have been checked and uploaded**.
