@@ -4,6 +4,139 @@ I've kept the V1 database close to the original capture and laboratory records. 
 
 The detailed rules, code definitions and changes I've made are in [V1 Cleaning Audit](V1_CLEANING_AUDIT.md).
 
+## Accessing the V1 database from R
+
+I recommend using the five `analysis` views for most work, and the `research` tables when individual source fields or relationships are needed. The code below is intended to run from the root of the `Badgers_SpatialPostDoc` repository. R uses the project's existing `scripts/BadgerDatabase.R` connection helper.
+
+### 1. Connect
+
+Install the packages once if required:
+
+```r
+install.packages(c("DBI", "RPostgres", "dplyr", "dbplyr", "readr"))
+```
+
+Connection settings `BADGER_DB_HOST`, `BADGER_DB_PORT`, `BADGER_DB_NAME`, `BADGER_DB_USER` and `BADGER_DB_PASSWORD` must be set in your environment (for example a private `.Renviron` file). Obtain a **read-only** database account from the project administrator. Do not put passwords in scripts, documents or GitHub.
+
+```r
+library(DBI)
+library(dplyr)
+library(dbplyr)
+
+source("scripts/BadgerDatabase.R")
+con <- badger_db_connect()
+
+DBI::dbIsValid(con)  # TRUE if connected
+```
+
+### 2. See what is available
+
+```r
+# All released analysis views
+DBI::dbListTables(con, schema = "analysis")
+
+# Base research tables (including cleaned and original columns)
+DBI::dbListTables(con, schema = "research")
+
+# See field names without downloading the data
+DBI::dbListFields(con, DBI::Id(schema = "research", table = "captures"))
+```
+
+The released `analysis` views are `capture_history_v1`, `capture_location_v1`, `diagnostic_results`, `capture_infection_probabilities` and `sett_inventory_v1`.
+
+### 3. Read and filter capture records
+
+Use `tbl()` to build a database-backed query. Nothing substantial is downloaded until `collect()` is called.
+
+```r
+captures <- dplyr::tbl(
+  con, dbplyr::in_schema("analysis", "capture_history_v1")
+)
+
+# Only capture events from 2000 onward; exclude post-mortem records
+recent_live <- captures %>%
+  filter(capture_date >= as.Date("2000-01-01"), is_pm == FALSE) %>%
+  select(capture_id, tattoo, capture_date, sett_id, sett_name) %>%
+  collect()
+
+# The existing convenience helper also works
+recent_live_2 <- load_capture_history(
+  con, start_date = "2000-01-01", live_only = TRUE
+)
+```
+
+### 4. Use other analysis views
+
+```r
+diagnostics <- tbl(con, in_schema("analysis", "diagnostic_results"))
+locations <- tbl(con, in_schema("analysis", "capture_location_v1"))
+infection <- tbl(con, in_schema("analysis", "capture_infection_probabilities"))
+sett_inventory <- tbl(con, in_schema("analysis", "sett_inventory_v1"))
+
+# Diagnostic row counts by assay family
+assay_counts <- diagnostics %>%
+  count(test_family, name = "n_records") %>%
+  collect()
+
+# Read the small mapped-sett inventory
+sett_summary <- sett_inventory %>% collect()
+```
+
+### 5. Read a research table and join tables
+
+The `research` tables contain the original and cleaned fields, including the category-standardisation columns.
+
+```r
+raw_capture_fields <- tbl(con, in_schema("research", "captures"))
+setts <- tbl(con, in_schema("research", "setts"))
+
+# Keep all captures; append the matching canonical sett's coordinates
+captures_with_sett_xy <- raw_capture_fields %>%
+  left_join(
+    setts %>% select(sett_id, sett_name, easting, northing),
+    by = "sett_id"
+  ) %>%
+  select(capture_id, sett_id, sett_name, easting, northing,
+         condition, condition_clean, eartags, eartags_clean) %>%
+  collect()
+```
+
+The `condition` and `eartags` fields preserve recorded values. Use `condition_clean` and `eartags_clean` for their documented standardised categories.
+
+### 6. Work with the three sett tables
+
+```r
+setts <- tbl(con, in_schema("research", "setts"))
+undated_links <- tbl(con, in_schema("research", "sett_social_group_links"))
+annual_polygons <- tbl(
+  con, in_schema("research", "sett_annual_territory_matches")
+)
+
+# All recorded undated sett/group associations
+links_df <- undated_links %>% collect()
+
+# All annual sett/polygon rows for 2020, including overlaps
+annual_2020 <- annual_polygons %>%
+  filter(year == 2020L) %>%
+  collect()
+
+# Count available annual rows: returns zero until the generated CSV is uploaded
+annual_polygons %>% summarise(n_rows = n()) %>% collect()
+```
+
+The undated `sett_social_group_links` table is distinct from the **year-specific polygon overlay** in `sett_annual_territory_matches`. Multiple polygon rows per sett-year are intentional; don't assume this is a one-row-per-sett-year lookup.
+
+### 7. Export and disconnect
+
+```r
+readr::write_csv(recent_live, "captures_2000_onward.csv")
+DBI::dbDisconnect(con)
+```
+
+For large tables, filter or aggregate in the database **before** calling `collect()`; avoid downloading everything unnecessarily. All examples above are read-only.
+
+---
+
 ## Research tables
 
 | Table | What it contains |
