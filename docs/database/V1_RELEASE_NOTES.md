@@ -6,7 +6,7 @@ The detailed rules, code definitions and changes I've made are in [V1 Cleaning A
 
 ## Accessing the V1 database from R
 
-I recommend using the five `analysis` views for most work, and the `research` tables when individual source fields or relationships are needed. The code below is intended to run from the root of the `Badgers_SpatialPostDoc` repository. R uses the project's existing `scripts/BadgerDatabase.R` connection helper.
+I recommend using the five `analysis` views for most work, and the `research` tables when individual source fields or relationships are needed. These examples work from **any R project folder**. You do not need to clone the Woodchester code repository or source a project-specific helper script.
 
 ### 1. Connect
 
@@ -16,15 +16,22 @@ Install the packages once if required:
 install.packages(c("DBI", "RPostgres", "dplyr", "dbplyr", "readr"))
 ```
 
-Connection settings `BADGER_DB_HOST`, `BADGER_DB_PORT`, `BADGER_DB_NAME`, `BADGER_DB_USER` and `BADGER_DB_PASSWORD` must be set in your environment (for example a private `.Renviron` file). Obtain a **read-only** database account from the project administrator. Do not put passwords in scripts, documents or GitHub.
+Connection settings `BADGER_DB_HOST`, `BADGER_DB_PORT` (optional; defaults to 5432), `BADGER_DB_NAME`, `BADGER_DB_USER` and `BADGER_DB_PASSWORD` must be set in your environment (for example in your project's private `.Renviron` file). Restart R after adding them. Obtain a **read-only** database account from the project administrator. Do not put passwords in scripts, documents or GitHub.
 
 ```r
 library(DBI)
 library(dplyr)
 library(dbplyr)
 
-source("scripts/BadgerDatabase.R")
-con <- badger_db_connect()
+con <- DBI::dbConnect(
+  RPostgres::Postgres(),
+  host = Sys.getenv("BADGER_DB_HOST"),
+  port = as.integer(Sys.getenv("BADGER_DB_PORT", "5432")),
+  dbname = Sys.getenv("BADGER_DB_NAME"),
+  user = Sys.getenv("BADGER_DB_USER"),
+  password = Sys.getenv("BADGER_DB_PASSWORD"),
+  sslmode = "require"
+)
 
 DBI::dbIsValid(con)  # TRUE if connected
 ```
@@ -32,11 +39,11 @@ DBI::dbIsValid(con)  # TRUE if connected
 ### 2. See what is available
 
 ```r
-# All released analysis views
-DBI::dbListTables(con, schema = "analysis")
-
-# Base research tables (including cleaned and original columns)
-DBI::dbListTables(con, schema = "research")
+# All released analysis views and research tables
+DBI::dbGetQuery(con, "SELECT table_schema, table_name
+ FROM information_schema.tables
+ WHERE table_schema IN ('analysis', 'research')
+ ORDER BY table_schema, table_name")
 
 # See field names without downloading the data
 DBI::dbListFields(con, DBI::Id(schema = "research", table = "captures"))
@@ -59,10 +66,6 @@ recent_live <- captures %>%
   select(capture_id, tattoo, capture_date, sett_id, sett_name) %>%
   collect()
 
-# The existing convenience helper also works
-recent_live_2 <- load_capture_history(
-  con, start_date = "2000-01-01", live_only = TRUE
-)
 ```
 
 ### 4. Use other analysis views
