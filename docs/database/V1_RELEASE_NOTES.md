@@ -986,3 +986,8 @@ polygon_matches_2020 <- annual %>%
 ```
 
 The undated links haven't been replaced by the annual polygon matches. Both are useful to keep, but neither should automatically be interpreted as proof that a badger was resident in a particular group or that it dispersed.
+
+
+## Tattoo case clarification: 040l and 040L (28 October 2026)
+
+I've confirmed that four original Access culture entries use `040l` (lowercase final L), whereas the other matching entries use `040L`. The **leading zero is part of the identifier**. The four cultures already link to the existing research individual `040L`, so there's no second badger to merge and no need to overwrite the original Access records. For original-text matching I treat the case variants as `040L` using `upper(trim(tattoo))`. The full evidence, original row IDs and check script are documented in the [Cleaning Audit](V1_CLEANING_AUDIT.md).
