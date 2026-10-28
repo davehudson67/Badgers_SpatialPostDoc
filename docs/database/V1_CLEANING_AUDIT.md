@@ -16,6 +16,113 @@ I've recorded the decisions and SQL behind the cleaned version here. Original Ac
 | Analysis views | I have created five useful views. Legacy/internal SQL views were moved to `internal_v1` so their definitions and dependencies remain available. | `woodchester_v1_minimal_public_schemas_20261026.sql` |
 | Code lists | I removed three tiny standalone tables after recording their entries here; I retained actual assay measurements and historical many-to-one/many-to-many relationships. | `woodchester_v1_remove_redundant_code_lookups_20261026.sql` |
 
+## Field-by-field cleaning rules (human-readable specification)
+
+This section is intended to be read without opening the SQL files. It describes **rules already implemented in the working database**, not a claim that every record is correct. The migration scripts remain the executable authority if the prose and implementation differ. Original values must be retained, and any disagreement needs to be documented rather than silently corrected. **Sett and social-group reconciliation is still in progress.**
+
+### A. Individual identification
+
+**Original evidence:** tattoo and the imported individual identifier. **Working rule:** I use the tattoo as the scientific individual identifier and retain the internal numeric individual ID as the relational key for database joins. Case variants (for example `40l` and `40L`) need consistent comparison without losing the original recorded string. **What I do not assume:** similar-looking marks or missing tattoos are not automatically evidence for joining two animals. Duplicate, absent or ambiguous tattoos need explicit review. The original-to-working identifiers must remain traceable. **Status:** working identifier convention; unusual records require audit. **Implementation:** original import/identity migrations in `sql/migrations/` (specific historical implementation to be confirmed from the migration sequence).
+
+### B. Sex and age at first capture
+
+**Sex:** `sex_clean` trims surrounding whitespace and standardises recognised `MALE` and `FEMALE` values to uppercase. Other values, including blanks, are assigned `UNKNOWN` in the cleaned field. I retain the original `sex` field, so `UNKNOWN` does not mean an original observer explicitly recorded that category.
+
+**Age at first capture:** `age_first_capture_clean` uses `CUB`, `YEARLING` or `ADULT` for the recognised categories; other or blank values become `UNKNOWN`. The source age-at-entry category is retained. These are recorded categories, not reconstructed ages derived from dates or body measurements.
+
+**Implementation:** `woodchester_v1_minimal_clean_columns_20261026.sql`.
+
+### C. Body condition categories
+
+I retain `research.captures.condition` unchanged and add `condition_clean`. The only documented consolidation is **`V.GOOD` → `VERY GOOD`**. Existing `VERY GOOD` stays `VERY GOOD`; `FAIR`, `GOOD` and `POOR` remain separate categories. Missing values stay **NULL**, not `UNKNOWN` and not `POOR`. At the recorded snapshot there were 700 `V.GOOD` entries and 1,068 originally entered `VERY GOOD` entries; the other recorded categories were `FAIR` 4,789, `GOOD` 8,809 and `POOR` 1,281, with 939 missing. The mapping is purely a label standardisation, not a change to an animal's assessed condition.
+
+**Implementation:** `woodchester_v1_standardise_condition_and_eartags_20261026.sql`.
+
+### D. Ear-tag categories and transcription errors
+
+The source field `research.captures.eartags` is retained. In `eartags_clean`, `NEITHER`, `NONE`, `NOT TAGGED` and the imported encoding variant `NOT TAGûGED` are standardised to **`NONE`**. `RETAGGEûD` becomes **`RETAGGED`**. `BOTH`, `LEFT`, `RIGHT` and **`REMOVED`** remain distinct. In particular, I do **not** treat `REMOVED` as the same observation as `NONE`. The source text is preserved so that a disputed encoding repair can be revisited.
+
+**Implementation:** `woodchester_v1_standardise_condition_and_eartags_20261026.sql`.
+
+### E. Collar/transmitter descriptions
+
+The original `research.captures.collar_transmitter` remains unchanged. In the generated `collar_transmitter_clean` field:
+
+| Original recorded variants | Cleaned category | Interpretation |
+|---|---|---|
+| `FIT`, `FITTED` | `FITTED` | Same recorded label in cleaned form |
+| `PRES`, `PRESENT` | `PRESENT` | Same recorded label in cleaned form |
+| `REPL`, `REPLACED` | `REPLACED` | Same recorded label in cleaned form |
+| `REMOVAL` | `REMOVAL` | **Not** combined with `REPLACED` |
+| `LOST` | `LOST` | Separate category |
+| Missing | NULL | No invented observation |
+
+The documented snapshot is `FITTED` 668, `PRESENT` 355, `REPLACED` 193, `REMOVAL` 127, `LOST` 29 and NULL 16,214. This is not an inference about how long a collar was worn.
+
+**Implementation:** `v1_collar_label_normalisation_20261026.sql`.
+
+### F. ELISA test-result labels
+
+I retain `research.elisa_tests.test_result` and introduce `test_result_clean`. `NO SERA` and `NO SERUM` are recorded as **`NO SERUM`** in the cleaned field. Other codes, including `N`, `P`, `I`, `ITT` and `BIT`, remain unchanged; these are not automatically recoded into a positive/negative biological outcome. The documented snapshot is `N` 13,297, `P` 1,554, `I` 163, `ITT` 15, `BIT` 2, `NO SERUM` 99, and NULL 32.
+
+**Implementation:** `v1_elisa_result_label_normalisation_20261026.sql`.
+
+### G. DPP and Stat-Pak recorded categories
+
+These values were originally stored in small code-lookup tables and are now explicitly documented rather than retained in three separate small lookup tables. **This is a structural change, not an experimental recoding of diagnostic results.** DPP sample types remain `Serum Fresh`, `WB Field`, `Whole Blood` and `Serum Frozen`. DPP visual lines retain `N` (Negative), `Nx` (NegativeX), `P` (Positive), and `Px` (PositiveX); I have **not interpreted the X qualifier**. Stat-Pak codes remain `N` (Negative), `P` (Positive) and `C` (No Clotted Sample). I have not treated `C` as a negative test.
+
+**Implementation:** `woodchester_v1_remove_redundant_code_lookups_20261026.sql`. Other assay measurements and relationships are retained.
+
+### H. Capture records, sampling, welfare and collar fields
+
+Sampling information, welfare assessments and collar-related fields from previously separate one-to-one tables were consolidated into **`research.captures`**. This was a change in table organisation: it was **not** intended to combine repeated capture events, erase historical observations or replace any original recorded value. Before retiring redundant split tables, the migration checked the one-to-one capture IDs and checked field equality for sampling time, collar transmitter and adverse effects. The documented validation result was **17,586 records with 17,586 unique capture IDs**.
+
+**Implementation:** `woodchester_v1_consolidate_capture_fields_20261026.sql` and `woodchester_v1_retire_split_capture_detail_tables_20261026.sql`.
+
+### I. Recorded setts, canonical names and other locations — provisional
+
+This is the most important **unfinished** element of the cleaning. The imported `recorded_sett_name` is an observation from the original capture data, not proof that a value corresponds to a known sett.
+
+**Previously implemented working rule:** `research.captures.sett_name_clean` takes the name of the currently assigned `research.setts.sett_id` where that link is present. Unresolved names remain NULL in that field, with the recorded string preserved. The read-only `analysis.capture_sett_location_standardised_v1` view instead presents an uppercase alphanumeric `sett_clean` based on that **existing** link, or literal **`OTHER`** where no sett ID is linked. `other_location_info` keeps the original location text, falling back to the descriptive location or OS reference where necessary.
+
+**New proposed rule, NOT YET APPLIED:** start from the **168 entries in the uploaded XY sett coordinate inventory**, use the XY-source naming as the preferred spelling (with punctuation/spaces stripped in `sett_clean`), and maintain one approved list of historical aliases for each confirmed sett. Examples are `CLIFF.FACE` → `CLIFFFACE` (historical `CLIFF`), `GULLY` (historical `GULLEY`), `ELEVEN.ROW` → `ELEVENROW` (historical `ELEVENTH ROW`), and `STONEY.TRACK` → `STONEYTRACK` (historical `STONY TRACK`). These proposed name equivalences are **not yet approved biological identity merges**. The 176 working `research.setts` records, existing IDs and linked capture counts remain intact. Names absent from the XY file are retained for review rather than silently deleted, and entries including `PEN.(NEEDS.RENAME)` and `STREAM.(NEEDS.NEW.NAME)` need clarification. `OTHER` must not mean that a location has no useful geographic information.
+
+**Implementation of existing rules:** `woodchester_v1_minimal_clean_columns_20261026.sql`, `woodchester_v1_clean_names_trigger_20261026.sql` and migrations defining `analysis.capture_sett_location_standardised_v1`. **Proposed policy (not implemented):** `V1_SETT_AND_SOCIAL_GROUP_RECONCILIATION_STATUS.md`.
+
+### J. Social-group names and residency — provisional
+
+The existing `social_group_name_clean` uses the currently assigned **recorded social-group ID** to display its canonical label. It does **not** prove that the animal was resident in that group at that time. The original group-name observation must remain accessible. I will agree the social-group naming list and aliases **separately from the sett list**. Identical text in a sett name and a social-group name does not establish that they are interchangeable, and polygon territory labels are not automatically social-group IDs.
+
+The table `research.sett_social_group_history` was renamed `research.sett_social_group_links`. The **173 existing sett–group links covering 160 setts** were kept, but lack validity dates: they are **undated lookup associations**, not evidence of annual occupancy.
+
+**Implementation:** `woodchester_v1_minimal_clean_columns_20261026.sql`, `woodchester_v1_clean_names_trigger_20261026.sql`, `v1_consolidate_sett_coordinates_and_rename_undated_links_20261026.sql`. **Final canonical social-group assignments remain under review.**
+
+### K. Sett coordinates and spatial precision — provisional
+
+The historical XY source is recorded in **British National Grid, EPSG:27700**. An earlier name-based audit matched 159 coordinate pairs to 176 working `research.setts` records, leaving 17 without a match. The 159 XY pairs were consolidated onto the sett records, with source-file and matching-name provenance. **These 159 earlier matches are not equivalent to a signed-off final XY-primary catalogue**; the matching rules and possible identity conflicts are under review.
+
+For captures associated with mapped setts, the working standardised view exposes the matched sett-point coordinates. For sufficiently supported post-mortem OS grid references, the view may instead expose the **south-west corner of the grid square**, with `coordinate_basis='GRID_SQUARE_SOUTHWEST_CORNER'` and `grid_cell_width_m`. A six-figure grid reference locates a **100 m cell**, not an exact point. Any recorded point must retain its basis and precision. For unsupported or ambiguous locations, coordinates remain missing rather than guessed from nearby social groups or polygons. Capture `os_ref` and descriptive text are retained.
+
+**Implementation:** `v1_consolidate_sett_coordinates_and_rename_undated_links_20261026.sql` and V1 location/PM-grid migrations. **Definitive spatial name–point mapping remains under review.**
+
+### L. Annual social-group territory overlays (calculation, not recoding)
+
+The R workflow overlays the then-mapped sett points against **49 annual social-group territory shapefiles (1977–2025)**, using EPSG:27700. The result records all intersections, including multiple overlapping polygons, boundary matches and points outside polygons, without forcing a unique group in ambiguous cases. The recorded snapshot is **9,140 output rows representing 8,624 sett-year combinations**, because a sett-year can have multiple matches. Polygon labels are **not** treated as canonical social groups, and a polygon overlap is **not** evidence that a particular badger was resident there. The recorded output was imported into `research.sett_annual_territory_matches`; source files were not altered.
+
+**Implementation:** `scripts/Spatial/10_build_V1_annual_sett_polygon_membership.R`, `v1_annual_sett_polygon_crosswalk_20261026.sql`, `v1_annual_sett_crosswalk_readonly_grants_20261026.sql`.
+
+### M. Derived access views and data release
+
+The `analysis` views give researchers consistent read-only access; they are not replacements for the original capture and laboratory records. Some earlier/internal SQL views were retained under `internal_v1` rather than destroyed. The current standardised capture/sett view has **17,586 rows**, one for each capture, but its existing `sett_clean` labels pre-date our newly proposed XY-primary naming policy. Treat the data as **working/provisional**, not as a frozen signed-off dataset. A future release must include exact source snapshots, approved name/coordinate dictionaries, a reproducible migration, validation checks and a release date or version identifier.
+
+**Implementation:** `woodchester_v1_minimal_public_schemas_20261026.sql` and the versioned migrations defining the analysis views.
+
+### Matters not yet established as fully audited cleaning rules
+
+I do **not** currently claim a completed or validated policy for resolving every tattoo ambiguity, every `recorded_sett_name` / sett-ID conflict, historical outlier classification, missing or contradictory OS references, time-varying social-group residence, or biological interpretation of ambiguous diagnostic codes. These remain review tasks. Any additional cleaning elsewhere in the modelling scripts must be catalogued separately before calling this an exhaustive audit of **all transformations used in published analyses**.
+
+---
+
 ## Historical code lists now documented instead of stored as tables
 
 **DPP sample types:** Serum Fresh; WB Field; Whole Blood; Serum Frozen.
