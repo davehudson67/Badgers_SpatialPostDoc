@@ -18,7 +18,7 @@ badger_db_connect <- function() {
 }
 
 capture_history_db <- function(con) {
-  tbl(con, dbplyr::in_schema("analysis", "capture_history"))
+  tbl(con, dbplyr::in_schema("analysis", "capture_history_v1"))
 }
 
 diagnostic_results_db <- function(con) {
