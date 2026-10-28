@@ -16,25 +16,28 @@ Install the packages once if required:
 install.packages(c("DBI", "RPostgres", "dplyr", "dbplyr", "readr"))
 ```
 
-Connection settings `BADGER_DB_HOST`, `BADGER_DB_PORT` (optional; defaults to 5432), `BADGER_DB_NAME`, `BADGER_DB_USER` and `BADGER_DB_PASSWORD` must be set in your environment (for example in your project's private `.Renviron` file). Restart R after adding them. Obtain a **read-only** database account from the project administrator. Do not put passwords in scripts, documents or GitHub.
+The database connection details are included below. Each researcher only needs their own **read-only username and password** from the project administrator. Leave credentials out of shared scripts and GitHub commits; the two blank strings below are placeholders for use in a private local script.
 
 ```r
 library(DBI)
+library(RPostgres)
 library(dplyr)
 library(dbplyr)
 
 con <- DBI::dbConnect(
   RPostgres::Postgres(),
-  host = Sys.getenv("BADGER_DB_HOST"),
-  port = as.integer(Sys.getenv("BADGER_DB_PORT", "5432")),
-  dbname = Sys.getenv("BADGER_DB_NAME"),
-  user = Sys.getenv("BADGER_DB_USER"),
-  password = Sys.getenv("BADGER_DB_PASSWORD"),
+  host = "db.klpvihubzlyzubyyubtw.supabase.co",
+  port = 5432,
+  dbname = "postgres",
+  user = "",      # Your read-only database username
+  password = "",  # Your database password
   sslmode = "require"
 )
 
 DBI::dbIsValid(con)  # TRUE if connected
 ```
+
+**Connection note:** This is the Supabase project's direct PostgreSQL host. A network that cannot connect over IPv6 may need Supabase's session-pooler hostname and port instead. The project's reference and region are `klpvihubzlyzubyyubtw` and `eu-west-1` respectively; the precise session-pooler hostname is not included here because it has not been verified for this project.
 
 ### 2. See what is available
 
