@@ -1,24 +1,27 @@
-# Woodchester badger database — V1 release notes
+# Woodchester database — what we've got so far and how to use it
 
-I've kept the V1 database close to the original capture and laboratory records. The original values are retained, and where a field needed cleaning I've added a separate `_clean` field. There are **18 research tables** and **five analysis views**. An unchanged source archive is retained separately; technical source files and imports are in `ingest`.
+I've tried to keep the database as close as possible to the original capture and laboratory records, rather than cleaning away things we may want to revisit. The original values are still there, and where I've standardised something I've generally added a separate `_clean` field. The current structure has **18 research tables** and **five analysis views**, with the original Access imports preserved separately and the source files in `ingest`.
 
-The detailed rules, code definitions and changes I've made are in [V1 Cleaning Audit](V1_CLEANING_AUDIT.md).
+This is a guide to what's available and how to get at it, rather than a claim that the data are all final. **Cleaning is still in progress, particularly for sett names, sett coordinates and social groups, and we haven't signed off a frozen V1 dataset.** I've written out the actual changes and decisions in the [Cleaning Audit](V1_CLEANING_AUDIT.md), and the current plan for reviewing setts and social groups is in the [sett and social-group reconciliation notes](V1_SETT_AND_SOCIAL_GROUP_RECONCILIATION_STATUS.md).
 
-## Accessing the V1 database from R
 
-I recommend using the five `analysis` views for most work, and the `research` tables when individual source fields or relationships are needed. These examples work from **any R project folder**.
+> **Current status (28 October 2026):** I'm still reviewing the sett and social-group catalogues with colleagues. The uploaded 168-entry XY list is now the starting point for **proposed** sett names and aliases; the existing `research.setts` IDs and `analysis` views have **not** yet been rebuilt around it. References below to 'V1', 'released' views or 'canonical' names describe the current working database, not a completed or approved release. Please check the [Cleaning Audit](V1_CLEANING_AUDIT.md) before treating any cleaned field as definitive.
 
-### 1. Connect
+## Getting into the database from R
 
-Install the packages once if required:
+For most day-to-day work, I'd start with the five `analysis` views. They're a convenient way to get to the data without having to join lots of tables yourself. If you need the original fields or want to understand how tables link together, use the `research` tables. The examples below should work from **any R project folder**, provided you've been given access. The views are still working versions where they depend on unfinished cleaning.
+
+### 1. Connecting
+
+If you haven't already got the packages installed, run this once:
 
 ```r
 install.packages(c("DBI", "RPostgres", "dplyr", "dbplyr", "readr"))
 ```
 
-The host, port and database name are fixed below. Each researcher should obtain their own **read-only username and password** from the project administrator. The recommended approach is to keep these credentials in a local `.Renviron` file rather than writing them in R scripts or committing them to GitHub.
+The connection details are below. Ideally, everyone will have their **own read-only login**, issued by whoever is managing access. Please don't put usernames or passwords directly into scripts or GitHub. The easiest approach in RStudio is to keep them in a local `.Renviron` file.
 
-**Set up `.Renviron` (once per computer or R project):**
+**Setting up `.Renviron` (once per computer or R project):**
 
 1. In RStudio create a plain-text file called `.Renviron` in the project root.
 2. Add the following two lines, replacing the blank values with your credentials:
@@ -30,7 +33,7 @@ BADGER_DB_PASSWORD=
 
 3. Save the file and restart your R session so R reads the values. Add `.Renviron` to your project's `.gitignore` and never share or commit the credentials. Check that they are present with `nzchar(Sys.getenv("BADGER_DB_USER"))` and `nzchar(Sys.getenv("BADGER_DB_PASSWORD"))`; both should return `TRUE`. These checks do not print the credentials.
 
-Then connect from **any R project root**:
+After restarting R, you can connect from **any R project folder** like this:
 
 ```r
 library(DBI)
@@ -51,7 +54,7 @@ con <- DBI::dbConnect(
 DBI::dbIsValid(con)  # TRUE if connected
 ```
 
-### 2. See what is available
+### 2. Seeing what's available
 
 ```r
 # All released analysis views and research tables
@@ -64,11 +67,11 @@ DBI::dbGetQuery(con, "SELECT table_schema, table_name
 DBI::dbListFields(con, DBI::Id(schema = "research", table = "captures"))
 ```
 
-The released `analysis` views are `capture_history_v1`, `capture_location_v1`, `diagnostic_results`, `capture_infection_probabilities` and `sett_inventory_v1`.
+The five main `analysis` views are `capture_history_v1`, `capture_location_v1`, `diagnostic_results`, `capture_infection_probabilities` and `sett_inventory_v1`. These names refer to the current working views, not a signed-off final release.
 
-### 3. Read and filter capture records
+### 3. Looking at capture records
 
-Use `tbl()` to build a database-backed query. Nothing substantial is downloaded until `collect()` is called.
+Using `tbl()` lets you filter and organise the data while it's still on the database server. The results aren't actually pulled into R until you call `collect()`, which is useful when working with a lot of records.
 
 ```r
 captures <- dplyr::tbl(
@@ -83,7 +86,7 @@ recent_live <- captures %>%
 
 ```
 
-### 4. Use other analysis views
+### 4. Other useful analysis views
 
 ```r
 diagnostics <- tbl(con, in_schema("analysis", "diagnostic_results"))
@@ -100,9 +103,9 @@ assay_counts <- diagnostics %>%
 sett_summary <- sett_inventory %>% collect()
 ```
 
-### 5. Read a research table and join tables
+### 5. Looking directly at the research tables
 
-The `research` tables contain the original and cleaned fields, including the category-standardisation columns.
+The `research` tables are useful when I want to look at the recorded fields alongside any cleaned versions, or check how things have been linked. For example:
 
 ```r
 raw_capture_fields <- tbl(con, in_schema("research", "captures"))
@@ -119,9 +122,9 @@ captures_with_sett_xy <- raw_capture_fields %>%
   collect()
 ```
 
-The `condition` and `eartags` fields preserve recorded values. Use `condition_clean` and `eartags_clean` for their documented standardised categories.
+The original `condition` and `eartags` entries are still there. The corresponding `_clean` columns are just the standardised versions described in the Cleaning Audit.
 
-### 6. Work with the three sett tables
+### 6. Working with the sett tables
 
 ```r
 setts <- tbl(con, in_schema("research", "setts"))
@@ -144,18 +147,18 @@ annual_polygons %>% summarise(n_rows = n()) %>% collect()
 
 The undated `sett_social_group_links` table is distinct from the **year-specific polygon overlay** in `sett_annual_territory_matches`. Multiple polygon rows per sett-year are intentional; don't assume this is a one-row-per-sett-year lookup.
 
-### 7. Export and disconnect
+### 7. Exporting results and disconnecting
 
 ```r
 readr::write_csv(recent_live, "captures_2000_onward.csv")
 DBI::dbDisconnect(con)
 ```
 
-For large tables, filter or aggregate in the database **before** calling `collect()`; avoid downloading everything unnecessarily. All examples above are read-only.
+For larger tables, it's much better to filter or summarise on the server **before** using `collect()`. All of these examples are read-only — they won't change anything in the database.
 
 ---
 
-## Research tables
+## Research tables — what each one contains
 
 | Table | What it contains |
 |---|---|
@@ -178,7 +181,7 @@ For large tables, filter or aggregate in the database **before** calling `collec
 | `supergroups` | Canonical supergroup names. |
 | `wounds` | Wounds recorded at captures; multiple rows can belong to one capture. |
 
-## Analysis views
+## Analysis views — the easier starting point
 
 | View | What it provides |
 |---|---|
@@ -188,7 +191,7 @@ For large tables, filter or aggregate in the database **before** calling `collec
 | `diagnostic_results` | All tests in one long-format output. |
 | `sett_inventory_v1` | Sett coordinates and capture counts. |
 
-## Column guide
+## Column guide — what the fields mean
 
 The following is the full list of currently released columns. I've described each as far as the original information supports.
 
@@ -759,13 +762,13 @@ Wounds recorded at captures; multiple rows can belong to one capture.
 | `notes` | Historical notes or provenance in the context of this table. |
 | `created_at` | Database row creation timestamp. |
 
-## Using these data
+## A few things to bear in mind when using these data
 
 I use `tattoo` as the scientific individual identifier and `capture_id` for capture events. A canonical sett name is only filled when the recorded location has been matched to a sett. PM grid references are recovery-location approximations, not known sett locations. Infection probabilities are model outputs rather than diagnostic observations.
 
 
 
-## Complete observed code lists (V1 snapshot)
+## Recorded codes and categories (current working snapshot)
 
 I extracted the distinct, non-missing values directly from the research tables on 12 October 2026. Each list below is **exhaustive for the current stored non-NULL values** where it is shown, not a claim that the source system could never contain other values. Values are presented exactly as stored, including inconsistent spellings. NULL is not a category; it indicates missing information. A code is not automatically biologically meaningful just because it appears in the source. For identifiers, staff initials, continuous measurements and free text I explain the field rather than listing every record. Two fields are entirely empty: `research.dpp_tests.test_result` (0 of 3,316 records populated) and `research.wounds.wound_type` (0 of 1,636 populated); they therefore have **no observed entries** to list.
 
@@ -907,37 +910,37 @@ I extracted the distinct, non-missing values directly from the research tables o
 | `wound_area` (6) | `BODY`, `HEAD`, `INGUI.`, `LIMB`, `NECK`, `RUMP` |
 | `wound_size` (7) | `LGE (gaping)`, `LGE (GAPING)`, `MED (gash)`, `MED (GASH)`, `NOT RECORDED`, `SML (puncture)`, `SML (PUNCTURE)` |
 
-### Interpreting recorded codes
+### How I'm treating the recorded codes
 
 I use **observed value** deliberately: `condition` contains both `VERY GOOD` and `V.GOOD`, and `eartags` contains source encoding artefacts (`NOT TAGûGED`, `RETAGGEûD`). For DPP and Stat-Pak codes, I use the definitions given in the companion cleaning audit. Recording a code is not evidence that all code variants are valid in every assay/time period.
 
-### What does not have a finite code list
+### Fields that don't have a short list of codes
 
 Free-text fields, staff/operator initials, animal or sample identifiers, arbitrary source references and numeric measurements are not treated as categorical. In particular `pm_cause` is narrative, while `best_tune`, `tx_number`, `plate_number`, `afno` and `elect_tag` refer to values/identifiers rather than defined category sets.
 
 
-## V1 category cleaning: condition and ear tags
+## Cleaning notes: body condition and ear tags
 
 I've kept the original `condition` and `eartags` fields and added generated `condition_clean` and `eartags_clean` columns so the standardised values update automatically. In `condition_clean`, `V.GOOD` → `VERY GOOD`; `FAIR`, `GOOD` and `POOR` are unchanged. The complete cleaned condition distribution is FAIR **4,789**, GOOD **8,809**, POOR **1,281**, VERY GOOD **1,768** (including 700 originally marked V.GOOD), and missing **939**.
 
 For `eartags_clean`, `NEITHER`, `NONE`, `NOT TAGGED`, and the encoding variant `NOT TAGûGED` all become `NONE`. `RETAGGEûD` becomes `RETAGGED`. `BOTH`, `LEFT`, `RIGHT`, and `REMOVED` remain distinct. The original field is still available if a researcher needs the exact entry. Missing entries stay missing.
 
 
-## Cleaned collar status and ELISA availability
+## Cleaning notes: collar entries and ELISA results
 
-I keep the original values and use generated clean columns for obvious equivalent labels.
+I've kept the original values and made a separate cleaned column where there are obvious alternative labels for the same thing.
 
 | Field | Standardised value and observed count |
 |---|---|
 | `research.captures.collar_transmitter_clean` | FITTED (668: FIT/FITTED), PRESENT (355: PRES/PRESENT), REPLACED (193: REPL/REPLACED), REMOVAL (127), LOST (29), NULL (16,214) |
 | `research.elisa_tests.test_result_clean` | N (13,297), P (1,554), I (163), ITT (15), BIT (2), NO SERUM (99: NO SERA/NO SERUM), NULL (32) |
 
-These fields are derived labels, not new observations. I have not interpreted I, ITT or BIT as equivalent diagnostic outcomes.
+These are tidied-up labels, not extra observations. I haven't assumed that `I`, `ITT` and `BIT` mean the same diagnostic outcome.
 
 
-## Interpreting setts and social groups by year
+## Setts, social groups and annual territories
 
-The data are kept in three separate tables:
+I've kept three different pieces of information separate, because they tell us different things:
 
 - `research.setts`: 176 named setts, including coordinates for 159; the remaining 17 have no mapped coordinate.
 - `research.sett_social_group_links`: all 173 recorded but **undated** associations between 160 setts and social groups. Multiple associations for a sett are retained.
@@ -982,4 +985,4 @@ polygon_matches_2020 <- annual %>%
   collect()
 ```
 
-The undated associations are not overwritten by the annual spatial overlay. These tables document source relationships and geographic matches, not confirmed residency or dispersal.
+The undated links haven't been replaced by the annual polygon matches. Both are useful to keep, but neither should automatically be interpreted as proof that a badger was resident in a particular group or that it dispersed.
