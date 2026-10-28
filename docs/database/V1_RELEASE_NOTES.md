@@ -6,7 +6,7 @@ The detailed rules, code definitions and changes I've made are in [V1 Cleaning A
 
 ## Accessing the V1 database from R
 
-I recommend using the five `analysis` views for most work, and the `research` tables when individual source fields or relationships are needed. These examples work from **any R project folder**. You do not need to clone the Woodchester code repository or source a project-specific helper script.
+I recommend using the five `analysis` views for most work, and the `research` tables when individual source fields or relationships are needed. These examples work from **any R project folder**.
 
 ### 1. Connect
 
@@ -20,7 +20,7 @@ The host, port and database name are fixed below. Each researcher should obtain 
 
 **Set up `.Renviron` (once per computer or R project):**
 
-1. In RStudio, open your project's `.Renviron` file using `usethis::edit_r_environ(scope = "project")` (install `usethis` first if needed). Alternatively, create a plain-text file called `.Renviron` in the project root.
+1. In RStudio create a plain-text file called `.Renviron` in the project root.
 2. Add the following two lines, replacing the blank values with your credentials:
 
 ```text
@@ -761,7 +761,7 @@ Wounds recorded at captures; multiple rows can belong to one capture.
 
 ## Using these data
 
-I use `tattoo` as the scientific individual identifier and `capture_id` for capture events. A canonical sett name is only filled when the recorded location has been matched to a sett. PM grid references are recovery-location approximations, not known sett locations. Recorded social groups shouldn't automatically be treated as annual residence assignments. Infection probabilities are model outputs rather than diagnostic observations.
+I use `tattoo` as the scientific individual identifier and `capture_id` for capture events. A canonical sett name is only filled when the recorded location has been matched to a sett. PM grid references are recovery-location approximations, not known sett locations. Infection probabilities are model outputs rather than diagnostic observations.
 
 
 
@@ -909,11 +909,11 @@ I extracted the distinct, non-missing values directly from the research tables o
 
 ### Interpreting recorded codes
 
-I use **observed value** deliberately: `condition` contains both `VERY GOOD` and `V.GOOD`, and `eartags` contains source encoding artefacts (`NOT TAGûGED`, `RETAGGEûD`). I have not silently translated those source strings. For DPP and Stat-Pak codes, I use the definitions given in the companion cleaning audit. Recording a code is not evidence that all code variants are valid in every assay/time period.
+I use **observed value** deliberately: `condition` contains both `VERY GOOD` and `V.GOOD`, and `eartags` contains source encoding artefacts (`NOT TAGûGED`, `RETAGGEûD`). For DPP and Stat-Pak codes, I use the definitions given in the companion cleaning audit. Recording a code is not evidence that all code variants are valid in every assay/time period.
 
 ### What does not have a finite code list
 
-Free-text fields, staff/operator initials, animal or sample identifiers, arbitrary source references and numeric measurements are not categorical codebooks. In particular `pm_cause` is narrative/high-cardinality, while `best_tune`, `tx_number`, `plate_number`, `afno` and `elect_tag` refer to values/identifiers rather than defined category sets.
+Free-text fields, staff/operator initials, animal or sample identifiers, arbitrary source references and numeric measurements are not treated as categorical. In particular `pm_cause` is narrative, while `best_tune`, `tx_number`, `plate_number`, `afno` and `elect_tag` refer to values/identifiers rather than defined category sets.
 
 
 ## V1 category cleaning: condition and ear tags
@@ -937,28 +937,49 @@ These fields are derived labels, not new observations. I have not interpreted I,
 
 ## Interpreting setts and social groups by year
 
-I have one mapped coordinate for each of 159 setts, included in `research.setts`. The other 17 currently lack a matched coordinate. The 173 undated associations in `research.sett_social_group_links` remain distinct from spatial assignments. A year-specific sett–group assignment must be computed by testing each mapped sett point against the polygon for that year, preserving unmatched points, overlaps, boundary ambiguities and the polygon version. A point-in-polygon result describes territory membership in that year, not proof of a badger's social-group residency. The year-specific results have their own table, `research.sett_annual_territory_matches`. The annual sett–territory table contains 9,140 uploaded records covering 8,624 sett-years (1977–2025); multiple matches are retained where a sett intersects more than one polygon.
+The data are kept in three separate tables:
 
+- `research.setts`: 176 named setts, including coordinates for 159; the remaining 17 have no mapped coordinate.
+- `research.sett_social_group_links`: all 173 recorded but **undated** associations between 160 setts and social groups. Multiple associations for a sett are retained.
+- `research.sett_annual_territory_matches`: the annual sett-point overlay against the 1977–2025 territory polygons. **The 9,140 results are already imported into Supabase**, covering 8,624 different sett-year combinations. Multiple rows for a sett-year are retained where polygons overlap. No biological or movement inference is made by these records.
 
 ### `research.sett_annual_territory_matches`
 
-I use this table to keep the annual spatial relationship between a fixed sett point and its territory polygon(s). It is produced by `scripts/Spatial/10_build_V1_annual_sett_polygon_membership.R` using the 49 annual polygon shapefiles (1977–2025). This is **not** a verified social-group residence assignment. Each sett can have more than one row in a year when polygons overlap; setts without coordinates or outside all territories get an explicit unmatched row.
-
 | Column | Meaning |
 |---|---|
-| `match_id` | Database row ID. |
-| `year` | Polygon snapshot year, 1977–2025. |
-| `sett_id` | Canonical ID of the named sett, linked to `research.setts`. |
-| `polygon_id` | Identifier of the polygon within that year's shapefile; NULL for unmatched sett-years. Together with year and polygon source this identifies the source feature. |
-| `territory_name` | Social-group territory label in that year's original shapefile. This has not automatically been equated to a canonical social_group_id. |
-| `match_status` | ONE_POLYGON: point inside exactly one polygon; MULTIPLE_POLYGONS: inside more than one; ON_BOUNDARY: touches a polygon boundary; OUTSIDE_ALL: mapped point falls outside every polygon; NO_COORDINATE: no mapped sett point. |
-| `polygon_source` | Name of the annual shapefile used for the calculation, e.g. `territories_1985.shp`. |
-| `coordinate_source` | Named-sett coordinate CSV provenance copied from `research.setts`. |
-| `created_at` | Time the computed association was stored in Supabase. |
+| `match_id` | Unique ID for this match record. |
+| `year` | Territory polygon snapshot year (1977–2025). |
+| `sett_id` | Sett identifier linked to `research.setts`. |
+| `polygon_id` | Feature identifier within the annual shapefile, NULL for unmatched setts. |
+| `territory_name` | Recorded name of the matching territory polygon; not automatically equated with a canonical social-group ID. |
+| `match_status` | One of the five spatial classifications explained below. |
+| `polygon_source` | Source annual shapefile, for example `territories_1985.shp`. |
+| `coordinate_source` | Source of the mapped sett coordinate. |
+| `created_at` | Database row creation timestamp. |
 
-The undated `research.sett_social_group_links` entries remain a separate dataset and are not used to overwrite these annual spatial matches. The annual crosswalk calculation has run locally and produced **9,140 records** across **8,624 distinct sett-years**. These results have been imported into Supabase.
+The possible `match_status` values are `ONE_POLYGON` (inside one polygon), `MULTIPLE_POLYGONS` (intersects multiple polygons), `ON_BOUNDARY` (on a polygon boundary), `OUTSIDE_ALL` (mapped but outside all polygons) and `NO_COORDINATE` (sett has no mapped location). A sett can have more than one row per year; the original polygon labels and all matches are retained.
 
+### Accessing the sett tables in R
 
-### V1 sett tables: practical distinction
+Using the `con` connection defined earlier in this document:
 
-I use three straightforward tables: `research.setts` stores each of the 176 named setts (including coordinates for 159); `research.sett_social_group_links` retains all 173 undated source associations across 160 setts; and `research.sett_annual_territory_matches` is for the 1977–2025 annual polygon overlay. Multiple polygon matches are retained as separate rows rather than combined or interpreted. The spatial crosswalk's five stored status values are `ONE_POLYGON`, `MULTIPLE_POLYGONS`, `ON_BOUNDARY`, `OUTSIDE_ALL` and `NO_COORDINATE`. No movement or residency inference is made at the V1 database-cleaning stage.
+```r
+library(dplyr)
+library(dbplyr)
+
+setts <- tbl(con, in_schema("research", "setts"))
+links <- tbl(con, in_schema("research", "sett_social_group_links"))
+annual <- tbl(con, in_schema("research", "sett_annual_territory_matches"))
+
+sett_locations <- setts %>%
+  select(sett_id, sett_name, easting, northing, coordinate_source) %>%
+  collect()
+
+undated_group_links <- links %>% collect()
+
+polygon_matches_2020 <- annual %>%
+  filter(year == 2020L) %>%
+  collect()
+```
+
+The undated associations are not overwritten by the annual spatial overlay. These tables document source relationships and geographic matches, not confirmed residency or dispersal.
