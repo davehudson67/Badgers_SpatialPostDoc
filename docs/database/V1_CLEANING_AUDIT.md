@@ -70,3 +70,18 @@ SQL: `sql/migrations/v1_annual_sett_polygon_crosswalk_20261026.sql`; `sql/migrat
 ## Annual crosswalk: V1 data-loading status
 
 The local polygon overlay succeeded and generated `annual_sett_polygon_all_matches.csv` with **9,140 rows** for **8,624 distinct sett-years** (176 setts × 49 annual files). Multiple polygons produce multiple rows by design. The summary contains 5,614 ONE_POLYGON rows, 988 MULTIPLE_POLYGONS rows, 17 ON_BOUNDARY rows, 1,688 OUTSIDE_ALL rows and 833 NO_COORDINATE rows. These are row counts, not necessarily counts of distinct ambiguous sett-years. There is no interpretation or reassignment in V1. The 9,140 records are present in the Supabase destination table; the generated CSV remains an export of the same calculation. I preserve the 173 undated sett–group links unchanged. The upload is implemented in `scripts/Spatial/10_build_V1_annual_sett_polygon_membership.R` with `UPLOAD_ANNUAL_CROSSWALK=1` and a write-enabled connection.
+
+
+## V1 capture sett/location standardised access view
+
+A non-destructive, read-only view `analysis.capture_sett_location_standardised_v1` now exposes one row per original capture (17,586 capture IDs). This is a convenience interface, **not** a replacement for `research.captures` or the recorded sett names. No individual capture or PM record has been deleted or collapsed.
+
+- `sett_clean`: uppercase alphanumeric canonical name (spaces and punctuation stripped) for the currently linked `research.setts.sett_id`, or `OTHER` if no sett ID is linked. Existing links are retained provisionally; newly proposed name/identity merges still require approval.
+- `other_location_info`: the recorded sett/location text for rows classified `OTHER`, falling back to capture location description or OS reference when the previous field is absent. Original text also remains in `recorded_sett_name`, `capture_location_text` and `os_ref`.
+- `location_easting`, `location_northing`: British National Grid coordinates where documented; for mapped setts these refer to the approved sett coordinate; for recognised grid-referenced PM locations these refer to the **southwest corner of a grid square**, not the exact location where the animal was found.
+- `coordinate_basis` gives `SETT_POINT`, `GRID_SQUARE_SOUTHWEST_CORNER` or `NO_COORDINATE`; `location_crs` is EPSG:27700 where coordinates are present. `grid_cell_width_m` retains available square-width precision.
+- `location_class` retains the previous location interpretation from `analysis.capture_location_v1`.
+
+Verified view cardinality: 17,586 rows / 17,586 unique capture IDs; 1,249 labelled `OTHER`; 16,034 with sett points; 710 with grid-square corner coordinates; and 842 without assigned coordinates. Thus 303 named-sett captures currently lack a mapped sett point despite their existing sett ID. These figures are counts of capture records, not distinct setts.
+
+This is only a consistent **access-layer classification** using the current approved IDs. The final sett alias dictionary and source-independent `sett_clean` rules must still be agreed before V1 sign-off.
