@@ -5,7 +5,7 @@ I've tried to keep the database as close as possible to the original capture and
 This is a guide to what's available and how to get at it, rather than a claim that the data are all final. **Cleaning is still in progress, particularly for sett names, sett coordinates and social groups, and we haven't signed off a frozen V1 dataset.** I've written out the actual changes and decisions in the [Cleaning Audit](V1_CLEANING_AUDIT.md), and the current plan for reviewing setts and social groups is in the [sett and social-group reconciliation notes](V1_SETT_AND_SOCIAL_GROUP_RECONCILIATION_STATUS.md).
 
 
-> **Current status (28 October 2026):** I'm still reviewing the sett and social-group catalogues with colleagues. The uploaded 168-entry XY list is now the starting point for **proposed** sett names and aliases; the existing `research.setts` IDs and `analysis` views have **not** yet been rebuilt around it. References below to 'V1', 'released' views or 'canonical' names describe the current working database, not a completed or approved release. Please check the [Cleaning Audit](V1_CLEANING_AUDIT.md) before treating any cleaned field as definitive.
+> **Current status (28 October 2026):** The uploaded 168-entry XY list is now the starting point for **proposed** sett names and aliases; the existing `research.setts` IDs and `analysis` views have **not** yet been rebuilt around it. References below to 'V1', 'released' views or 'canonical' names describe the current working database, not a completed or approved release. Please check the [Cleaning Audit](V1_CLEANING_AUDIT.md) before treating any cleaned field as definitive.
 
 ## Getting into the database from R
 
@@ -19,7 +19,7 @@ If you haven't already got the packages installed, run this once:
 install.packages(c("DBI", "RPostgres", "dplyr", "dbplyr", "readr"))
 ```
 
-The connection details are below. Ideally, everyone will have their **own read-only login**, issued by whoever is managing access. Please don't put usernames or passwords directly into scripts or GitHub. The easiest approach in RStudio is to keep them in a local `.Renviron` file.
+The connection details are below. Please don't put usernames or passwords directly into scripts or GitHub. The easiest approach in RStudio is to keep them in a local `.Renviron` file.
 
 **Setting up `.Renviron` (once per computer or R project):**
 
