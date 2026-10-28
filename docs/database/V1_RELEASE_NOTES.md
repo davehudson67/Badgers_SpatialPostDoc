@@ -16,7 +16,21 @@ Install the packages once if required:
 install.packages(c("DBI", "RPostgres", "dplyr", "dbplyr", "readr"))
 ```
 
-The database connection details are included below. Each researcher only needs their own **read-only username and password** from the project administrator. Leave credentials out of shared scripts and GitHub commits; the two blank strings below are placeholders for use in a private local script.
+The host, port and database name are fixed below. Each researcher should obtain their own **read-only username and password** from the project administrator. The recommended approach is to keep these credentials in a local `.Renviron` file rather than writing them in R scripts or committing them to GitHub.
+
+**Set up `.Renviron` (once per computer or R project):**
+
+1. In RStudio, open your project's `.Renviron` file using `usethis::edit_r_environ(scope = "project")` (install `usethis` first if needed). Alternatively, create a plain-text file called `.Renviron` in the project root.
+2. Add the following two lines, replacing the blank values with your credentials:
+
+```text
+BADGER_DB_USER=
+BADGER_DB_PASSWORD=
+```
+
+3. Save the file and restart your R session so R reads the values. Add `.Renviron` to your project's `.gitignore` and never share or commit the credentials. Check that they are present with `nzchar(Sys.getenv("BADGER_DB_USER"))` and `nzchar(Sys.getenv("BADGER_DB_PASSWORD"))`; both should return `TRUE`. These checks do not print the credentials.
+
+Then connect from **any R project root**:
 
 ```r
 library(DBI)
@@ -29,15 +43,13 @@ con <- DBI::dbConnect(
   host = "db.klpvihubzlyzubyyubtw.supabase.co",
   port = 5432,
   dbname = "postgres",
-  user = "",      # Your read-only database username
-  password = "",  # Your database password
+  user = Sys.getenv("BADGER_DB_USER"),
+  password = Sys.getenv("BADGER_DB_PASSWORD"),
   sslmode = "require"
 )
 
 DBI::dbIsValid(con)  # TRUE if connected
 ```
-
-**Connection note:** This is the Supabase project's direct PostgreSQL host. A network that cannot connect over IPv6 may need Supabase's session-pooler hostname and port instead. The project's reference and region are `klpvihubzlyzubyyubtw` and `eu-west-1` respectively; the precise session-pooler hostname is not included here because it has not been verified for this project.
 
 ### 2. See what is available
 
