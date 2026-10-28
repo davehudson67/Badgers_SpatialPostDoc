@@ -1,39 +1,95 @@
-# Woodchester sett and social-group reconciliation — working policy
-**Date:** 2026-10-28  
-**Status:** CLEANING IN PROGRESS — NOT APPROVED AS A DEFINITIVE V1 ANALYSIS RELEASE
+# Woodchester sett and social-group names — reconciliation and next steps
 
-## Source authority and scope
-1. The separately supplied sett XY coordinate inventory is the **primary starting reference** for reviewing named sett locations. The preserved imported copy is `ingest.sett_coordinate_source_20261023`; a review snapshot is `docs/database/V1_XY_source_review_snapshot_20261028.csv`. It contains **168 coordinate-source entries**, not 168 independently confirmed biological sett identities. Preserve `source_name`, grid easting/northing and original provenance.
-2. The original Access `access_raw.tbl_sett` lookup is **historical supporting evidence**, not an alternate canonical-name authority. `access_raw.tbl_captures.sett` is the primary original **observation-level recorded sett/location label**. These fields are never overwritten.
-3. The current `research.setts` inventory (176 named records before proposed merges) and associated `sett_id` joins are **provisional migrated/working mappings**, NOT proof of biological identity. Do not use a zero linked-capture count as grounds for dropping a named sett. Names with no confirmed matching XY go into a separate review queue; no coordinates are invented.
-4. The main collaborative review workbook is **Woodchester_XY_Primary_Sett_Name_Review_20261028.xlsx** (shared separately; not a source dataset until signed off). It is derived from the user's edited review workbook and the preserved XY source. Source-name strings such as `CLIFF.FACE`, `GULLY`, `ELEVEN.ROW`, `STONEY.TRACK` take precedence as proposed canonical labels over earlier Access spelling preferences; those Access spellings become aliases.
-5. **Exceptions requiring review before final approval:** `PEN.(NEEDS.RENAME)`, `STREAM.(NEEDS.NEW.NAME)`, coordinate-only names not yet matched to historical records, and any two differently named sett points with nearby/identical XY. Same point or similar spelling is not by itself evidence of the same sett.
+**28 October 2026**  
+**Status: Cleaning in progress. The dataset is not yet signed off as V1 for final analyses.**
 
-## Agreed outputs (future, after independent review and audit)
-- **Sett catalogue:** exactly one agreed canonical `sett_clean` per named sett, easting and northing in **EPSG:27700** where confirmed, coordinate provenance/precision, status, and a *single* alias list including historical alternative spellings. For XY-primary canonical spelling, uppercase and remove punctuation/spaces for `sett_clean` (e.g. source `CLIFF.FACE` -> `CLIFFFACE`). Historical `CLIFF` is an alias if the identity merge is upheld.
-- **Social group catalogue:** separately approved named social groups, with their own alias dictionary and potentially **time-dependent territories/boundaries**. Identical text in a sett and social-group list does NOT equate the two biological entities. Polygon territory labels, including composite names, are not sett records.
-- **Capture-level cleaned view:** original `recorded_sett_name`, `capture_location_text` and `os_ref` retained; `sett_clean` restricted to an approved sett name or literal `OTHER`; `location_easting`/`location_northing` numeric BNG coordinates if independently supported; `coordinate_source`/`coordinate_basis` and precision/grid-cell width; original descriptive information kept separately. Do **not** assign sett coordinates just because a capture belongs to a social group.
-- For a six-figure OS grid reference, identify its **100 m cell**; any calculated coordinate for the SW corner is **not** an exact capture point. Incomplete, ambiguous or inconsistent refs must be review-flagged, not silently geocoded.
-- **Capture counts:** distinguish (a) occurrences of original recorded name and approved aliases, (b) current captures linked by `sett_id`, and (c) currently linked `moc='TRAP'` captures. The numbers may differ and must be separately labelled. Capture records are not unique badgers.
+## Aim
 
-## Review and evidence
-- Full multi-source name inventory: `docs/database/V1_all_sources_sett_name_review.csv`. It contains 580 formatting keys from multiple sources, **not** 580 confirmed setts. Territory/social-group names should not inflate sett counts.
-- User-reviewed alias decisions (historical working spelling targets): `docs/database/V1_SETT_ALIAS_REVIEW_DECISIONS.csv`. These record **proposed identity merges or explicit non-merges** but their earlier target spelling is superseded, for naming purposes, by the chosen XY-source name. The decisions have **not been applied** to live capture records or sett IDs.
-- Current linked capture and MOC counts are available in `docs/database/V1_sett_capture_counts_source_audit_20261028.csv` and must be reconciled with original recorded-name occurrences.
-- The user's reviewed location material distinguishes **coordinate-bearing**, **road**, **description** and **potential sett**. It requires quality control: transcription conflicts (e.g. a supplied grid string inconsistent with the original name), spatial extent, correct OS grid square, and original text encoding. User tagging a row as coordinate-bearing is not itself verification of an exact point.
-- Names not matched to the XY inventory remain visible for review rather than being deleted, declared nonexistent, or assigned a nearby coordinate. Some may be genuine historical or outlier setts.
+I want to establish two clearly defined, independent reference lists: one of named badger setts, with reliable coordinates wherever available, and one of social groups. Some setts and social groups share names, but they are not the same thing. Social-group territories can also change over time.
 
-## Supabase governance — no destructive cleanup yet
-- **`access_raw`:** retain unchanged as historical source of truth.
-- **`ingest`:** retain unchanged XY source and original provenance.
-- **`research`:** keep existing migrated working tables and currently linked IDs for traceability, but mark sett-name and spatial cleaning as **provisional**. Avoid replacing raw capture values with normalisations.
-- **`analysis`:** existing historical cleaned views and spatial/model inputs are **interim interpretations**, not certified V1. In particular, `analysis.capture_sett_location_standardised_v1` reflects currently linked `sett_id` naming, NOT the newly proposed XY-primary naming policy. It must not be passed off as the final agreed `sett_clean`.
-- Future implementation requires approved catalogues, a source-to-canonical alias mapping with justification, coordinate/conflict audit, a reproducible migration, tests of capture counts and referential integrity, and a **separate explicit sign-off** before freezing V1.
-- Do not drop original tables, delete captures, rewrite historical spellings, conflate social groups with setts, or change existing Supabase mappings as part of this documentation update.
+For each capture, my eventual aim is to have a `sett_clean` value that is either an agreed sett name or `OTHER`. I also want to retain useful location information, whether that comes from a known sett, an OS grid reference or another recorded location. Crucially, the original values must remain available so that all cleaning decisions can be checked and reproduced.
 
-## Questions for colleagues
-1. Which XY-listed names are truly distinct setts, and which are renamed/replaced versions of other mapped setts?
-2. Are provisional historical identity merges correct (especially those with two original IDs)?
-3. Which names missing from the XY list are known historical/outlier setts, and can their point locations be verified?
-4. Which descriptive/road observations have defensible grid references or independently located points?
-5. What is the approved social-group name dictionary, accounting for changes in boundaries and time?
+## Which sources am I using?
+
+I am using the sett XY coordinate list that I supplied as the **starting point for the sett catalogue**, including the preferred names. The original imported data are preserved in `ingest.sett_coordinate_source_20261023`, with a snapshot in `docs/database/V1_XY_source_review_snapshot_20261028.csv`. There are **168 entries** in that source. This does not necessarily mean there are 168 distinct, confirmed biological setts: names and coordinates still need checking.
+
+I am checking these against two other historical sources:
+
+- **Original Access sett lookup:** `access_raw.tbl_sett`. This provides historical named sett entries, including some that may no longer be used or may be alternative names.
+- **Original Access capture locations:** `access_raw.tbl_captures.sett`. This records what was entered at the time of each capture. Some values are sett names, but others are road locations, grid references, descriptions or outliers.
+
+I want these original sources preserved unchanged. I do not want to create new setts just because a different spelling appears in a capture record.
+
+The current `research.setts` table contains **176 named records before proposed merges**, inherited from earlier migration and cleaning. Its `sett_id` values and capture links are useful for tracing the data, but they should not be treated as the final agreed sett catalogue. A sett with no currently linked captures should not automatically be removed.
+
+## Naming convention
+
+For the working review, I am taking the **name from the XY source** as the preferred name. Historical spellings and names that we consider to refer to the same sett will be recorded as **aliases in a single column**, rather than maintaining separate and overlapping lists of aliases and historical names.
+
+The eventual `sett_clean` field will use uppercase letters and numbers with spaces and punctuation removed. For example:
+
+| Original XY-source name | Proposed `sett_clean` | Historical name / alias |
+|---|---|---|
+| `CLIFF.FACE` | `CLIFFFACE` | `CLIFF` |
+| `GULLY` | `GULLY` | `GULLEY` |
+| `ELEVEN.ROW` | `ELEVENROW` | `ELEVENTH ROW` |
+| `STONEY.TRACK` | `STONEYTRACK` | `STONY TRACK` |
+
+These examples reflect the chosen **naming priority**, not evidence that a name match alone establishes biological identity. I still need to check proposed mergers, especially where the original records used different sett IDs or have potentially conflicting coordinates.
+
+Names such as `PEN.(NEEDS.RENAME)` and `STREAM.(NEEDS.NEW.NAME)` also need clarification. I will keep historically recorded names that do not match the XY list in a separate review list rather than deleting them or assigning guessed coordinates.
+
+The review spreadsheet, **Woodchester_XY_Primary_Sett_Name_Review_20261028.xlsx**, is the current working document for discussing these questions with colleagues. It is not yet a signed-off master list.
+
+## Social groups
+
+I will review social-group names separately from sett names. The two catalogues may contain some identical names, but a social group should not automatically be assigned the identity or coordinates of a sett with the same name.
+
+I also need to take care with annual territory polygons. Their labels sometimes combine several group names or express uncertainty, and group boundaries may change between years. They should not be added to the sett catalogue simply because their names appear in the database-wide audit.
+
+## Capture locations and coordinates
+
+I want the final capture-level data to preserve the originally recorded sett/location text, alongside the cleaned interpretation.
+
+My proposed fields are:
+
+- `recorded_sett_name`, `capture_location_text` and `os_ref`: original information retained.
+- `sett_clean`: one agreed sett name, or `OTHER` if no named sett can be established.
+- `location_easting` and `location_northing`: British National Grid coordinates (EPSG:27700), where supported by the evidence.
+- `coordinate_source`, `coordinate_basis` and an indication of precision: so we know whether a point comes from the sett inventory, a grid reference or some other source.
+- A separate description for locations that are not recognised named setts.
+
+I have reviewed the original location-name inventory and identified entries that appear to contain grid references, roads, descriptions or potential sett names. These classifications need checking before they are incorporated into the cleaned data. In particular, a six-figure OS grid reference identifies a **100 m grid square**, not an exact capture point. If we use its south-west corner as a coordinate, that distinction must be retained. Ambiguous or conflicting references should remain flagged for review.
+
+For capture counts, I will distinguish between how often an original name or proposed alias is written in the capture records, how many captures currently link to a `sett_id`, and how many of those are recorded with `moc='TRAP'`. These are different quantities, and none is a count of unique badgers.
+
+## What has been reviewed so far?
+
+The database-wide inventory is in `docs/database/V1_all_sources_sett_name_review.csv`. It contains **580 standardised name keys** drawn from several sources; these are *not* 580 confirmed setts.
+
+The naming decisions discussed so far are recorded in `docs/database/V1_SETT_ALIAS_REVIEW_DECISIONS.csv`. They are **proposed merges and explicit non-merges**. Some earlier decisions used Access spelling as the preferred canonical name; the new spreadsheet instead gives priority to the XY-source name. These changes have not been applied to capture records or `sett_id` links.
+
+Existing linked capture counts by sett and method of capture are recorded in `docs/database/V1_sett_capture_counts_source_audit_20261028.csv`. I still need to reconcile these with the counts obtained directly from the original recorded names and their aliases.
+
+## Current database position
+
+For now, I want to **retain the existing Supabase tables and explicitly recognise that cleaning is ongoing**, rather than make further structural changes before the review is complete.
+
+- `access_raw` contains the original imported Access records and should remain unchanged.
+- `ingest` retains the supplied XY source data and provenance.
+- `research` contains migrated working tables, including provisional sett IDs and assignments.
+- `analysis` contains derived views and model inputs, which should be considered provisional wherever they depend on unresolved cleaning.
+
+In particular, `analysis.capture_sett_location_standardised_v1` still uses the **existing sett links and earlier name-cleaning rules**. It has **not** been updated to follow the XY-first convention described here, and should not be mistaken for the final `sett_clean` definition.
+
+Once the two catalogues and location rules have been reviewed, I will need an auditable alias mapping, a check for coordinate and identity conflicts, reproducible code to apply the decisions, and validation of capture counts and relationships before signing off a frozen V1 dataset. I do not want to overwrite raw entries or lose their provenance.
+
+## Questions to resolve with colleagues
+
+1. Do the names and coordinates in the XY list represent distinct setts, or are any alternative names for the same location?
+2. Are the proposed aliases correct, particularly when separate historical IDs already exist?
+3. Are the historical sett names missing from the XY list genuine setts or outliers, and can their coordinates be established?
+4. Which road and descriptive locations can be located reliably from their original grid references or other evidence?
+5. What is the agreed set of social-group names, including historical changes in group names and territories?
+
+**Until these points are resolved, the sett and social-group catalogues remain working proposals, and the database cleaning remains in progress.**
