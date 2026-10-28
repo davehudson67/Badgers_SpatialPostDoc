@@ -937,7 +937,7 @@ These fields are derived labels, not new observations. I have not interpreted I,
 
 ## Interpreting setts and social groups by year
 
-I have one mapped coordinate for each of 159 setts, included in `research.setts`. The other 17 currently lack a matched coordinate. The 173 undated associations in `research.sett_social_group_links` remain distinct from spatial assignments. A year-specific sett–group assignment must be computed by testing each mapped sett point against the polygon for that year, preserving unmatched points, overlaps, boundary ambiguities and the polygon version. A point-in-polygon result describes territory membership in that year, not proof of a badger's social-group residency. The year-specific results have their own table, `research.sett_annual_territory_matches`. The local spatial script has produced 9,140 records covering 8,624 sett-years; these remain in CSV until imported into this Supabase table.
+I have one mapped coordinate for each of 159 setts, included in `research.setts`. The other 17 currently lack a matched coordinate. The 173 undated associations in `research.sett_social_group_links` remain distinct from spatial assignments. A year-specific sett–group assignment must be computed by testing each mapped sett point against the polygon for that year, preserving unmatched points, overlaps, boundary ambiguities and the polygon version. A point-in-polygon result describes territory membership in that year, not proof of a badger's social-group residency. The year-specific results have their own table, `research.sett_annual_territory_matches`. The annual sett–territory table contains 9,140 uploaded records covering 8,624 sett-years (1977–2025); multiple matches are retained where a sett intersects more than one polygon.
 
 
 ### `research.sett_annual_territory_matches`
@@ -956,7 +956,7 @@ I use this table to keep the annual spatial relationship between a fixed sett po
 | `coordinate_source` | Named-sett coordinate CSV provenance copied from `research.setts`. |
 | `created_at` | Time the computed association was stored in Supabase. |
 
-The undated `research.sett_social_group_links` entries remain a separate dataset and are not used to overwrite these annual spatial matches. The annual crosswalk calculation has run locally and produced **9,140 records** across **8,624 distinct sett-years**. At the time of this update, the Supabase table remains empty pending import from the generated CSV.
+The undated `research.sett_social_group_links` entries remain a separate dataset and are not used to overwrite these annual spatial matches. The annual crosswalk calculation has run locally and produced **9,140 records** across **8,624 distinct sett-years**. These results have been imported into Supabase.
 
 
 ### V1 sett tables: practical distinction
