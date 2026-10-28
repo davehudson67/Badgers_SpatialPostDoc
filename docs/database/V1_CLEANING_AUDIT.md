@@ -1,6 +1,6 @@
 # Woodchester database — notes on cleaning and changes so far
 
-I've been working through the original Access database and documenting the changes as I go. I want a clear record of what I've changed, why I've changed it and what still needs checking. The original Access data are kept in `access_raw`, so we can always go back and see exactly what was recorded. The SQL migrations are the definitive record of what was run, but this document should explain the decisions without anyone needing to read SQL. There's also a fuller table and column guide in the [V1 Release Notes](V1_RELEASE_NOTES.md).
+I've been working through the original Access database and documenting the changes as I go. The original Access data are kept in `access_raw`, so we can always go back and see exactly what was recorded. The SQL migrations are the definitive record of what was run, but this document should explain the decisions without anyone needing to read SQL. There's also a fuller table and column guide in the [V1 Release Notes](V1_RELEASE_NOTES.md).
 
 **This is still a working database, not a signed-off V1 release.** In particular, the sett names, coordinates and social-group assignments are still being reviewed.
 
