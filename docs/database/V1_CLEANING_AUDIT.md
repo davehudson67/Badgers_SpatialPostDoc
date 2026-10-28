@@ -24,11 +24,9 @@ I've set out the rules below in plain language so it's possible to see what we'v
 
 ### Individual identification
 
-I'm using the tattoo number as the main identifier for an individual badger. The database still uses an internal numeric ID to link tables together, but that's a technical key rather than the identifier I want researchers to work with. I've also been looking at case differences such as `40l` and `40L`. These need to be handled consistently, while keeping the original entry available.
+I'm using the tattoo number as the main identifier for an individual badger. The database still uses an internal numeric ID to link tables together.
 
-I don't want to assume that two similar-looking tattoos necessarily belong to the same animal. Missing or ambiguous tattoos still need checking, and we need to be able to trace every working identifier back to its original record.
-
-**Where this is implemented:** the original import and identity migrations in `sql/migrations/`. I still need to identify the precise migration for every historical identifier rule.
+**Where this is implemented:** the original import and identity migrations in `sql/migrations/`.
 
 ### Sex and age at first capture
 
@@ -40,9 +38,7 @@ For **age at first capture**, I've done much the same thing. Recognised values a
 
 ### Body condition
 
-The only change I've made to body-condition categories is to treat `V.GOOD` as `VERY GOOD` in `condition_clean`. The original `condition` column is left as it was. `FAIR`, `GOOD` and `POOR` stay separate, and missing entries stay **NULL** — I'm not assigning a condition where none was recorded.
-
-At the time of the check, there were 700 records entered as `V.GOOD` and 1,068 already entered as `VERY GOOD`. The other categories were `FAIR` (4,789), `GOOD` (8,809), `POOR` (1,281) and missing (939). This is just tidying up a label; it doesn't change the observer's assessment.
+The only change I've made to body-condition categories is to treat `V.GOOD` as `VERY GOOD` in `condition_clean`. The original `condition` column is left as it was. `FAIR`, `GOOD` and `POOR` stay separate, and missing entries stay **NULL**.
 
 **Implementation:** `woodchester_v1_standardise_condition_and_eartags_20261026.sql`.
 
@@ -67,13 +63,13 @@ For the collar/transmitter entries, I've standardised a few abbreviations in `co
 | `LOST` | `LOST` | Separate category |
 | Missing | NULL | No invented observation |
 
-The counts at the time were `FITTED` 668, `PRESENT` 355, `REPLACED` 193, `REMOVAL` 127, `LOST` 29 and missing 16,214. I'm only standardising what was recorded — not trying to reconstruct how long collars were worn.
+The counts at the time were `FITTED` 668, `PRESENT` 355, `REPLACED` 193, `REMOVAL` 127, `LOST` 29 and missing 16,214.
 
 **Implementation:** `v1_collar_label_normalisation_20261026.sql`.
 
 ### ELISA result labels
 
-For ELISA results, I've combined `NO SERA` and `NO SERUM` into `NO SERUM` in a new `test_result_clean` field. Everything else, including `N`, `P`, `I`, `ITT` and `BIT`, has been left as recorded. I don't want to make biological assumptions about unusual codes as part of a simple database tidy-up.
+For ELISA results, I've combined `NO SERA` and `NO SERUM` into `NO SERUM` in a new `test_result_clean` field. Everything else, including `N`, `P`, `I`, `ITT` and `BIT`, has been left as recorded.
 
 At the time of the check, there were `N` 13,297, `P` 1,554, `I` 163, `ITT` 15, `BIT` 2, `NO SERUM` 99 and missing 32. The original result field is retained.
 
@@ -83,7 +79,7 @@ At the time of the check, there were `N` 13,297, `P` 1,554, `I` 163, `ITT` 15, `
 
 Some very small lookup tables didn't seem worth keeping as separate tables, so I've recorded their contents here instead. This is a change in how the codes are stored and documented, **not** a change to the test results themselves.
 
-The DPP sample types are `Serum Fresh`, `WB Field`, `Whole Blood` and `Serum Frozen`. The visual-line codes are `N` (Negative), `Nx` (NegativeX), `P` (Positive) and `Px` (PositiveX). I haven't tried to interpret the `X` qualifier.
+The DPP sample types are `Serum Fresh`, `WB Field`, `Whole Blood` and `Serum Frozen`. The visual-line codes are `N` (Negative), `Nx` (NegativeX), `P` (Positive) and `Px` (PositiveX).
 
 For Stat-Pak the codes are `N` (Negative), `P` (Positive) and `C` (No Clotted Sample). `C` has **not** been treated as a negative test.
 
@@ -91,7 +87,7 @@ For Stat-Pak the codes are `N` (Negative), `P` (Positive) and `C` (No Clotted Sa
 
 ### Putting the capture information together
 
-I've brought the sampling, welfare-assessment and collar information together in `research.captures`, rather than keeping several separate one-to-one tables. This should make the data easier to work with. Importantly, this didn't mean combining repeated captures or removing individual capture events.
+I've brought the sampling, welfare-assessment and collar information together in `research.captures`, rather than keeping several separate one-to-one tables. This should make the data easier to work with.
 
 Before the redundant split tables were retired, the capture IDs were checked and the relevant fields were compared — including sampling time, collar transmitter and adverse effects. The resulting data contained **17,586 records with 17,586 unique capture IDs**.
 
@@ -109,9 +105,7 @@ This is probably the area where there's still most to sort out. Not everything e
 
 ### Social-group names — also still under review
 
-The existing `social_group_name_clean` uses the currently assigned **recorded social-group ID** to display its canonical label. It does **not** prove that the animal was resident in that group at that time. The original group-name observation must remain accessible. I will agree the social-group naming list and aliases **separately from the sett list**. Identical text in a sett name and a social-group name does not establish that they are interchangeable, and polygon territory labels are not automatically social-group IDs.
-
-The table `research.sett_social_group_history` was renamed `research.sett_social_group_links`. The **173 existing sett–group links covering 160 setts** were kept, but lack validity dates: they are **undated lookup associations**, not evidence of annual occupancy.
+The existing `social_group_name_clean` uses the currently assigned **recorded social-group ID** to display its canonical label.
 
 **Implementation:** `woodchester_v1_minimal_clean_columns_20261026.sql`, `woodchester_v1_clean_names_trigger_20261026.sql`, `v1_consolidate_sett_coordinates_and_rename_undated_links_20261026.sql`. **Final canonical social-group assignments remain under review.**
 
@@ -131,13 +125,13 @@ The R workflow overlays the then-mapped sett points against **49 annual social-g
 
 ### Analysis views and releasing a finished version
 
-The `analysis` views give researchers consistent read-only access; they are not replacements for the original capture and laboratory records. Some earlier/internal SQL views were retained under `internal_v1` rather than destroyed. The current standardised capture/sett view has **17,586 rows**, one for each capture, but its existing `sett_clean` labels pre-date our newly proposed XY-primary naming policy. Treat the data as **working/provisional**, not as a frozen signed-off dataset. A future release must include exact source snapshots, approved name/coordinate dictionaries, a reproducible migration, validation checks and a release date or version identifier.
+The `analysis` views give researchers consistent read-only access; they are not replacements for the original capture and laboratory records. Some earlier/internal SQL views were retained under `internal_v1` rather than destroyed. The current standardised capture/sett view has **17,586 rows**, one for each capture, but its existing `sett_clean` labels pre-date our newly proposed XY-primary naming policy. Treat the data as **working/provisional**, not as a frozen signed-off dataset.
 
 **Implementation:** `woodchester_v1_minimal_public_schemas_20261026.sql` and the versioned migrations defining the analysis views.
 
 ### What still needs checking
 
-There are still quite a few things I don't want to claim we've resolved: ambiguous tattoo entries, mismatches between recorded sett names and sett IDs, outliers, incomplete OS references, social-group membership through time and some of the less clear diagnostic codes. I'd also like to check the cleaning that happens later in the modelling scripts. Until that's done, this is an audit of the database cleaning we've documented, **not yet every transformation used in the analyses**.
+There are still quite a few things I don't want to claim we've resolved: ambiguous tattoo entries, mismatches between recorded sett names and sett IDs, outliers, incomplete OS references, social-group membership through time and some of the less clear diagnostic codes. I'd also like to check the cleaning that happens later in my modelling scripts.
 
 ---
 
@@ -207,7 +201,7 @@ A non-destructive, read-only view `analysis.capture_sett_location_standardised_v
 - `coordinate_basis` gives `SETT_POINT`, `GRID_SQUARE_SOUTHWEST_CORNER` or `NO_COORDINATE`; `location_crs` is EPSG:27700 where coordinates are present. `grid_cell_width_m` retains available square-width precision.
 - `location_class` retains the previous location interpretation from `analysis.capture_location_v1`.
 
-Verified view cardinality: 17,586 rows / 17,586 unique capture IDs; 1,249 labelled `OTHER`; 16,034 with sett points; 710 with grid-square corner coordinates; and 842 without assigned coordinates. Thus 303 named-sett captures currently lack a mapped sett point despite their existing sett ID. These figures are counts of capture records, not distinct setts.
+Verified view: 17,586 rows / 17,586 unique capture IDs; 1,249 labelled `OTHER`; 16,034 with sett points; 710 with grid-square corner coordinates; and 842 without assigned coordinates. Thus 303 named-sett captures currently lack a mapped sett point despite their existing sett ID. These figures are counts of capture records, not distinct setts.
 
 This is only a consistent **access-layer classification** using the current approved IDs. The final sett alias dictionary and source-independent `sett_clean` rules must still be agreed before V1 sign-off.
 
