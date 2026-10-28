@@ -83,13 +83,3 @@ For now, I want to **retain the existing Supabase tables and explicitly recognis
 In particular, `analysis.capture_sett_location_standardised_v1` still uses the **existing sett links and earlier name-cleaning rules**. It has **not** been updated to follow the XY-first convention described here, and should not be mistaken for the final `sett_clean` definition.
 
 Once the two catalogues and location rules have been reviewed, I will need an auditable alias mapping, a check for coordinate and identity conflicts, reproducible code to apply the decisions, and validation of capture counts and relationships before signing off a frozen V1 dataset. I do not want to overwrite raw entries or lose their provenance.
-
-## Questions to resolve with colleagues
-
-1. Do the names and coordinates in the XY list represent distinct setts, or are any alternative names for the same location?
-2. Are the proposed aliases correct, particularly when separate historical IDs already exist?
-3. Are the historical sett names missing from the XY list genuine setts or outliers, and can their coordinates be established?
-4. Which road and descriptive locations can be located reliably from their original grid references or other evidence?
-5. What is the agreed set of social-group names, including historical changes in group names and territories?
-
-**Until these points are resolved, the sett and social-group catalogues remain working proposals, and the database cleaning remains in progress.**
