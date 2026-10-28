@@ -941,7 +941,7 @@ The data are kept in three separate tables:
 
 - `research.setts`: 176 named setts, including coordinates for 159; the remaining 17 have no mapped coordinate.
 - `research.sett_social_group_links`: all 173 recorded but **undated** associations between 160 setts and social groups. Multiple associations for a sett are retained.
-- `research.sett_annual_territory_matches`: the annual sett-point overlay against the 1977–2025 territory polygons. **The 9,140 results are already imported into Supabase**, covering 8,624 different sett-year combinations. Multiple rows for a sett-year are retained where polygons overlap. No biological or movement inference is made by these records.
+- `research.sett_annual_territory_matches`: the annual sett-point overlay against the 1977–2025 territory polygons. Multiple rows for a sett-year are retained where polygons overlap. No biological or movement inference is made by these records.
 
 ### `research.sett_annual_territory_matches`
 
