@@ -991,3 +991,38 @@ The undated links haven't been replaced by the annual polygon matches. Both are 
 ## Tattoo case clarification: 040l and 040L (28 October 2026)
 
 I've confirmed that four original Access culture entries use `040l` (lowercase final L), whereas the other matching entries use `040L`. The **leading zero is part of the identifier**. The four cultures already link to the existing research individual `040L`, so there's no second badger to merge and no need to overwrite the original Access records. For original-text matching I treat the case variants as `040L` using `upper(trim(tattoo))`. The full evidence, original row IDs and check script are documented in the [Cleaning Audit](V1_CLEANING_AUDIT.md).
+
+
+## UN badgers: how I'm treating unmarked carcasses (reviewed 2 November 2026)
+
+I've looked specifically at animals whose tattoo identifier starts with `UN`. These are **unmarked animals recorded when found dead or submitted for post-mortem examination**, not known marked individuals repeatedly caught in the trapping study. I want to keep them in the database because they may still be useful for mortality and disease work, but **they cannot automatically be assigned a resident social group or used in individual movement histories**.
+
+There are **498 UN records for 498 distinct IDs** in the current `research.captures` table. All 498 are post-mortem records and **none** has capture method (`moc`) `TRAP`. The methods are RTA (372), FOUND DEAD (85), SHOT (14), SHOT (GP) (11), FOUND EXT (6), missing method (6), PUT DOWN (2), REPORTED BY MEMBER OF THE PUBLIC (1), and DEAD SN/TR (1). These counts refer to records rather than a representative sample of the whole badger population.
+
+**A distinction I don't want to lose:** the source data can record **where a carcass was found** or a local sett/territory label, without establishing **where that animal was resident**. In the current migrated data, **175 UN records have a recorded social-group ID**, and **34 have a linked sett ID**. Those fields have been preserved from the historical record and/or current lookup mappings; they are **not biological evidence of residency**.
+
+### I checked the 34 UN records linked to named setts
+
+| Recorded method | Records |
+|---|---:|
+| FOUND DEAD | 23 |
+| SHOT | 5 |
+| RTA | 4 |
+| FOUND EXT | 1 |
+| DEAD SN/TR | 1 |
+| **Total** | **34** |
+
+The original location-description field is recorded for all 34: **28 say `SETT`**, **3 say `HEDGE`**, **2 say `OTHER`**, and **1 says `WOOD`**. None has a populated general `comment` or `os_ref` field. The label `SETT` is evidence of how the *recovery location* was described; it does not tell us that the carcass belonged to that social group. For example, JACKS has `SETT` / `SHOT` / recorded SG `JACKS MIREY`, while a WOOD FARM RTA has `HEDGE` as its location description. One record says `DEAD SN/TR`, which is **not a live `TRAP` capture**.
+
+### Working inclusion and location rules
+
+1. **Keep every UN record** in `access_raw` and `research`. Do not delete observations or rewrite the historic recorded-sett/SG fields.
+2. **Exclude UN records from individual movement, recapture, and resident social-group assignment analyses.** Any existing `sett_id` or `recorded_social_group_id` is **descriptive/source information**, not confirmed membership.
+3. **For a carcass recovered at a named sett**, retain that named recovery location if supported by the original description. Keep the separate distinction between *carcass found at/near a sett* and *individual resident at a sett*.
+4. **For road, wood, hedge and general recovery descriptions**, do not infer an exact sett point, a nearest territory or a social-group assignment. OS grid references should retain the precision of the original grid cell. A carcass recovery area can extend beyond the trapping/bait-marking area.
+5. **Keep marked-animal off-sett records**, including live NET/SNARE captures and later found-dead events, for potential survival, disease or encounter-history analyses where their observation processes can be modelled appropriately; don't use off-sett location alone to change group residency.
+6. **Prioritise field-team review** of named historical setts missing from the XY list and the currently unmatched records with `moc='TRAP'`. Tracing approximate carcass locations can be a lower priority unless it addresses a specific mortality or disease question.
+
+These are the **proposed analysis inclusion rules**, not a retroactive change to the raw database or an assertion that historical group labels were necessarily recorded incorrectly. The current `analysis` views may still display linked sett or social-group labels for UN animals: they have **not yet been rewritten** to enforce these proposed modelling exclusions. Any future analysis extract should include explicit flags such as `is_unmarked_found_dead`, `has_sett_recovery_label`, and `residency_evidence_eligible`, rather than dropping records globally.
+
+The comparison of `access_raw` and `research` row totals and recorded fields is tracked separately in [Access-to-Research Parity Audit](V1_ACCESS_TO_RESEARCH_PARITY_AUDIT_20261102.md). This doesn't yet prove field-by-field identity for every imported column.
