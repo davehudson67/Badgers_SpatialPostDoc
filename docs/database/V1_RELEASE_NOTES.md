@@ -1026,3 +1026,10 @@ The original location-description field is recorded for all 34: **28 say `SETT`*
 These are the **proposed analysis inclusion rules**, not a retroactive change to the raw database or an assertion that historical group labels were necessarily recorded incorrectly. The current `analysis` views may still display linked sett or social-group labels for UN animals: they have **not yet been rewritten** to enforce these proposed modelling exclusions. Any future analysis extract should include explicit flags such as `is_unmarked_found_dead`, `has_sett_recovery_label`, and `residency_evidence_eligible`, rather than dropping records globally.
 
 The comparison of `access_raw` and `research` row totals and recorded fields is tracked separately in [Access-to-Research Parity Audit](V1_ACCESS_TO_RESEARCH_PARITY_AUDIT_20261102.md). This doesn't yet prove field-by-field identity for every imported column.
+
+
+### Agreed rule (2 November 2026): UN animals have no resident social group
+
+We have now **agreed** that an animal with tattoo beginning `UN` should **never be assigned an analytical resident social group**. This is different from the historically *recorded* sett or SG label, which stays in the original and research data for transparency. All 498 UN records are post-mortems, with no `TRAP` captures; 175 currently retain a recorded SG label and 34 have a linked recovery-sett label. These are not proof of residency. The proposed downstream `resident_social_group` and `resident_social_group_id` fields must be missing for every UN animal, regardless of which place it was found. **The existing views have not yet been changed to enforce this rule**; do not mistake `recorded_social_group_*` or `normalized_social_group_name` for verified residency.
+
+The broader spatial review, its SQL findings and the remaining named-sett / trapping-location questions are in [Spatial Audit and Decisions, 2 November 2026](V1_SPATIAL_AUDIT_DECISIONS_20261102.md).
