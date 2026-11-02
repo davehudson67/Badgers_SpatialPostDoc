@@ -222,3 +222,12 @@ I am treating `040l` as a **case variant of the same tattoo**, not a separate ba
 **Rule:** use the canonical scientific identifier **`040L`**, retaining the leading zero; when matching original tattoo text, compare `upper(trim(tattoo))`, but keep the original `040l` value in `access_raw` for provenance. This is a confirmed **case-only correction for this tattoo**, not permission to merge other visually similar tattoos or drop leading zeros.
 
 **Audit/verification script:** `sql/migrations/v1_040l_tattoo_case_audit_20261028.sql`. **Database action:** original source records unchanged; existing research links already correct. This is a documented interpretation and reproducibility check.
+
+
+## 2 November 2026 — spatial interpretation and UN social groups
+
+I've now agreed the following **firm biological cleaning rule**: **no badger whose tattoo starts with `UN` should be given a resident social group in an analysis**. These animals are unmarked post-mortem submissions, not animals with known residency from the trapping programme. The 498 current UN records are all PM records and none has capture method `TRAP`. The database nevertheless preserves 175 original recorded SG labels and 34 linked sett labels. Those labels can describe a carcass recovery place or historical field annotation; **they do not establish SG membership**.
+
+I'm deliberately **not deleting or blanking the original `recorded_social_group_*`, `recorded_sett_name` or `sett_id` fields** in `research` or `access_raw`. The rule must be applied to a separate derived *residency* field in the analysis extract: for a `UN%` tattoo, resident SG ID/name are NULL and residency evidence eligibility is FALSE. The existing views are **not yet updated** to enforce this rule, so the presence of a recorded or normalised SG in those views should not be mistaken for an inferred resident group.
+
+The spatial audit also identified **102 TRAP records without linked sett IDs** (81 with recorded names and 21 without). These need targeted sett-name and original-field-record review before spatial assignment; they should not be discarded or automatically matched to the nearest sett. Current spatial classifications and polygon-match counts, and remaining field-team questions, are documented in [Spatial Audit and Decisions](V1_SPATIAL_AUDIT_DECISIONS_20261102.md). No source data have been changed as part of this decision.
