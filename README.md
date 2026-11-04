@@ -1,31 +1,18 @@
 # Badgers_SpatialPostDoc
 
-Woodchester badger database and spatial analysis code.
+Woodchester badger spatial, disease and encounter-analysis repository.
 
-## Database documentation
+## Current database documentation (WECS v1 — 4 November 2026)
 
-For collaborators who need straightforward read-only access:
+For routine use there are **three authoritative documents**, plus a live inconsistency register:
 
-- [Woodchester Badger Database — Quick Access Guide](markdown/Woodchester_Badger_Database_Access_Guide.md)
+1. [01 — Database access and available tables](docs/database/01_ACCESS_AND_TABLE_GUIDE.md) — connect from R, which views to use and key interpretation rules.
+2. [02 — Master data dictionary and audit](docs/database/02_MASTER_DATA_DICTIONARY_AND_AUDIT.md) — complete live schema/column inventory, types, categorical definitions, evidence and limitations.
+3. [03 — Versioning, SQL migrations and scientific decisions](docs/database/03_VERSIONING_AND_DECISIONS.md) — migration index, rule changes, QA and reproducibility.
+4. [WECS inconsistency register](docs/database/WECS_FLAGGED_INCONSISTENCIES_2026_11_04.md) — read-only dated snapshot of the live `analysis.wecs_review_flags_v1` view; resolution status/current interpretation/final decisions.
 
-For database structure, analysis views, infection outputs, R workflows, maintainer tasks and access-control details:
+**Current research outputs:** `analysis.encounters_clean_v1` (17,586 source capture/PM rows), `analysis.capture_history_v1`, `analysis.diagnostic_results`, `analysis.mortality_events_review_v1` (death evidence irrespective of missing XY), and `analysis.wecs_review_flags_v1`. See the guide for row-grain and mortality cautions.
 
-- [Woodchester Badger Database — Detailed Technical, R and Infection Guide](markdown/Woodchester_SQL_R_Analysis_and_Infection_Guide.md)
+**SQL:** `sql/migrations/20261104_wecs_curated_v1_snapshot.sql` captures reviewed event links, classification overrides, sett-name aliases and current WECS output views; its prerequisite import/spatial objects must already exist. Validations are in `sql/audit/`.
 
-For cleaning transparency, provenance, variable definitions and spatial-assignment rules:
-
-- [Database Governance, Provenance and Cleaning Audit](docs/database/DATABASE_GOVERNANCE_AND_PROVENANCE.md)
-- [Sett and Social-Group Assignment Rules](docs/database/SETT_SOCIAL_GROUP_RULES.md)
-- [Research Data Dictionary](docs/database/DATA_DICTIONARY.md)
-- [Executable Cleaning Audit SQL](sql/audit/Woodchester_database_cleaning_audit.sql)
-- [Advanced Research Read-Only Access SQL](sql/access/create_badger_research_readonly.sql)
-
-### Access levels
-
-- **`badger_readonly`** — default collaborator access to curated `analysis` views.
-- **`badger_research_readonly`** — advanced/audit access to approved canonical `research` tables plus the analysis views; still strictly read-only.
-- **`postgres`** — maintainer/admin access only.
-
-The `analysis` layer is the recommended starting point because it gives explicit analysis grains and centrally maintained joins. Direct use of `research` is appropriate for auditing and specialist work, but requires care with one-to-many joins, recorded versus normalised fields, and internal table semantics.
-
-Database credentials are **not stored in this repository**. Use the supplied `.Renviron.example` as a template and keep the real `.Renviron` file local only.
+Older files under `docs/database/` and `markdown/` remain for historical scientific decisions, but should not be regarded as the current documentation entrypoint. Do not store credentials in Git. Use `.Renviron.example` as a local template.
