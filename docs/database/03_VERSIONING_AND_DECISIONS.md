@@ -47,6 +47,12 @@ All names are relative to `sql/migrations/`. These older scripts establish the s
 
 **Important scope limitation:** this is *not* a stand-alone restoration of the entire database. It depends on pre-existing imported `access_raw`/`research` records and source standardisation/spatial views such as `analysis.encounters_standardised_v1`. Before using on a fresh database, check those prerequisite view definitions and migration history. The snapshot uses `ON CONFLICT DO NOTHING` to avoid silently overwriting already reviewed decisions. An incremental amendment after 4 November must receive **a new dated migration**, not silent mutation of this historical snapshot.
 
+### Collaborator permissions (applied and saved)
+
+**`sql/migrations/20261104_wecs_readonly_access_grants.sql`** must run **after** the curated WECS snapshot on fresh/rebuilt databases. It grants `SELECT` on the four curated WECS analysis views to both read-only roles, restricts direct curation-table SELECT to the advanced `badger_research_readonly` role, and establishes read-only row-level policies for that advanced role. These curated analysis views are view-owner secured to expose **only their selected columns**, without needing to grant unrestricted write access to original observations.
+
+**Verified 4 November 2026:** both `badger_readonly` and `badger_research_readonly` have `SELECT` on `analysis.encounters_clean_v1`, `analysis.mortality_events_review_v1`, and `analysis.wecs_review_flags_v1`; advanced role also has SELECT on `research.wecs_review_flags`. These checks verify role-level grants, not a real end-to-end individual collaborator login; verify with the user's actual login when available.
+
 ### Read-only validation (in `sql/audit/`)
 
 - `WECS_v1_encounter_and_spatial_checks.sql` — capture preservation, six fields, six spatial quality checks and curated decisions.
@@ -96,4 +102,4 @@ from analysis.mortality_events_review_v1;
 select review_status,count(*) from research.wecs_review_flags group by review_status;
 ```
 
-**Baseline assurance:** the migration snapshot is now version-controlled; it has **not yet been independently replayed on a clean test database**. Access-wide field-by-field parity and role permissions for new views are not fully signed off. Do not describe WECS v1 as a fully frozen and validated survival-modelling dataset yet.
+**Baseline assurance:** the migration snapshot is now version-controlled; it has **not yet been independently replayed on a clean test database**. Access-wide field-by-field parity and real collaborator end-to-end login tests are not fully signed off. Do not describe WECS v1 as a fully frozen and validated survival-modelling dataset yet.
