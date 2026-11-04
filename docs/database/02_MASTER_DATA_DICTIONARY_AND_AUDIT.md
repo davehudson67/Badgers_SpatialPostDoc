@@ -36,6 +36,29 @@
 
 *Note:* these are observed values in the November 2026 baseline, not an exhaustive immutable set. The source `moc`, health assessment, lab test categories and other historical free-text categories vary by era. Do not assert closed enums for raw fields; inspect `SELECT DISTINCT ...` before modelling. Clinical assay interpretations are specific to test family; a blank/invalid test is **not a negative**.
 
+## Observed source categories in the principal raw/canonical fields
+
+These are **observed values**, not necessarily validated biological categories, and may change after data corrections. `NULL` is an absence of entry, **not** a negative result. Counts below come directly from current live Supabase tables.
+
+| Table.column | Observed categories (count) | Interpretation |
+|---|---|---|
+| `research.individuals.sex` | FEMALE 1,982; MALE 1,772; UNKNOWN 17; NULL 20 | Keep unknown sex distinct from missing |
+| `research.individuals.age_first_capture` | CUB 2,823; ADULT 769; YEARLING 85; NULL 114 | Recorded age **class at first capture**; not exact birth year |
+| `research.captures.condition` | GOOD 8,809; FAIR 4,789; POOR 1,281; VERY GOOD 1,068; V.GOOD 700; NULL 939 | VERY GOOD and V.GOOD appear distinct in source; harmonise explicitly if used |
+| `research.captures.pm_status` | POSSIBLE 474; NOT POSSIBLE 73; NULL 17,039 | Availability/PM-status text, not a death outcome by itself |
+| `research.captures.release_assessment` | Fit 1,835; Death 4; NULL 15,747 | Fit supports routine release but does not itself prove release |
+| `research.captures.moc` | TRAP 15,916; RTA 738; FOUND DEAD 267; NULL 206; SNARE 140; SHOT (GP) 120; REMOVAL 77; NET 43; FOUND EXT 31; SHOT 21; PUT DOWN 15; DEAD SN/TR 9; ON ROAD 1; REPORTED BY MEMBER OF THE PUBLIC 1; DART GUN 1 | Original recorded method/context. `FOUND EXT` means found in extremis. `RTA` alone is not necessarily fatal |
+| `research.captures.reproductive_status` | NEVER LACTATING 4,484; LACTATING THIS YEAR 884; LACTATING SOMETIME 671; LACTATING 475; N LACT T Y 288; LACT P Y 216; NPTD 165; UNSURE 88; TESTES DESCENDED 75; PREGNANT 51; TESTES ASCENDED 14; MID 10; UNKNOWN 3; NULL 10,162 | Mixed sex-specific, historical and abbreviated codes; **do not** map ambiguous codes without source documentation |
+| `research.cultures.culture_result` | NEGATIVE 46,400; M.BOVIS 1,058; M.AVIUM 2; M.OTHER 1; CONTAMINATED 2; FAILED 7; PENDING 6; NOT TESTED 5; NULL 1,218 | Only M.BOVIS is *M. bovis detected*; OTHER, failed, pending and untested are not negative |
+| `research.disease_statuses.disease_status` | Negative; Exposed; Excretor; Super excretor | Lookup categories (one row per type), not observed test counts |
+| `research.stat_pak_tests.test_result` | Negative 2,149; Positive 654; No Clotted Sample 48 | No clotted sample is invalid/not tested; **not negative** |
+| `research.brock_tests.test_result` | N 1,082; P 514; NULL 52 | N/P assay interpretation; NULL is missing |
+| `research.elisa_tests.test_result` | N 13,297; P 1,554; I 163; NO SERA 93; ITT 15; NO SERUM 6; BIT 2; NULL 32 | Unresolved abbreviations/insufficient serum need separate assay-level interpretation; don't collapse into negative |
+| `research.ifn_gamma_elisa.test_result` | Negative 3,276; Positive 698; NULL 401 | Interpretation should additionally consider QC, controls and numerical thresholds |
+| `research.dpp_tests.test_result` | NULL 3,316 | This source field is entirely blank; **DPP result must be reconstructed from visual-line and optical-density fields**, not interpreted as universally negative |
+
+For diagnostic outcomes **prefer `analysis.diagnostic_results`**, which retains the source family and test provenance. Other historical text fields (including `condition`, `testes`, injuries, notes and named locations) are not assumed to be controlled enums. Where a category matters scientifically, add a separately reviewed rule rather than silently collapsing spelling variants.
+
 ## Live column-by-column inventory
 
 Entries under every table below show **actual database type**, nullability and explanation. For fields without verified semantics or units in their source, this is explicitly stated; the SQL and original Access documentation remain necessary.
