@@ -44,8 +44,8 @@ dbDisconnect(con)
 | `analysis.capture_history_v1` | Longitudinal source-rich captures, samples, historical SG, age/sex and original descriptions | Biological covariates and model-specific histories; do not confuse PM with live capture |
 | `analysis.diagnostic_results` | Long-format diagnostic results (multiple possible per capture) | Disease testing; join carefully on `capture_id` |
 | `analysis.capture_infection_probabilities` | Existing capture-level predicted infection probabilities | Models using derived disease-state information |
-| `analysis.mortality_events_review_v1` | Death evidence, 1,311 recorded event rows (439 missing XY) | **Review** before using terminal outcomes; two tattoo conflicts and possible duplicate deaths remain |
-| `analysis.mortality_model_candidate_v1` | 1,311 recorded death rows: 1,307 candidate terminal events and four held identity/repeat cases | Cautious model-event input; NOT final signed-off survival dataset |
+| `analysis.mortality_events_review_v1` | Death evidence, 1,304 recorded event rows (433 missing XY) | **Review** before using terminal outcomes; two tattoo conflicts and possible duplicate deaths remain |
+| `analysis.mortality_model_candidate_v1` | 1,304 recorded death rows: 1,300 candidate terminal events and four held identity/repeat cases | Cautious model-event input; NOT final signed-off survival dataset |
 | `analysis.grid_reference_audit_v1` | Original/corrected coordinates for 54 reviewed and 38 withheld grid locations | Check source references and spatial uncertainties |
 | `analysis.wecs_review_flags_v1` | Current open and resolved inconsistency register | Check whether a record is trusted or needs review |
 | `analysis.capture_sett_alias_audit_v1` | Approved capture-specific historical sett-name aliases | Find name changes and why a coordinate is or is not applied |
@@ -60,11 +60,13 @@ The live database has additional specialist tests, wounds, lookup tables, analys
 ## Important biological rules
 
 - **Tattoo** is the scientific badger identifier; `capture_id` is a source record ID. `individual_id` is an internal DB key; don't analyse it as a separate identifier.
-- `is_pm=true` identifies a source PM-coded row. **Ten** live/PM pairs are already confirmed as **single episodes**. `024Y` on 2014-08-14 is one euthanasia, represented by source rows 16882 and 16817. For independent events exclude `episode_record_role='PM_COMPANION'`.
+- `is_pm=true` identifies a source PM-coded row. **Seventeen live/PM pairs are already confirmed as **single episodes**. `024Y` on 2014-08-14 is one euthanasia, represented by source rows 16882 and 16817. For independent events exclude `episode_record_role='PM_COMPANION'`.
 - A **confirmed death remains mortality data even with XY missing**. Missing location never converts death to live censoring. Conversely, `RTA` in the original method field does **not automatically mean fatal**.
 - Coordinates may be actual recovery sites, provisional sett-centre proxies or coarse grid-square corners. Read `location_type` **and** `location_quality`; don't equate a social group or last known sett with where a carcass was recovered.
 - `UN` tattoos should not receive a social-group assignment by inference.
 - The mortality review is **not yet a signed-off survival input**: U005 and 020D have PM deaths but later live captures and require source-ID review.
+
+**Seven additional confirmed same-event deaths:** 001R, 017R, 045W, D007, I022, M012 and Q070. Field and PM source records are retained, but PM companions must not be counted as additional death events. D007 died under anaesthetic; its original field note explicitly explains the one-day PM-date offset. Only W023 and Q082 still have possible repeat-death entries.
 
 ## Common safe queries
 
