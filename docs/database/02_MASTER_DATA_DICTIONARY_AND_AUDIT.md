@@ -11,13 +11,13 @@
 | `analysis.encounters_clean_v1` | **Recommended spatial/encounter starting point**; one row per original capture/PM record | 17,586 rows, 13 columns, one `capture_id` each |
 | `analysis.capture_history_v1` | Source-rich longitudinal capture history | One row per capture/PM record; avoid conflating PM with live capture |
 | `analysis.diagnostic_results` | Pooled six diagnostic families | One row per assay/test outcome (possibly multiple per capture) |
-| `analysis.mortality_events_review_v1` | One primary record per **recorded** death, excluding curated PM companion; identity/duplicate flags retained | 1,311 death-event rows, **439 without XY**; not yet signed-off survival endpoint |
+| `analysis.mortality_events_review_v1` | One primary record per **recorded** death, excluding curated PM companion; identity/duplicate flags retained | 1,304 death-event rows, **433 without XY**; not yet signed-off survival endpoint |
 | `analysis.wecs_review_flags_v1` | **Live flagged-inconsistency register** | One issue per flag ID; review status and final decision |
 
 ### Key scientific rules
 
 - `tattoo` is the scientific individual identifier. `individual_id` is only an internal relational key. `UN` animals must not be assigned a social group simply from inferred sett location.
-- `capture_id` identifies a **source row**. A field row and its PM row can describe **one** episode. Currently **10 linked two-row episodes**, including 024Y (16882 + 16817). Exclude PM companions when counting distinct episodes.
+- `capture_id` identifies a **source row**. A field row and its PM row can describe **one** episode. Currently **17 linked two-row episodes**, including 024Y (16882 + 16817). Exclude PM companions when counting distinct episodes.
 - A death with missing coordinates **remains a recorded death**. An RTA label alone is **not** a proven death without adequate outcome evidence. Later live captures after recorded deaths require tattoo/identity review.
 - Associated-sett XY, grid-cell SW corners and actual field/recovery locations are not interchangeable. Read `location_quality` before using coordinates in a movement model.
 - `NULL`/blank means unknown or not recorded, not negative, no movement, presumed alive or exact zero.
@@ -28,9 +28,9 @@
 
 ### Exact current categorical entries (with live counts)
 - **`encounter_type`:** TRAP:16093; RTA:750; FOUND_DEAD:271; SHOT:146; SNARE:140; REMOVAL:76; NET:43; FOUND_IN_EXTREMIS:31; PUT_DOWN:15; DEAD_SNARE_TRAP:9; UNKNOWN:6; FOUND_ALIVE:3; DART:1; ON_ROAD:1; PUBLIC_REPORT:1.
-- **`outcome`:** PRESUMED_RELEASED:16263; FOUND_DEAD:1034; KILLED:223; EUTHANISED:43; DIED:21; RELEASED:1; UNKNOWN:1.
-- **`episode_record_role`:** STANDALONE:17566; FIELD_RECORD:10; PM_COMPANION:10.
-- **`location_quality`:** SETT_POINT_PROVISIONAL:15740; UNRESOLVED:828; GRID_CELL_100M_RECORDED_SO:364; GRID_CELL_100M_PREFIX_UNVERIFIED:187; SETT_ASSOCIATION_PROVISIONAL:190; SETT_COORDINATE_CONFLICT:107; GRID_CELL:65; GRID_REFERENCE_CORRECTED_PROVISIONAL:54; GRID_REFERENCE_AMBIGUOUS_WITHHELD:38; LINKED_SETT_POINT_PROVISIONAL:7; SETT_ASSOCIATION_ONLY:5; LINKED_GRID_CELL_PRECISION_UNCONFIRMED:1.
+- **`outcome`:** PRESUMED_RELEASED:16263; FOUND_DEAD:1032; KILLED:223; EUTHANISED:44; DIED:22; RELEASED:1; UNKNOWN:1.
+- **`episode_record_role`:** STANDALONE:17552; FIELD_RECORD:17; PM_COMPANION:17.
+- **`location_quality`:** SETT_POINT_PROVISIONAL:15740; UNRESOLVED:834; GRID_CELL_100M_RECORDED_SO:366; GRID_CELL_100M_PREFIX_UNVERIFIED:187; SETT_ASSOCIATION_PROVISIONAL:190; SETT_COORDINATE_CONFLICT:107; GRID_CELL:65; GRID_REFERENCE_CORRECTED_PROVISIONAL:54; GRID_REFERENCE_AMBIGUOUS_WITHHELD:38; SETT_ASSOCIATION_ONLY:5.
 - **`location_type`:** SETT:16044; ROAD:747; RECOVERY_SITE:238; UNKNOWN:222; SETT_ASSOCIATION:164; BOUNDARY:57; FIELD:49; WOOD:30; BUILDING:10; LINKED_FIELD_SITE:10; HEDGE:8; OTHER_CAPTURE_SITE:6; GARDEN:1.
 - **`research.wecs_review_flags.review_status`:** OPEN; NEEDS_SOURCE_CHECK; WAITING_FIELD_TEAM; RESOLVED.
 
@@ -1229,7 +1229,7 @@ One row per grid correction/withheld case. Researcher-readable provenance paired
 
 ### `analysis.mortality_model_candidate_v1` (18 columns, newly audited)
 
-**1,311 rows** (1,307 candidates, **2 ID conflicts**, **2 possible duplicate death reports**), 439 now without XY. This view **retains all rows**, attaching a model-inclusion status; it is NOT a signed-off survival-input table.
+**1,304 rows** (1,300 candidates, **2 ID conflicts**, **2 possible duplicate death reports**), 433 without XY. This view **retains all rows**, attaching a model-inclusion status; it is NOT a signed-off survival-input table.
 
 | Column | SQL type | Null? | Definition |
 |---|---|---|---|
@@ -1264,6 +1264,10 @@ select location_quality,count(*) from analysis.encounters_clean_v1 group by 1 or
 select moc,count(*) from research.captures group by 1 order by 2 desc;
 select review_status,count(*) from research.wecs_review_flags group by 1;
 ```
+
+### Seven additional pair confirmations (4 November 2026)
+
+The wider identity/death audit confirmed **seven more** field–PM pairs: 001R, 017R, 045W, D007, I022, M012 and Q070. A source `capture_id` still represents one original row, but **17 pairs** now share an episode (PM companion not a separate death). D007 was recorded as a PM one day later solely because of a documented historical database date limitation; the primary note states death under anaesthetic. Only W023 and Q082 remain as tattoos with two unlinked candidate death reports. U005 and 020D deaths are temporarily held from tattoo terminal assignments due identity contradictions. For a safe record-level audit see `analysis.mortality_model_candidate_v1` and `analysis.wecs_review_flags_v1`.
 
 ## Outstanding audit limitations
 
