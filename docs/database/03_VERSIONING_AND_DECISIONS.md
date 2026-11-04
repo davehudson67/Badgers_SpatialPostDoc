@@ -14,7 +14,7 @@
 
 **`analysis.encounters_clean_v1` — 17,586 source rows.** Seven essential identifiers: `capture_id`, `tattoo`, `capture_date`, `is_pm`, `sett_id`, `episode_primary_capture_id`, `episode_record_role`. Exactly **six cleaned fields**: `encounter_type`, `outcome`, `location_type`, `location_easting`, `location_northing`, `location_quality`.
 
-**`analysis.mortality_events_review_v1` — 1,311 recorded death-event rows**, with 401 without a coordinate pair; not a finished survival endpoint. Ten independently confirmed field/PM same-event links prevent counting the PM companion as a second death. Identity conflicts and duplicate-death reports still need adjudication. **Deaths with unknown XY remain deaths** and must not be treated as never recaptured/censored solely for that reason.
+**`analysis.mortality_events_review_v1` — 1,311 recorded death-event rows**, with 439 without a coordinate pair; not a finished survival endpoint. Ten independently confirmed field/PM same-event links prevent counting the PM companion as a second death. Identity conflicts and duplicate-death reports still need adjudication. **Deaths with unknown XY remain deaths** and must not be treated as never recaptured/censored solely for that reason.
 
 **`analysis.wecs_review_flags_v1`** is the *live* issue tracker. `RESOLVED` always has a final decision; `OPEN`, `NEEDS_SOURCE_CHECK` and `WAITING_FIELD_TEAM` have provisional current interpretations.
 
@@ -52,6 +52,20 @@ All names are relative to `sql/migrations/`. These older scripts establish the s
 **`sql/migrations/20261104_wecs_readonly_access_grants.sql`** must run **after** the curated WECS snapshot on fresh/rebuilt databases. It grants `SELECT` on the four curated WECS analysis views to both read-only roles, restricts direct curation-table SELECT to the advanced `badger_research_readonly` role, and establishes read-only row-level policies for that advanced role. These curated analysis views are view-owner secured to expose **only their selected columns**, without needing to grant unrestricted write access to original observations.
 
 **Verified 4 November 2026:** both `badger_readonly` and `badger_research_readonly` have `SELECT` on `analysis.encounters_clean_v1`, `analysis.mortality_events_review_v1`, and `analysis.wecs_review_flags_v1`; advanced role also has SELECT on `research.wecs_review_flags`. These checks verify role-level grants, not a real end-to-end individual collaborator login; verify with the user's actual login when available.
+
+### Applied spatial and identity audit migrations (4 November 2026)
+
+Run these **in order after** `20261104_wecs_curated_v1_snapshot.sql` and the read-only grants migration:
+
+| Saved migration in `sql/migrations/` | Implemented decision |
+|---|---|
+| `20261104_wecs_grid_square_qa_and_safe_corrections.sql` | Named Woodchester-area ST references were mapped ~100 km south by the original parser. **50** provisionally reinterpreted in the SO square; **four** embedded ST/SU original prefixes mechanically corrected; **33** uncertain coordinates withheld. Source unchanged |
+| `20261104_wecs_six_digit_precision_and_additional_quarantine.sql` | A six-digit OS reference represents a **100 m square**, not an exact observed point. Separates explicitly recorded SO prefixes from unverified assumed prefixes; **five** additional suspect points withheld |
+| `20261104_wecs_access_identity_and_spatial_conflict_resolution.sql` | Original Access data confirm U005 and 020D death/tattoo contradictions, the latter explicitly recorded first captured as CUB in **2022** although attributed a PM death in **2020**. These two deaths remain recorded but are held from tattoo terminal-event assignment; second possible repeated deaths for W023 and Q082 held. **107** nonsett/sett-association spatial conflicts resolved by retaining missing XY |
+
+**Current verified baseline:** 17,586 distinct source capture/PM rows; 54 grid decisions `CORRECTED`, 38 `WITHHELD`; **978 records have no accepted XY**; 107 nonsett encounter locations intentionally unknown; 10 linked field–PM event pairs; 1,311 recorded mortality-event rows; 1,307 candidate deaths and four held from terminal assignment. **11 register flags:** 4 resolved, 2 needing original source, 4 open and 1 awaiting field team.
+
+These corrections preserve the original OS reference and its interpretation before correction in `research.capture_grid_coordinate_decisions`. Check the concise view `analysis.grid_reference_audit_v1`. Use `analysis.mortality_model_candidate_v1` for tentative model event inclusion, not as a final survival fit dataset. A death with no XY is still recorded as a death.
 
 ### Read-only validation (in `sql/audit/`)
 
