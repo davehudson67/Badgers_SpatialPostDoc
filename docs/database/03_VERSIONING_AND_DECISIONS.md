@@ -14,7 +14,7 @@
 
 **`analysis.encounters_clean_v1` — 17,586 source rows.** Seven essential identifiers: `capture_id`, `tattoo`, `capture_date`, `is_pm`, `sett_id`, `episode_primary_capture_id`, `episode_record_role`. Exactly **six cleaned fields**: `encounter_type`, `outcome`, `location_type`, `location_easting`, `location_northing`, `location_quality`.
 
-**`analysis.mortality_events_review_v1` — 1,311 recorded death-event rows**, with 439 without a coordinate pair; not a finished survival endpoint. Ten independently confirmed field/PM same-event links prevent counting the PM companion as a second death. Identity conflicts and duplicate-death reports still need adjudication. **Deaths with unknown XY remain deaths** and must not be treated as never recaptured/censored solely for that reason.
+**`analysis.mortality_events_review_v1` — 1,304 recorded death-event rows**, with 439 without a coordinate pair; not a finished survival endpoint. Ten independently confirmed field/PM same-event links prevent counting the PM companion as a second death. Identity conflicts and duplicate-death reports still need adjudication. **Deaths with unknown XY remain deaths** and must not be treated as never recaptured/censored solely for that reason.
 
 **`analysis.wecs_review_flags_v1`** is the *live* issue tracker. `RESOLVED` always has a final decision; `OPEN`, `NEEDS_SOURCE_CHECK` and `WAITING_FIELD_TEAM` have provisional current interpretations.
 
@@ -39,7 +39,7 @@ All names are relative to `sql/migrations/`. These older scripts establish the s
 ### Current encounter, spatial and mortality curation
 
 **`sql/migrations/20261104_wecs_curated_v1_snapshot.sql`** is a **replayable WECS curation baseline** exported from live database definitions and decision rows on 4 November 2026. It contains:
-- The current ten **field/PM episode links** and one explicit **nonlink** (Y030 netting versus later independent starvation recovery).
+- The current 17 linked field–PM episode pairs and one explicit **nonlink** (Y030 netting versus later independent starvation recovery).
 - All **23 manual outcome/encounter overrides**, including 1979 REMOVAL→KILLED (11 records), D061 RTA survival correction, 014D false-euthanasia correction, and 024Y explicit euthanasia.
 - Nine approved **capture-specific sett aliases** (MRS MACKS, STONEY TRACK, S PEGLARS→SOUTH PEGLARS, WEST MAIN→WEST) and the distinct canonical SOUTH PEGLARS name (ID 555, no XY).
 - Ten live flagged-inconsistency cases, with current status and any final decision.
@@ -63,9 +63,20 @@ Run these **in order after** `20261104_wecs_curated_v1_snapshot.sql` and the rea
 | `20261104_wecs_six_digit_precision_and_additional_quarantine.sql` | A six-digit OS reference represents a **100 m square**, not an exact observed point. Separates explicitly recorded SO prefixes from unverified assumed prefixes; **five** additional suspect points withheld |
 | `20261104_wecs_access_identity_and_spatial_conflict_resolution.sql` | Original Access data confirm U005 and 020D death/tattoo contradictions, the latter explicitly recorded first captured as CUB in **2022** although attributed a PM death in **2020**. These two deaths remain recorded but are held from tattoo terminal-event assignment; second possible repeated deaths for W023 and Q082 held. **107** nonsett/sett-association spatial conflicts resolved by retaining missing XY |
 
-**Current verified baseline:** 17,586 distinct source capture/PM rows; 54 grid decisions `CORRECTED`, 38 `WITHHELD`; **978 records have no accepted XY**; 107 nonsett encounter locations intentionally unknown; 10 linked field–PM event pairs; 1,311 recorded mortality-event rows; 1,307 candidate deaths and four held from terminal assignment. **11 register flags:** 4 resolved, 2 needing original source, 4 open and 1 awaiting field team.
+**Current verified baseline:** 17,586 distinct source capture/PM rows; 54 grid decisions `CORRECTED`, 38 `WITHHELD`; **978 records have no accepted XY**; 107 nonsett encounter locations intentionally unknown; 17 linked field–PM episode pairs; 1,304 recorded mortality-event rows; 1,300 candidate deaths and four held from terminal assignment. **11 register flags:** 4 resolved, 2 needing original source, 4 open and 1 awaiting field team.
 
 These corrections preserve the original OS reference and its interpretation before correction in `research.capture_grid_coordinate_decisions`. Check the concise view `analysis.grid_reference_audit_v1`. Use `analysis.mortality_model_candidate_v1` for tentative model event inclusion, not as a final survival fit dataset. A death with no XY is still recorded as a death.
+
+### Further record-level mortality audit (applied after the migrations above)
+
+| SQL file in `sql/migrations/` | Why it exists |
+|---|---|
+| `20261104_wecs_seven_confirmed_death_episode_pairs.sql` | Original Access/capture notes confirm seven more single-event field–PM pairs: **001R, 017R, 045W, D007, I022, M012 and Q070**. The database now has **17** linked pairs. D007 explicitly states its PM was entered the following day because historic Access could not record both rows on the true date. Six episodes are EUTHANISED; D007 is DIED under anaesthetic |
+| `20261104_wecs_pm_companion_spatial_provenance.sql` | PM companions retain their own independent grid-square recovery location if recorded; a nominal sett point is **not** copied onto PM rows without independent evidence. The field record retains its own supported sett/capture location. Original spatial text unchanged |
+
+**Final verified working counts:** 17,586 distinct capture/PM source rows; **17 confirmed two-row episodes**; 54 provisional OS-grid corrections and 38 withheld points; **984 source rows have no accepted XY** (including intentionally locationless PM companions); **1,304 recorded death episodes** after excluding linked PM companions; **1,300 candidate terminal events and four held events** (2 tattoo identity contradictions and 2 possible repeated deaths). Among candidate terminal events **433 have missing XY**, which does not remove death evidence. Twelve live issues: 5 resolved, 2 need original source checks, 4 open and one awaiting the field team.
+
+**Outstanding mortality identity checks:** original Access still documents U005 as both dead and subsequently live; 020D's 2020 PM conflicts with age_first_capture=CUB/year_first_capture=2022. W023 and Q082 each have potentially repeated carcass records. No alternative identity has been invented. This is **not yet a certified survival-modelling input**, but the hold/candidate distinction is explicit in `analysis.mortality_model_candidate_v1`.
 
 ### Read-only validation (in `sql/audit/`)
 
