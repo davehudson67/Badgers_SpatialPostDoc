@@ -61,7 +61,7 @@ The live database has additional specialist tests, wounds, lookup tables, analys
 ## Important biological rules
 
 - **Tattoo** is the scientific badger identifier; `capture_id` is a source record ID. `individual_id` is an internal DB key; don't analyse it as a separate identifier.
-- `is_pm=true` identifies a source PM-coded row. **Seventeen live/PM pairs are already confirmed as **single episodes**. `024Y` on 2014-08-14 is one euthanasia, represented by source rows 16882 and 16817. For independent events exclude `episode_record_role='PM_COMPANION'`.
+- `is_pm=true` identifies a source PM-coded row. **Seventeen field/PM pairs are confirmed as single episodes**. `024Y` on 2014-08-14 is one euthanasia, represented by source rows 16882 and 16817. For independent events exclude `episode_record_role='PM_COMPANION'`.
 - A **confirmed death remains mortality data even with XY missing**. Missing location never converts death to live censoring. Conversely, `RTA` in the original method field does **not automatically mean fatal**.
 - Coordinates may be actual recovery sites, provisional sett-centre proxies or coarse grid-square corners. Read `location_type` **and** `location_quality`; don't equate a social group or last known sett with where a carcass was recovered.
 - `UN` tattoos should not receive a social-group assignment by inference.
