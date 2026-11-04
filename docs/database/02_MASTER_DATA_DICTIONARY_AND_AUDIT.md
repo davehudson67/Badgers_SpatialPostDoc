@@ -1,6 +1,6 @@
 # Woodchester database — MASTER DATA DICTIONARY AND AUDIT
 
-**Live schema snapshot:** 4 November 2026. **Scope:** all current `access_raw`, `research` and `analysis` relations, not guessed old tables. Describes **every live column**. **Database is authoritative**; this inventory must be regenerated after migrations.
+**Live schema snapshot:** 4 November 2026, after grid/identity audit (**55 tables/views; 908 columns**). **Scope:** all current `access_raw`, `research` and `analysis` relations, not guessed old tables. Describes **every live column**. **Database is authoritative**; this inventory must be regenerated after migrations.
 
 ## How to use these tables
 
@@ -11,7 +11,7 @@
 | `analysis.encounters_clean_v1` | **Recommended spatial/encounter starting point**; one row per original capture/PM record | 17,586 rows, 13 columns, one `capture_id` each |
 | `analysis.capture_history_v1` | Source-rich longitudinal capture history | One row per capture/PM record; avoid conflating PM with live capture |
 | `analysis.diagnostic_results` | Pooled six diagnostic families | One row per assay/test outcome (possibly multiple per capture) |
-| `analysis.mortality_events_review_v1` | One primary record per **recorded** death, excluding curated PM companion; identity/duplicate flags retained | 1,311 death-event rows, **401 without XY**; not yet signed-off survival endpoint |
+| `analysis.mortality_events_review_v1` | One primary record per **recorded** death, excluding curated PM companion; identity/duplicate flags retained | 1,311 death-event rows, **439 without XY**; not yet signed-off survival endpoint |
 | `analysis.wecs_review_flags_v1` | **Live flagged-inconsistency register** | One issue per flag ID; review status and final decision |
 
 ### Key scientific rules
@@ -30,7 +30,7 @@
 - **`encounter_type`:** TRAP:16093; RTA:750; FOUND_DEAD:271; SHOT:146; SNARE:140; REMOVAL:76; NET:43; FOUND_IN_EXTREMIS:31; PUT_DOWN:15; DEAD_SNARE_TRAP:9; UNKNOWN:6; FOUND_ALIVE:3; DART:1; ON_ROAD:1; PUBLIC_REPORT:1.
 - **`outcome`:** PRESUMED_RELEASED:16263; FOUND_DEAD:1034; KILLED:223; EUTHANISED:43; DIED:21; RELEASED:1; UNKNOWN:1.
 - **`episode_record_role`:** STANDALONE:17566; FIELD_RECORD:10; PM_COMPANION:10.
-- **`location_quality`:** SETT_POINT_PROVISIONAL:15740; UNRESOLVED:828; GRID_CELL_PRECISION_UNCONFIRMED:593; SETT_ASSOCIATION_PROVISIONAL:190; GRID_CELL:115; SETT_COORDINATE_CONFLICT:107; LINKED_SETT_POINT_PROVISIONAL:7; SETT_ASSOCIATION_ONLY:5; LINKED_GRID_CELL_PRECISION_UNCONFIRMED:1.
+- **`location_quality`:** SETT_POINT_PROVISIONAL:15740; UNRESOLVED:828; GRID_CELL_100M_RECORDED_SO:364; GRID_CELL_100M_PREFIX_UNVERIFIED:187; SETT_ASSOCIATION_PROVISIONAL:190; SETT_COORDINATE_CONFLICT:107; GRID_CELL:65; GRID_REFERENCE_CORRECTED_PROVISIONAL:54; GRID_REFERENCE_AMBIGUOUS_WITHHELD:38; LINKED_SETT_POINT_PROVISIONAL:7; SETT_ASSOCIATION_ONLY:5; LINKED_GRID_CELL_PRECISION_UNCONFIRMED:1.
 - **`location_type`:** SETT:16044; ROAD:747; RECOVERY_SITE:238; UNKNOWN:222; SETT_ASSOCIATION:164; BOUNDARY:57; FIELD:49; WOOD:30; BUILDING:10; LINKED_FIELD_SITE:10; HEDGE:8; OTHER_CAPTURE_SITE:6; GARDEN:1.
 - **`research.wecs_review_flags.review_status`:** OPEN; NEEDS_SOURCE_CHECK; WAITING_FIELD_TEAM; RESOLVED.
 
@@ -1184,6 +1184,74 @@ Entries under every table below show **actual database type**, nullability and e
 | `notes` | `text` | Yes | Free-text provenance, observation or explanation; not a controlled category. |
 | `created_at` | `timestamp with time zone` | No | Recorded date/time or database provenance timestamp; check original source for precision. |
 
+### `research.capture_grid_coordinate_decisions` (10 columns, newly audited)
+
+One record per intentionally corrected or withheld historical grid point; **54 corrected** and **38 withheld**. No original source data is overwritten.
+
+| Column | SQL type | Null? | Definition |
+|---|---|---|---|
+| `capture_id` | bigint | No | Source capture/PM record key; one grid decision per source row |
+| `original_grid_reference` | text | Yes | Original recorded OS reference or embedded raw location text |
+| `source_easting` | numeric | Yes | Previously parsed/derived easting before review, not raw survey measurement |
+| `source_northing` | numeric | Yes | Previously parsed/derived northing before review |
+| `corrected_easting` | numeric | Yes | Researcher-approved provisional BNG corrected easting; null if WITHHELD |
+| `corrected_northing` | numeric | Yes | Corresponding provisional BNG northing; null if WITHHELD |
+| `decision_status` | text | No | **CORRECTED** (use provisional corrected XY) or **WITHHELD** (clean XY null) |
+| `decision_note` | text | No | Record-specific error explanation, evidence and uncertainties |
+| `decision_source` | text | No | Provenance of decision / audit |
+| `reviewed_at` | timestamptz | No | Date and time decision was recorded |
+
+### `analysis.grid_reference_audit_v1` (19 columns, newly audited)
+
+One row per grid correction/withheld case. Researcher-readable provenance paired with final spatial output. This is a **review view**, not a separate source of spatial observations.
+
+| Column | SQL type | Null? | Definition |
+|---|---|---|---|
+| `capture_id` | bigint | Yes | Source capture identifier |
+| `tattoo` | text | Yes | Canonical badger tattoo |
+| `capture_date` | date | Yes | Recorded event date |
+| `is_pm` | boolean | Yes | Original PM classification |
+| `os_ref` | text | Yes | Original source OS reference, unmodified |
+| `recorded_sett_name` | text | Yes | Original named sett or embedded location text |
+| `capture_location_text` | text | Yes | Source field/road/recovery description |
+| `original_grid_reference` | text | Yes | Original grid string entered in curation table |
+| `source_easting` | numeric | Yes | Coordinate from previous parser, potentially erroneous |
+| `source_northing` | numeric | Yes | Previous parser's northing |
+| `corrected_easting` | numeric | Yes | Proposed accepted BNG correction, null if withheld |
+| `corrected_northing` | numeric | Yes | Proposed accepted BNG correction, null if withheld |
+| `decision_status` | text | Yes | CORRECTED or WITHHELD |
+| `decision_note` | text | Yes | Why the coordinate was corrected or withheld |
+| `decision_source` | text | Yes | Provenance |
+| `reviewed_at` | timestamptz | Yes | Curation timestamp |
+| `analysis_easting` | numeric | Yes | **Actual cleaned analysis** easting after override |
+| `analysis_northing` | numeric | Yes | Actual cleaned analysis northing after override |
+| `location_quality` | text | Yes | Final quality flag distinguishing corrected proxy vs withheld |
+
+### `analysis.mortality_model_candidate_v1` (18 columns, newly audited)
+
+**1,311 rows** (1,307 candidates, **2 ID conflicts**, **2 possible duplicate death reports**), 439 now without XY. This view **retains all rows**, attaching a model-inclusion status; it is NOT a signed-off survival-input table.
+
+| Column | SQL type | Null? | Definition |
+|---|---|---|---|
+| `capture_id` | bigint | Yes | Primary source death-event record (PM companion excluded) |
+| `tattoo` | text | Yes | Current canonical tattoo (may be disputed) |
+| `recorded_event_date` | date | Yes | Source date, not necessarily exact moment of death |
+| `mortality_outcome` | text | Yes | FOUND_DEAD, DIED, EUTHANISED, KILLED |
+| `encounter_type` | text | Yes | RTA, TRAP, FOUND_DEAD etc; not the terminal status itself |
+| `source_is_pm` | boolean | Yes | PM flag on primary source row |
+| `original_moc` | text | Yes | Original uncategorised capture/encounter method |
+| `pm_cause` | text | Yes | Original PM cause/comment where supplied |
+| `linked_pm_capture_id` | bigint | Yes | Companion PM source ID, if curated pair |
+| `linked_pm_date` | date | Yes | Date of confirmed companion PM row |
+| `location_easting` | numeric | Yes | Best supported field/recovery XY, nullable and sometimes coarse |
+| `location_northing` | numeric | Yes | Companion BNG northing |
+| `location_quality` | text | Yes | Grid/reference precision and any uncertainty |
+| `next_live_capture_date` | date | Yes | Earliest subsequent explicit live trap/net/snare/dart observation for linked identity |
+| `previous_death_record_date` | date | Yes | Earlier death under same current identity, if any |
+| `mortality_review_status` | text | Yes | Evidence/identity quality (e.g. PM-supported, later-live contradiction, duplicate warning) |
+| `terminal_model_status` | text | Yes | **CANDIDATE_TERMINAL_DEATH**, **HOLD_IDENTITY_CONTRADICTION**, **HOLD_POSSIBLE_REPEAT_DEATH** |
+| `terminal_model_note` | text | Yes | Why record remains a candidate or is held for further review |
+
 ## Reproducible categorical-domain inspection
 
 Historical free text and lab result codes are **not reliably closed enumerations**. For any candidate category use:
@@ -1201,5 +1269,5 @@ select review_status,count(*) from research.wecs_review_flags group by 1;
 
 1. The 12 imported Access tables have not been proven equivalent to the **entire original 62-object Access inventory**. Counts/key-level parity have been checked for principal capture/individual data; a full field-by-field source audit is pending.
 2. Two fatal PM records conflict with subsequent live tattoo histories (U005, 020D); two pairs of possible duplicate deaths (W023, Q082) are still open.
-3. The 57-name field-team sett request and two descriptive recovery locations await verifiable coordinates; 594 initially flagged grid-reference records need source-precision review.
+3. Named field-team sett coordinates remain pending; **38** ambiguous historical grid points are deliberately withheld, 54 grid interpretations were corrected provisionally, and the remaining six-digit references now explicitly carry 100 m grid-square provenance.
 4. This schema snapshot is current at creation, not a substitute for database migrations and source records. Only primary views are recommended for scientific usage; other specialised or legacy views may remain for compatibility.
