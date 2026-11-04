@@ -14,7 +14,7 @@
 
 **`analysis.encounters_clean_v1` — 17,586 source rows.** Seven essential identifiers: `capture_id`, `tattoo`, `capture_date`, `is_pm`, `sett_id`, `episode_primary_capture_id`, `episode_record_role`. Exactly **six cleaned fields**: `encounter_type`, `outcome`, `location_type`, `location_easting`, `location_northing`, `location_quality`.
 
-**`analysis.mortality_events_review_v1` — 1,304 recorded death-event rows**, with 439 without a coordinate pair; not a finished survival endpoint. Ten independently confirmed field/PM same-event links prevent counting the PM companion as a second death. Identity conflicts and duplicate-death reports still need adjudication. **Deaths with unknown XY remain deaths** and must not be treated as never recaptured/censored solely for that reason.
+**`analysis.mortality_events_review_v1` — 1,304 recorded death-event rows**, with 433 candidate events without XY (source/event spatial row counts differ); not a finished survival endpoint. Seventeen confirmed field/PM same-event links prevent counting the PM companion as a second death. Identity conflicts and duplicate-death reports still need adjudication. **Deaths with unknown XY remain deaths** and must not be treated as never recaptured/censored solely for that reason.
 
 **`analysis.wecs_review_flags_v1`** is the *live* issue tracker. `RESOLVED` always has a final decision; `OPEN`, `NEEDS_SOURCE_CHECK` and `WAITING_FIELD_TEAM` have provisional current interpretations.
 
@@ -42,7 +42,7 @@ All names are relative to `sql/migrations/`. These older scripts establish the s
 - The current 17 linked field–PM episode pairs and one explicit **nonlink** (Y030 netting versus later independent starvation recovery).
 - All **23 manual outcome/encounter overrides**, including 1979 REMOVAL→KILLED (11 records), D061 RTA survival correction, 014D false-euthanasia correction, and 024Y explicit euthanasia.
 - Nine approved **capture-specific sett aliases** (MRS MACKS, STONEY TRACK, S PEGLARS→SOUTH PEGLARS, WEST MAIN→WEST) and the distinct canonical SOUTH PEGLARS name (ID 555, no XY).
-- Ten live flagged-inconsistency cases, with current status and any final decision.
+- Twelve live flagged-inconsistency cases, with current status and any final decision.
 - Latest **eight WECS view definitions** including encounter clean, alias audit, mortality review and issue register.
 
 **Important scope limitation:** this is *not* a stand-alone restoration of the entire database. It depends on pre-existing imported `access_raw`/`research` records and source standardisation/spatial views such as `analysis.encounters_standardised_v1`. Before using on a fresh database, check those prerequisite view definitions and migration history. The snapshot uses `ON CONFLICT DO NOTHING` to avoid silently overwriting already reviewed decisions. An incremental amendment after 4 November must receive **a new dated migration**, not silent mutation of this historical snapshot.
@@ -63,7 +63,6 @@ Run these **in order after** `20261104_wecs_curated_v1_snapshot.sql` and the rea
 | `20261104_wecs_six_digit_precision_and_additional_quarantine.sql` | A six-digit OS reference represents a **100 m square**, not an exact observed point. Separates explicitly recorded SO prefixes from unverified assumed prefixes; **five** additional suspect points withheld |
 | `20261104_wecs_access_identity_and_spatial_conflict_resolution.sql` | Original Access data confirm U005 and 020D death/tattoo contradictions, the latter explicitly recorded first captured as CUB in **2022** although attributed a PM death in **2020**. These two deaths remain recorded but are held from tattoo terminal-event assignment; second possible repeated deaths for W023 and Q082 held. **107** nonsett/sett-association spatial conflicts resolved by retaining missing XY |
 
-**Current verified baseline:** 17,586 distinct source capture/PM rows; 54 grid decisions `CORRECTED`, 38 `WITHHELD`; **978 records have no accepted XY**; 107 nonsett encounter locations intentionally unknown; 17 linked field–PM episode pairs; 1,304 recorded mortality-event rows; 1,300 candidate deaths and four held from terminal assignment. **11 register flags:** 4 resolved, 2 needing original source, 4 open and 1 awaiting field team.
 
 These corrections preserve the original OS reference and its interpretation before correction in `research.capture_grid_coordinate_decisions`. Check the concise view `analysis.grid_reference_audit_v1`. Use `analysis.mortality_model_candidate_v1` for tentative model event inclusion, not as a final survival fit dataset. A death with no XY is still recorded as a death.
 
@@ -91,7 +90,7 @@ These corrections preserve the original OS reference and its interpretation befo
 | Decision | Implemented rule / consequence |
 |---|---|
 | Capture identity | Use tattoo scientifically; preserve original source data; 17,586 distinct capture IDs |
-| Confirmed linked episodes | Field/PM rows retained, 10 pairs, single mortality event per confirmed episode; **024Y 16882 + 16817 is one euthanasia** |
+| Confirmed linked episodes | Field/PM rows retained, 17 pairs, single mortality event per confirmed episode; **024Y 16882 + 16817 is one euthanasia** |
 | Missing capture method | 176 ordinary captures with original blank MOC inferred TRAP/PRESUMED_RELEASED from subsequent live evidence or original trapping/sampling context; original blank retained |
 | Historical removals | 11 October 1979 non-PM REMOVAL outcomes classified KILLED based on contemporary PM lethal-removal operation; **inferred**, not separately PM-proven |
 | 2001 REMOVAL | U002 17555 was found alive and taken for sampling; no documented release, outcome UNKNOWN |
@@ -103,7 +102,7 @@ These corrections preserve the original OS reference and its interpretation befo
 | Historical sett names | MRS MACKS→MRS MACK'S, STONEY→STONY TRACK; S PEGLARS→separate SOUTH PEGLARS (SG HOGARTHS), WEST MAIN→WEST (recorded SG WYCH ELM **not** rewritten) |
 | Spatial evidence | Sett-centre point is not necessarily an actual capture point; boundary/field/wood/road recovery position may remain unknown |
 | UN tattoos | Do not automatically give UN badgers social-group membership |
-| Grid references | Cell SW corner is not a precise badger point; 594 pre-audit precision warnings (now one linked-grid flag separate) |
+| Grid references | Cell SW corner is not a precise badger point; historical grid references now classified by precision and source-prefix provenance; suspect grid positions withheld pending evidence |
 | Outstanding coordinates | 57 field-team names supplied, plus descriptive PM sites; no fabricated points; distinguish historical aliases/outliers from distinct physical setts |
 
 ## Workflow to make the next change
