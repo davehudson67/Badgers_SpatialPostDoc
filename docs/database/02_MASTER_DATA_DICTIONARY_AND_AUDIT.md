@@ -11,7 +11,7 @@
 | `analysis.encounters_clean_v1` | **Recommended spatial/encounter starting point**; one row per original capture/PM record | 17,586 rows, 13 columns, one `capture_id` each |
 | `analysis.capture_history_v1` | Source-rich longitudinal capture history | One row per capture/PM record; avoid conflating PM with live capture |
 | `analysis.diagnostic_results` | Pooled six diagnostic families | One row per assay/test outcome (possibly multiple per capture) |
-| `analysis.mortality_events_review_v1` | One primary record per **recorded** death, excluding curated PM companion; identity/duplicate flags retained | 1,304 death-event rows, **430 without XY**; not yet signed-off survival endpoint |
+| `analysis.mortality_events_review_v1` | One primary record per **recorded** death, excluding curated PM companion; identity/duplicate flags retained | 1,304 death-event rows, **400 without XY**; not yet signed-off survival endpoint |
 | `analysis.wecs_review_flags_v1` | **Live flagged-inconsistency register** | One issue per flag ID; review status and final decision |
 
 ### Key scientific rules
@@ -30,7 +30,7 @@
 - **`encounter_type`:** TRAP:16093; RTA:750; FOUND_DEAD:271; SHOT:146; SNARE:140; REMOVAL:76; NET:43; FOUND_IN_EXTREMIS:31; PUT_DOWN:15; DEAD_SNARE_TRAP:9; UNKNOWN:6; FOUND_ALIVE:3; DART:1; ON_ROAD:1; PUBLIC_REPORT:1.
 - **`outcome`:** PRESUMED_RELEASED:16263; FOUND_DEAD:1032; KILLED:223; EUTHANISED:44; DIED:22; RELEASED:1; UNKNOWN:1.
 - **`episode_record_role`:** STANDALONE:17552; FIELD_RECORD:17; PM_COMPANION:17.
-- **`location_quality`:** SETT_POINT_PROVISIONAL:15740; UNRESOLVED:834; GRID_CELL_100M_RECORDED_SO:366; GRID_CELL_100M_PREFIX_UNVERIFIED:187; SETT_ASSOCIATION_PROVISIONAL:190; SETT_COORDINATE_CONFLICT:107; GRID_CELL:65; GRID_REFERENCE_CORRECTED_PROVISIONAL:57; GRID_REFERENCE_AMBIGUOUS_WITHHELD:40; SETT_ASSOCIATION_ONLY:5.
+- **`location_quality`:** SETT_POINT_PROVISIONAL:15740; UNRESOLVED:834; GRID_CELL_100M_RECORDED_SO:366; GRID_CELL_100M_PREFIX_UNVERIFIED:187; SETT_ASSOCIATION_PROVISIONAL:190; SETT_COORDINATE_CONFLICT:107; GRID_CELL:65; GRID_REFERENCE_CORRECTED_PROVISIONAL:87; GRID_REFERENCE_AMBIGUOUS_WITHHELD:10; SETT_ASSOCIATION_ONLY:5.
 - **`location_type`:** SETT:16044; ROAD:747; RECOVERY_SITE:238; UNKNOWN:222; SETT_ASSOCIATION:164; BOUNDARY:57; FIELD:49; WOOD:30; BUILDING:10; LINKED_FIELD_SITE:10; HEDGE:8; OTHER_CAPTURE_SITE:6; GARDEN:1.
 - **`research.wecs_review_flags.review_status`:** OPEN; NEEDS_SOURCE_CHECK; WAITING_FIELD_TEAM; RESOLVED.
 
@@ -1186,7 +1186,7 @@ Entries under every table below show **actual database type**, nullability and e
 
 ### `research.capture_grid_coordinate_decisions` (10 columns, newly audited)
 
-One record per intentionally corrected or withheld historical grid point; **57 corrected** and **40 withheld**. No original source data is overwritten.
+One record per intentionally corrected or withheld historical grid point; **87 corrected** and **10 withheld**. No original source data is overwritten.
 
 | Column | SQL type | Null? | Definition |
 |---|---|---|---|
@@ -1229,7 +1229,7 @@ One row per grid correction/withheld case. Researcher-readable provenance paired
 
 ### `analysis.mortality_model_candidate_v1` (18 columns, newly audited)
 
-**1,304 rows** (1,300 candidates, **2 ID conflicts**, **2 possible duplicate death reports**), 430 without XY. This view **retains all rows**, attaching a model-inclusion status; it is NOT a signed-off survival-input table.
+**1,304 rows** (1,300 candidates, **2 ID conflicts**, **2 possible duplicate death reports**), 400 without XY. This view **retains all rows**, attaching a model-inclusion status; it is NOT a signed-off survival-input table.
 
 | Column | SQL type | Null? | Definition |
 |---|---|---|---|
@@ -1256,13 +1256,13 @@ One row per grid correction/withheld case. Researcher-readable provenance paired
 
 | Column | SQL type | Null? | Meaning |
 |---|---|---|---|
-| `map_review_status` | text | No | `VISUALLY_VERIFIED` (57 corrected grid points, geographic plausibility visually approved, **not** exact positional accuracy); `REJECTED_BY_INVESTIGATOR` (2 withheld outliers); `PENDING_REVIEW` (38 withheld) |
+| `map_review_status` | text | No | `VISUALLY_VERIFIED` (87 corrected grid points, geographic plausibility visually approved, **not** exact positional accuracy); `REJECTED_BY_INVESTIGATOR` (2 withheld outliers); `PENDING_REVIEW` (38 withheld) |
 | `map_review_note` | text | Yes | Scope and limitations of investigator's visual map review |
 | `map_reviewed_at` | timestamptz | Yes | When the map decision was recorded |
 
 ### `analysis.grid_withheld_candidate_review_v1` (20 columns)
 
-Read-only review table for **40 withheld grid decisions**, including 30 **test-only** hypothetical northing corrections of -100000m. This view **does not modify** accepted spatial XY. It keeps all withheld source records and includes the two explicitly rejected points with **no** suggested replacement. Among 39 original-grid-review records, 30 have test corrections; five are irregular/remote numeric grids; two have Leg of Mutton anomalies and two were already rejected. A further withheld PM row (17427) is categorised under a different spatial worklist reason.
+Read-only review table for **10 withheld grid decisions**, including 30 **test-only** hypothetical northing corrections of -100000m. This view **does not modify** accepted spatial XY. It keeps all withheld source records and includes the two explicitly rejected points with **no** suggested replacement. Among 39 original-grid-review records, 30 have test corrections; five are irregular/remote numeric grids; two have Leg of Mutton anomalies and two were already rejected. A further withheld PM row (17427) is categorised under a different spatial worklist reason.
 
 | Column | SQL type | Null? | Meaning |
 |---|---|---|---|
@@ -1289,7 +1289,7 @@ Read-only review table for **40 withheld grid decisions**, including 30 **test-o
 
 ### `analysis.spatial_missing_review_v1` (18 columns, current missing-XY review queue)
 
-**981 rows, one per source capture/PM record with no accepted XY.** This is an organisational QA view, **not** an exclusion list. Dead events remain available without a coordinate. `spatial_review_priority` groups each row into exactly one category: MORTALITY_RECOVERY_LOCATION (331); SETT_XY_FIELD_TEAM (306); NAMED_NON_SETT_SITE (163); ASSOCIATED_SETT_NOT_ACTUAL_SITE (107); ORIGINAL_GRID_VERIFY (39); SOURCE_LOCATION_UNSPECIFIED (26); PM_COMPANION_NO_INDEPENDENT_POINT (9). The WITHHELD decision table has 40 entries; one is grouped under another priority in this mutually exclusive queue.
+**951 rows, one per source capture/PM record with no accepted XY.** This is an organisational QA view, **not** an exclusion list. Dead events remain available without a coordinate. `spatial_review_priority` groups each row into exactly one category: MORTALITY_RECOVERY_LOCATION (331); SETT_XY_FIELD_TEAM (306); NAMED_NON_SETT_SITE (163); ASSOCIATED_SETT_NOT_ACTUAL_SITE (107); ORIGINAL_GRID_VERIFY (9); SOURCE_LOCATION_UNSPECIFIED (26); PM_COMPANION_NO_INDEPENDENT_POINT (9). The WITHHELD decision table has 40 entries; one is grouped under another priority in this mutually exclusive queue.
 
 | Column | SQL type | Null? | Scientific meaning |
 |---|---|---|---|
@@ -1337,3 +1337,12 @@ The wider identity/death audit confirmed **seven more** field–PM pairs: 001R, 
 2. Two fatal PM records conflict with subsequent live tattoo histories (U005, 020D); two pairs of possible duplicate deaths (W023, Q082) are still open.
 3. Named field-team sett coordinates remain pending; **38** ambiguous historical grid points are deliberately withheld, 57 grid interpretations were corrected provisionally, and the remaining six-digit references now explicitly carry 100 m grid-square provenance.
 4. This schema snapshot is current at creation, not a substitute for database migrations and source records. Only primary views are recommended for scientific usage; other specialised or legacy views may remain for compatibility.
+
+
+### Investigator approval of 30 more historical grid corrections (5 November 2026)
+
+Thirty 100 km northing-shift candidates were accepted from the interactive map. Their locations are now included in `analysis.encounters_clean_v1` as `GRID_REFERENCE_CORRECTED_PROVISIONAL`; this denotes **geographical plausibility, not independently measured positional accuracy**. Source references and prior parser coordinates remain available in `research.capture_grid_coordinate_decisions`.
+
+**Current authoritative counts:** 87 grid decisions `CORRECTED` and `VISUALLY_VERIFIED`; 10 `WITHHELD` (8 pending investigation, 2 `REJECTED_BY_INVESTIGATOR`). There are 951 source records without accepted XY, of which 400 primary recorded death events have missing XY. The one-priority missing-location review view now has 331 MORTALITY_RECOVERY_LOCATION, 306 SETT_XY_FIELD_TEAM, 163 NAMED_NON_SETT_SITE, 107 ASSOCIATED_SETT_NOT_ACTUAL_SITE, 26 SOURCE_LOCATION_UNSPECIFIED, **9 ORIGINAL_GRID_VERIFY**, and 9 PM_COMPANION_NO_INDEPENDENT_POINT.
+
+The test-only candidate view continues to show the **remaining withheld records**, not the already approved 30. The decision status and map review status are separate fields for provenance.
