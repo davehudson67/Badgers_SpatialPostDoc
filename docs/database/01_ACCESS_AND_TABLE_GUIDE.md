@@ -44,10 +44,10 @@ dbDisconnect(con)
 | `analysis.capture_history_v1` | Longitudinal source-rich captures, samples, historical SG, age/sex and original descriptions | Biological covariates and model-specific histories; do not confuse PM with live capture |
 | `analysis.diagnostic_results` | Long-format diagnostic results (multiple possible per capture) | Disease testing; join carefully on `capture_id` |
 | `analysis.capture_infection_probabilities` | Existing capture-level predicted infection probabilities | Models using derived disease-state information |
-| `analysis.mortality_events_review_v1` | Death evidence, 1,304 recorded event rows (428 missing XY) | **Review** before using terminal outcomes; two tattoo conflicts and possible duplicate deaths remain |
+| `analysis.mortality_events_review_v1` | Death evidence, 1,304 recorded event rows (430 missing XY) | **Review** before using terminal outcomes; two tattoo conflicts and possible duplicate deaths remain |
 | `analysis.mortality_model_candidate_v1` | 1,304 recorded death rows: 1,300 candidate terminal events and four held identity/repeat cases | Cautious model-event input; NOT final signed-off survival dataset |
-| `analysis.spatial_missing_review_v1` | **979 source rows lacking accepted XY**, grouped into seven evidence/review categories | The main queue for continuing spatial cleanup; retains outcomes and original notes |
-| `analysis.grid_reference_audit_v1` | Original/corrected coordinates for 54 reviewed and 38 withheld grid locations | Check source references and spatial uncertainties |
+| `analysis.spatial_missing_review_v1` | **981 source rows lacking accepted XY**, grouped into seven evidence/review categories | The main queue for continuing spatial cleanup; retains outcomes and original notes |
+| `analysis.grid_reference_audit_v1` | Original/corrected coordinates for 57 provisionally corrected and 40 withheld grid locations | Check source references and spatial uncertainties |
 | `analysis.wecs_review_flags_v1` | Current open and resolved inconsistency register | Check whether a record is trusted or needs review |
 | `analysis.capture_sett_alias_audit_v1` | Approved capture-specific historical sett-name aliases | Find name changes and why a coordinate is or is not applied |
 | `research.captures` | Canonical linked capture/PM source data | Audit original method, sampling notes, PM cause; advanced read-only |
@@ -56,7 +56,7 @@ dbDisconnect(con)
 
 The live database has additional specialist tests, wounds, lookup tables, analysis views and internal research decision tables. The master dictionary inventories **all** live tables and columns.
 
-**Latest OS-grid check:** 59 provisional grid interpretations (five reconstructed malformed original OS strings); 38 ambiguous coordinates withheld; 107 sett-versus-physical capture-site conflicts deliberately kept without XY. Mortality remains available independently.
+**Latest OS-grid check:** 57 provisional grid interpretations; 40 withheld, including UN260 and F030 rejected by the investigator; 107 sett-versus-physical capture-site conflicts deliberately kept without XY. Mortality remains available independently.
 
 ## Important biological rules
 
