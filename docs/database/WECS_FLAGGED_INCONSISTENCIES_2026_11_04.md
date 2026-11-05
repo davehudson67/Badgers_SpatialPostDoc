@@ -58,3 +58,8 @@ The investigator accepted **all 30 test-only minus-100km grid candidates** on th
 ### Named-locality audit and west gate (5 November 2026)
 
 Source **17285 UN221** corrected from `014795` to `SO795014` E379500 N201400; the user-provided west-gate point and historic listed gateway independently support the reconstruction. The original numeric source remains unchanged, and 100 m grid-cell position is not a GPS death point. **Leg of Mutton** is a field/trapping locality with NET/FIELD and SNARE/HEDGE entries in 1983, plus shot-PM records in 2019; no canonical sett name match. PMs 16861 and 17477 remain withheld. **Cockadilly** is a hamlet with multiple road recoveries, not a canonical sett; capture 18 remains withheld. Remaining unlocated grid records and both previous rejections retain their death outcomes. Current totals: 88 corrected grid positions, nine withheld, 950 capture/PM rows without XY, 399 primary death events without XY.
+
+
+### Grid/locality close-out — 5 November 2026
+
+**Cockadilly marked RESOLVED:** two approximate hamlet-centre RTA proxies, capture 18 and 3382; both source records/mortality preserved. **Tinkley Lane 16869** and **Woodcock entrance 17117 (UN492)** resolved as source-corroborated transposed 100m OS grids. **Six withheld grid records remain**, only if model-specific spatial precision becomes essential: F030/12072, UN260/17254, Leg of Mutton shot/PM 16861 and 17477, Watts Farm RTA 17376, and 017R PM companion 17427 (field episode 8377 at Larch already locatable). No need to chase every uncertain location where biological death information is sufficient. Source original grid references and original typed locality remain unchanged.
