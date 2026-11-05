@@ -19,13 +19,13 @@
 
 ## Quick status and handling
 
-**Twelve issues:** 5 resolved, 2 needing original source checks, 4 open, 1 waiting for field-team coordinates.
+**Fourteen issues:** 5 resolved, 4 needing original source checks, 4 open, 1 waiting for field-team coordinates.
 
 - **Confirmed episodes:** 024Y and the seven newly matched deaths (001R, 017R, 045W, D007, I022, M012, Q070) are **one event per field/PM pair**, both source rows preserved. **17** confirmed paired episodes in total.
 - **U005 / 020D:** original PM deaths retained, but disputed as *terminal deaths of their currently linked tattoos*. 020D source says first captured as a CUB in 2022, despite a PM recorded under 020D in 2020.
 - **W023 / Q082:** possible second report of the same carcass; the later record is held as a potential duplicate. Neither is a later live recapture.
 - **Sett/location conflicts:** all 107 accepted as legitimately unknown physical location; nominal associated sett retained separately. This item is **RESOLVED**, even though XY correctly remains null.
-- **Grid corrections:** 59 provisional reinterpretations, including five malformed source grids; 38 questionable points withheld. Exact grid references and original parsed coordinates retained; a six-digit reference is a 100 m **square**, not an exact point.
+- **Grid corrections:** 57 provisional interpretations; 40 points withheld, including UN260 and F030 rejected during investigator map review. Exact grid references and original parsed coordinates retained; a six-digit reference is a 100 m **square**, not an exact point.
 - **Field team:** named setts/outliers await XY; six unnamed source SETT encounters are flagged for supplementary evidence. A missing XY does **not** discard a recorded death.
 
 **Only finalise an issue when the change has an applied, version-controlled SQL migration and a final decision.** Query live current status with:
