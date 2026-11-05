@@ -46,6 +46,7 @@ dbDisconnect(con)
 | `analysis.capture_infection_probabilities` | Existing capture-level predicted infection probabilities | Models using derived disease-state information |
 | `analysis.mortality_events_review_v1` | Death evidence, 1,304 recorded event rows (430 missing XY) | **Review** before using terminal outcomes; two tattoo conflicts and possible duplicate deaths remain |
 | `analysis.mortality_model_candidate_v1` | 1,304 recorded death rows: 1,300 candidate terminal events and four held identity/repeat cases | Cautious model-event input; NOT final signed-off survival dataset |
+| `analysis.grid_withheld_candidate_review_v1` | All 40 withheld grid cases, including 30 **test-only** 100 km-shift positions and two specifically rejected sites | Map candidate positions before any further approved XY change |
 | `analysis.spatial_missing_review_v1` | **981 source rows lacking accepted XY**, grouped into seven evidence/review categories | The main queue for continuing spatial cleanup; retains outcomes and original notes |
 | `analysis.grid_reference_audit_v1` | Original/corrected coordinates for 57 provisionally corrected and 40 withheld grid locations | Check source references and spatial uncertainties |
 | `analysis.wecs_review_flags_v1` | Current open and resolved inconsistency register | Check whether a record is trusted or needs review |
@@ -55,6 +56,8 @@ dbDisconnect(con)
 | `access_raw.*` | Twelve originally imported Access source tables | Strict provenance checks, not standard collaborator analysis |
 
 The live database has additional specialist tests, wounds, lookup tables, analysis views and internal research decision tables. The master dictionary inventories **all** live tables and columns.
+
+**Map review (5 Nov 2026):** 57 corrected points are marked **VISUALLY_VERIFIED** for geographic plausibility. They remain scientifically provisional (not surveyed-accurate). Two previously corrected outliers, UN260 and F030, are rejected and withheld. The next review is 30 **test-only** 100 km shifts, with no accepted XY assigned automatically.
 
 **Latest OS-grid check:** 57 provisional grid interpretations; 40 withheld, including UN260 and F030 rejected by the investigator; 107 sett-versus-physical capture-site conflicts deliberately kept without XY. Mortality remains available independently.
 
