@@ -11,7 +11,7 @@
 | `analysis.encounters_clean_v1` | **Recommended spatial/encounter starting point**; one row per original capture/PM record | 17,586 rows, 13 columns, one `capture_id` each |
 | `analysis.capture_history_v1` | Source-rich longitudinal capture history | One row per capture/PM record; avoid conflating PM with live capture |
 | `analysis.diagnostic_results` | Pooled six diagnostic families | One row per assay/test outcome (possibly multiple per capture) |
-| `analysis.mortality_events_review_v1` | One primary record per **recorded** death, excluding curated PM companion; identity/duplicate flags retained | 1,304 death-event rows, **428 without XY**; not yet signed-off survival endpoint |
+| `analysis.mortality_events_review_v1` | One primary record per **recorded** death, excluding curated PM companion; identity/duplicate flags retained | 1,304 death-event rows, **430 without XY**; not yet signed-off survival endpoint |
 | `analysis.wecs_review_flags_v1` | **Live flagged-inconsistency register** | One issue per flag ID; review status and final decision |
 
 ### Key scientific rules
@@ -30,7 +30,7 @@
 - **`encounter_type`:** TRAP:16093; RTA:750; FOUND_DEAD:271; SHOT:146; SNARE:140; REMOVAL:76; NET:43; FOUND_IN_EXTREMIS:31; PUT_DOWN:15; DEAD_SNARE_TRAP:9; UNKNOWN:6; FOUND_ALIVE:3; DART:1; ON_ROAD:1; PUBLIC_REPORT:1.
 - **`outcome`:** PRESUMED_RELEASED:16263; FOUND_DEAD:1032; KILLED:223; EUTHANISED:44; DIED:22; RELEASED:1; UNKNOWN:1.
 - **`episode_record_role`:** STANDALONE:17552; FIELD_RECORD:17; PM_COMPANION:17.
-- **`location_quality`:** SETT_POINT_PROVISIONAL:15740; UNRESOLVED:834; GRID_CELL_100M_RECORDED_SO:366; GRID_CELL_100M_PREFIX_UNVERIFIED:187; SETT_ASSOCIATION_PROVISIONAL:190; SETT_COORDINATE_CONFLICT:107; GRID_CELL:65; GRID_REFERENCE_CORRECTED_PROVISIONAL:59; GRID_REFERENCE_AMBIGUOUS_WITHHELD:38; SETT_ASSOCIATION_ONLY:5.
+- **`location_quality`:** SETT_POINT_PROVISIONAL:15740; UNRESOLVED:834; GRID_CELL_100M_RECORDED_SO:366; GRID_CELL_100M_PREFIX_UNVERIFIED:187; SETT_ASSOCIATION_PROVISIONAL:190; SETT_COORDINATE_CONFLICT:107; GRID_CELL:65; GRID_REFERENCE_CORRECTED_PROVISIONAL:57; GRID_REFERENCE_AMBIGUOUS_WITHHELD:40; SETT_ASSOCIATION_ONLY:5.
 - **`location_type`:** SETT:16044; ROAD:747; RECOVERY_SITE:238; UNKNOWN:222; SETT_ASSOCIATION:164; BOUNDARY:57; FIELD:49; WOOD:30; BUILDING:10; LINKED_FIELD_SITE:10; HEDGE:8; OTHER_CAPTURE_SITE:6; GARDEN:1.
 - **`research.wecs_review_flags.review_status`:** OPEN; NEEDS_SOURCE_CHECK; WAITING_FIELD_TEAM; RESOLVED.
 
@@ -1186,7 +1186,7 @@ Entries under every table below show **actual database type**, nullability and e
 
 ### `research.capture_grid_coordinate_decisions` (10 columns, newly audited)
 
-One record per intentionally corrected or withheld historical grid point; **59 corrected** and **38 withheld**. No original source data is overwritten.
+One record per intentionally corrected or withheld historical grid point; **57 corrected** and **40 withheld**. No original source data is overwritten.
 
 | Column | SQL type | Null? | Definition |
 |---|---|---|---|
@@ -1229,7 +1229,7 @@ One row per grid correction/withheld case. Researcher-readable provenance paired
 
 ### `analysis.mortality_model_candidate_v1` (18 columns, newly audited)
 
-**1,304 rows** (1,300 candidates, **2 ID conflicts**, **2 possible duplicate death reports**), 428 without XY. This view **retains all rows**, attaching a model-inclusion status; it is NOT a signed-off survival-input table.
+**1,304 rows** (1,300 candidates, **2 ID conflicts**, **2 possible duplicate death reports**), 430 without XY. This view **retains all rows**, attaching a model-inclusion status; it is NOT a signed-off survival-input table.
 
 | Column | SQL type | Null? | Definition |
 |---|---|---|---|
@@ -1254,7 +1254,7 @@ One row per grid correction/withheld case. Researcher-readable provenance paired
 
 ### `analysis.spatial_missing_review_v1` (18 columns, current missing-XY review queue)
 
-**979 rows, one per source capture/PM record with no accepted XY.** This is an organisational QA view, **not** an exclusion list. Dead events remain available without a coordinate. `spatial_review_priority` groups each row into exactly one category: MORTALITY_RECOVERY_LOCATION (331); SETT_XY_FIELD_TEAM (306); NAMED_NON_SETT_SITE (163); ASSOCIATED_SETT_NOT_ACTUAL_SITE (107); ORIGINAL_GRID_VERIFY (37); SOURCE_LOCATION_UNSPECIFIED (26); PM_COMPANION_NO_INDEPENDENT_POINT (9). The WITHHELD decision table has 38 entries; one is grouped under another priority in this mutually exclusive queue.
+**981 rows, one per source capture/PM record with no accepted XY.** This is an organisational QA view, **not** an exclusion list. Dead events remain available without a coordinate. `spatial_review_priority` groups each row into exactly one category: MORTALITY_RECOVERY_LOCATION (331); SETT_XY_FIELD_TEAM (306); NAMED_NON_SETT_SITE (163); ASSOCIATED_SETT_NOT_ACTUAL_SITE (107); ORIGINAL_GRID_VERIFY (39); SOURCE_LOCATION_UNSPECIFIED (26); PM_COMPANION_NO_INDEPENDENT_POINT (9). The WITHHELD decision table has 40 entries; one is grouped under another priority in this mutually exclusive queue.
 
 | Column | SQL type | Null? | Scientific meaning |
 |---|---|---|---|
@@ -1300,5 +1300,5 @@ The wider identity/death audit confirmed **seven more** field–PM pairs: 001R, 
 
 1. The 12 imported Access tables have not been proven equivalent to the **entire original 62-object Access inventory**. Counts/key-level parity have been checked for principal capture/individual data; a full field-by-field source audit is pending.
 2. Two fatal PM records conflict with subsequent live tattoo histories (U005, 020D); two pairs of possible duplicate deaths (W023, Q082) are still open.
-3. Named field-team sett coordinates remain pending; **38** ambiguous historical grid points are deliberately withheld, 59 grid interpretations were corrected provisionally, and the remaining six-digit references now explicitly carry 100 m grid-square provenance.
+3. Named field-team sett coordinates remain pending; **38** ambiguous historical grid points are deliberately withheld, 57 grid interpretations were corrected provisionally, and the remaining six-digit references now explicitly carry 100 m grid-square provenance.
 4. This schema snapshot is current at creation, not a substitute for database migrations and source records. Only primary views are recommended for scientific usage; other specialised or legacy views may remain for compatibility.
