@@ -44,10 +44,10 @@ dbDisconnect(con)
 | `analysis.capture_history_v1` | Longitudinal source-rich captures, samples, historical SG, age/sex and original descriptions | Biological covariates and model-specific histories; do not confuse PM with live capture |
 | `analysis.diagnostic_results` | Long-format diagnostic results (multiple possible per capture) | Disease testing; join carefully on `capture_id` |
 | `analysis.capture_infection_probabilities` | Existing capture-level predicted infection probabilities | Models using derived disease-state information |
-| `analysis.mortality_events_review_v1` | Death evidence, 1,304 recorded event rows (430 missing XY) | **Review** before using terminal outcomes; two tattoo conflicts and possible duplicate deaths remain |
+| `analysis.mortality_events_review_v1` | Death evidence, 1,304 recorded event rows (400 missing XY) | **Review** before using terminal outcomes; two tattoo conflicts and possible duplicate deaths remain |
 | `analysis.mortality_model_candidate_v1` | 1,304 recorded death rows: 1,300 candidate terminal events and four held identity/repeat cases | Cautious model-event input; NOT final signed-off survival dataset |
 | `analysis.grid_withheld_candidate_review_v1` | All 40 withheld grid cases, including 30 **test-only** 100 km-shift positions and two specifically rejected sites | Map candidate positions before any further approved XY change |
-| `analysis.spatial_missing_review_v1` | **981 source rows lacking accepted XY**, grouped into seven evidence/review categories | The main queue for continuing spatial cleanup; retains outcomes and original notes |
+| `analysis.spatial_missing_review_v1` | **951 source rows lacking accepted XY**, grouped into seven evidence/review categories | The main queue for continuing spatial cleanup; retains outcomes and original notes |
 | `analysis.grid_reference_audit_v1` | Original/corrected coordinates for 57 provisionally corrected and 40 withheld grid locations | Check source references and spatial uncertainties |
 | `analysis.wecs_review_flags_v1` | Current open and resolved inconsistency register | Check whether a record is trusted or needs review |
 | `analysis.capture_sett_alias_audit_v1` | Approved capture-specific historical sett-name aliases | Find name changes and why a coordinate is or is not applied |
@@ -96,3 +96,6 @@ where review_status <> 'RESOLVED';
 ```
 
 **Close connections when finished.** Never edit source data or share credentials. If a newly created view produces permission denied, ask the maintainer to grant SELECT to your read-only role.
+
+
+**Latest map review (5 November 2026):** 87 grid corrections visually accepted (still provisional spatial precision); ten original grid records remain withheld, including the investigator-rejected F030 and UN260. The 30 previously hypothetical northing shifts are now applied to cleaned encounter XY. Source OS references and all mortality outcomes are unchanged. There are 951 capture/PM source rows without accepted XY and 400 recorded mortality events without accepted XY.
