@@ -8,7 +8,7 @@
 
 
 **Status:** Living project document  
-**Last updated:** 26 October 2026
+**Last updated:** 5 November 2026
 **Purpose:** Prevent duplicated modelling, preserve decisions across chat windows, and keep the route from movement modelling to demography, infectiousness and social structure explicit.
 
 ---
