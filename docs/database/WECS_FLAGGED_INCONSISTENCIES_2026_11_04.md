@@ -10,7 +10,7 @@
 | **SPATIAL-UN260-17254 (UN260)** — Provisional position rejected for RTA recovery at Stanley Wood near glider field gate. | 17254 | XY withheld pending original source/map confirmation. Death outcome remains recorded. | NEEDS_SOURCE_CHECK | — |
 | **DEATH-Q082 (Q082)** — Two death records two days apart at Jacks. | 17055, 7311 | Likely one dead badger with two records; first death is candidate event, later entry provisionally withheld as possible duplicate. Original PM flag disagreement requires source clarification. | OPEN | — |
 | **DEATH-W023 (W023)** — Two death records 18 days apart at Giant Beech. | 4984, 4987 | Possible repeat record of same carcass; no live recapture. | OPEN | — |
-| **SPATIAL-GRID** — Grid-reference audit: 57 corrected provisional, 40 withheld after map review. | Multiple | 57 provisionally mapped grid points; 40 withheld. Review original field evidence before replacing either rejected point. | OPEN | — |
+| **SPATIAL-GRID** — Grid-reference audit: 57 corrected provisional, 40 withheld after map review. | Multiple | 57 accepted by investigator as geographically plausible on interactive maps, while remaining provisionally precise. 40 withheld: two rejected and 38 pending, including 30 hypothetical minus-100km test locations that have NOT been applied. | OPEN | — |
 | **SPATIAL-UNNAMED-SETT** — Six original SETT records with no recorded canonical sett name. | 17560, 17573, 17557, 17542, 17561, 16882 | Leave physical encounter XY unknown absent original field evidence. Preserve separate fate/mortality; 024Y two source rows already confirmed one euthanasia. | OPEN | — |
 | **SPATIAL-SETT-XY** — Named sett and outlier coordinates pending from field team. | Multiple | Do not invent XY; keep unresolved and provenance flags. | WAITING_FIELD_TEAM | — |
 | **DEATH-014D (014D)** — Trap-numbering wording incorrectly interpreted as euthanasia. | 8880, 9767 | Routine capture, presumed released. | RESOLVED | Outcome PRESUMED_RELEASED; words put down describe trap numbering, not killing. |
@@ -40,3 +40,10 @@ order by review_status,flag_id;
 ```
 
 For provisional survival events, `analysis.mortality_model_candidate_v1` has **1,304** recorded primary deaths: **1,300 candidates and four held** for identity or duplicate-carcase review. It is **not** yet a signed-off survival fit table.
+
+### Investigator map review — 5 November 2026
+
+- All **57 corrected provisional grid locations** except the two individually rejected during the preceding 59-point map review have been marked `VISUALLY_VERIFIED` for **geographical plausibility only**. Original grid strings, precision flags and decision notes remain intact. This approval does not establish precise capture/recovery XY.
+- **F030 (12072)** and **UN260 (17254)** remain `REJECTED_BY_INVESTIGATOR` and `WITHHELD`; their PM death evidence is unchanged.
+- The **39-grid missing-XY worklist** includes **30** possible 100km northing-prefix errors, **five** irregular/remote numeric references, **two** Leg of Mutton grid anomalies, and the **two** rejected points. An additional withheld PM grid, capture **17427**, is categorised as a missing mortality location, making **40** total withheld.
+- `analysis.grid_withheld_candidate_review_v1` provides review-only hypothetical coordinates for the 30 cases (plus all other withheld rows). **Nothing from this proposal view enters `analysis.encounters_clean_v1` until explicitly approved.**
