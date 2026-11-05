@@ -1256,13 +1256,13 @@ One row per grid correction/withheld case. Researcher-readable provenance paired
 
 | Column | SQL type | Null? | Meaning |
 |---|---|---|---|
-| `map_review_status` | text | No | `VISUALLY_VERIFIED` (87 corrected grid points, geographic plausibility visually approved, **not** exact positional accuracy); `REJECTED_BY_INVESTIGATOR` (2 withheld outliers); `PENDING_REVIEW` (38 withheld) |
+| `map_review_status` | text | No | `VISUALLY_VERIFIED` (87 corrected grid points, geographic plausibility visually approved, **not** exact positional accuracy); `REJECTED_BY_INVESTIGATOR` (2 withheld outliers); `PENDING_REVIEW` (8 withheld) |
 | `map_review_note` | text | Yes | Scope and limitations of investigator's visual map review |
 | `map_reviewed_at` | timestamptz | Yes | When the map decision was recorded |
 
 ### `analysis.grid_withheld_candidate_review_v1` (20 columns)
 
-Read-only review table for **10 withheld grid decisions**, including 30 **test-only** hypothetical northing corrections of -100000m. This view **does not modify** accepted spatial XY. It keeps all withheld source records and includes the two explicitly rejected points with **no** suggested replacement. Among 39 original-grid-review records, 30 have test corrections; five are irregular/remote numeric grids; two have Leg of Mutton anomalies and two were already rejected. A further withheld PM row (17427) is categorised under a different spatial worklist reason.
+Read-only review table for **10 withheld grid decisions**, including 30 **test-only** hypothetical northing corrections of -100000m. This view **does not modify** accepted spatial XY. It keeps all withheld source records and includes the two explicitly rejected points with **no** suggested replacement. The remaining original-grid-review worklist contains nine records; other withheld PM evidence may have a different missing-location priority. A further withheld PM row (17427) is categorised under a different spatial worklist reason.
 
 | Column | SQL type | Null? | Meaning |
 |---|---|---|---|
