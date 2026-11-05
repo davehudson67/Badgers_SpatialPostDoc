@@ -1346,3 +1346,12 @@ Thirty 100 km northing-shift candidates were accepted from the interactive map. 
 **Current authoritative counts:** 87 grid decisions `CORRECTED` and `VISUALLY_VERIFIED`; 10 `WITHHELD` (8 pending investigation, 2 `REJECTED_BY_INVESTIGATOR`). There are 951 source records without accepted XY, of which 400 primary recorded death events have missing XY. The one-priority missing-location review view now has 331 MORTALITY_RECOVERY_LOCATION, 306 SETT_XY_FIELD_TEAM, 163 NAMED_NON_SETT_SITE, 107 ASSOCIATED_SETT_NOT_ACTUAL_SITE, 26 SOURCE_LOCATION_UNSPECIFIED, **9 ORIGINAL_GRID_VERIFY**, and 9 PM_COMPANION_NO_INDEPENDENT_POINT.
 
 The test-only candidate view continues to show the **remaining withheld records**, not the already approved 30. The decision status and map review status are separate fields for provenance.
+
+
+### Latest spatial corrections — 5 November 2026
+
+**Current counts:** 88 provisional corrected grids, 9 withheld; 950 source encounter rows and 399 primary recorded deaths without accepted XY. Of the corrected grids, 87 were visually accepted on the map and UN221 is separately corroborated by a historic mapped west gateway. Source grid-square width is NOT exact RTA recovery-site accuracy.
+
+- **UN221, source capture 17285:** original numeric reference `014795` has reversed three-digit halves. Reconstructed `SO795014`, E379500 N201400 (100m square). Independently corroborated by documented Woodchester Park west-gate grid and user WGS84 location. Original uncorrected source retained.
+- **Leg of Mutton** is recorded historically as FIELD / NET and HEDGE / SNARE, and in 2019 as a shot-PM locality; there is no canonical sett of that name. Two original PM records `SO820500` still have withheld XY; do not copy another animal's grid location.
+- **Cockadilly** is a hamlet and historical RTA locality, not a canonical sett. Capture 18 `801791 COCKADILLY` remains withheld pending original grid verification.
