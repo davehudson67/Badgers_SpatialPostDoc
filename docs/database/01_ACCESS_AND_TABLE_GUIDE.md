@@ -99,3 +99,6 @@ where review_status <> 'RESOLVED';
 
 
 **Latest map review (5 November 2026):** 87 grid corrections visually accepted (still provisional spatial precision); ten original grid records remain withheld, including the investigator-rejected F030 and UN260. The 30 previously hypothetical northing shifts are now applied to cleaned encounter XY. Source OS references and all mortality outcomes are unchanged. There are 951 capture/PM source rows without accepted XY and 400 recorded mortality events without accepted XY.
+
+
+**Latest spatial case resolution (5 Nov 2026):** source capture 17285 (UN221) has original six-digit `014795` transposed to `SO795014`, BNG grid-square E379500 N201400, corroborated by the investigator's Woodchester Park west-gate coordinates and an independently documented historic gateway. This is a 100 m grid-square proxy, not an exact RTA point. **88** provisional corrected grids, **9** withheld, and **950** capture/PM rows without accepted XY. The Cockadilly and Leg of Mutton source names are locality/field descriptions, not newly created canonical setts; their ambiguous PM coordinates remain withheld.
