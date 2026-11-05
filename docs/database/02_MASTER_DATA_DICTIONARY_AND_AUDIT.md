@@ -1,6 +1,6 @@
 # Woodchester database — MASTER DATA DICTIONARY AND AUDIT
 
-**Live schema snapshot:** 4 November 2026, after grid/identity audit (**56 tables/views; 926 columns**). **Scope:** all current `access_raw`, `research` and `analysis` relations, not guessed old tables. Describes **every live column**. **Database is authoritative**; this inventory must be regenerated after migrations.
+**Live schema snapshot:** 4 November 2026, after grid/identity audit (**57 tables/views; 949 columns**). **Scope:** all current `access_raw`, `research` and `analysis` relations, not guessed old tables. Describes **every live column**. **Database is authoritative**; this inventory must be regenerated after migrations.
 
 ## How to use these tables
 
@@ -1251,6 +1251,41 @@ One row per grid correction/withheld case. Researcher-readable provenance paired
 | `mortality_review_status` | text | Yes | Evidence/identity quality (e.g. PM-supported, later-live contradiction, duplicate warning) |
 | `terminal_model_status` | text | Yes | **CANDIDATE_TERMINAL_DEATH**, **HOLD_IDENTITY_CONTRADICTION**, **HOLD_POSSIBLE_REPEAT_DEATH** |
 | `terminal_model_note` | text | Yes | Why record remains a candidate or is held for further review |
+
+### New grid review metadata (3 additional columns on `research.capture_grid_coordinate_decisions`)
+
+| Column | SQL type | Null? | Meaning |
+|---|---|---|---|
+| `map_review_status` | text | No | `VISUALLY_VERIFIED` (57 corrected grid points, geographic plausibility visually approved, **not** exact positional accuracy); `REJECTED_BY_INVESTIGATOR` (2 withheld outliers); `PENDING_REVIEW` (38 withheld) |
+| `map_review_note` | text | Yes | Scope and limitations of investigator's visual map review |
+| `map_reviewed_at` | timestamptz | Yes | When the map decision was recorded |
+
+### `analysis.grid_withheld_candidate_review_v1` (20 columns)
+
+Read-only review table for **40 withheld grid decisions**, including 30 **test-only** hypothetical northing corrections of -100000m. This view **does not modify** accepted spatial XY. It keeps all withheld source records and includes the two explicitly rejected points with **no** suggested replacement. Among 39 original-grid-review records, 30 have test corrections; five are irregular/remote numeric grids; two have Leg of Mutton anomalies and two were already rejected. A further withheld PM row (17427) is categorised under a different spatial worklist reason.
+
+| Column | SQL type | Null? | Meaning |
+|---|---|---|---|
+| `capture_id` | bigint | Yes | Original source-record key |
+| `tattoo` | text | Yes | Badger tattoo |
+| `capture_date` | date | Yes | Source encounter date |
+| `is_pm` | boolean | Yes | Source PM indicator |
+| `encounter_type` | text | Yes | Cleaned method/context |
+| `outcome` | text | Yes | Cleaned fate, independent of spatial quality |
+| `original_grid_reference` | text | Yes | Unmodified written grid reference |
+| `original_place_description` | text | Yes | Original recorded locality or recovery-site description |
+| `source_easting` | numeric | Yes | Original parser's inferred easting (not necessarily correct) |
+| `source_northing` | numeric | Yes | Original parser's inferred northing (not necessarily correct) |
+| `accepted_easting` | numeric | Yes | Audited accepted easting; always null for withheld cases |
+| `accepted_northing` | numeric | Yes | Audited accepted northing; always null for withheld cases |
+| `decision_status` | text | Yes | WITHHELD for this queue |
+| `map_review_status` | text | Yes | Visual review status; see controlled categories above |
+| `proposed_review_group` | text | Yes | TEST_100KM_NORTHING_SHIFT; IRREGULAR_OR_REMOTE_GRID; LEG_OF_MUTTON_GRID_ANOMALY; INVESTIGATOR_REJECTED |
+| `test_easting` | numeric | Yes | Hypothetical location for visual test, NOT approved spatial output |
+| `test_northing` | numeric | Yes | Hypothetical N-100000m for plausible boundary-error cases only |
+| `test_warning` | text | Yes | Explicit warning that test points are not approved |
+| `decision_note` | text | Yes | Historical source, problem and spatial decision rationale |
+| `map_review_note` | text | Yes | Investigator review notes |
 
 ### `analysis.spatial_missing_review_v1` (18 columns, current missing-XY review queue)
 
