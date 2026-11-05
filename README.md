@@ -2,6 +2,13 @@
 
 Woodchester badger database and spatial analysis code.
 
+## Current modelling programme (single authoritative record)
+
+- **[Woodchester Model Development Roadmap](docs/WOODCHESTER_MODEL_DEVELOPMENT_ROADMAP.md)** — the **one living modelling record** covering historical models, V11R2 diagnostics, integrated movement/social pathways, current results, scientific decisions and V12/V13 plans. Most recent update: 5 November 2026.
+- **[Executable V12 survival data eligibility audit](sql/audit/WECS_V12_readonly_survival_eligibility_audit.sql)** — non-mutating queries against the curated Supabase database for encounter histories, death-only records, missing covariates, location support and mortality contradictions.
+
+Older files in `docs/`, `markdown/` and `data/` are technical history or specific model annotations, not competing live modelling roadmaps. The current V11R2 scripts are on `main`. The audited database SQL migrations and the separate four canonical database reference documents currently live on `audit-tattoo-identifier`; reconcile branches carefully before proposing a model-data rerun.
+
 ## Database documentation
 
 For collaborators who need straightforward read-only access:
