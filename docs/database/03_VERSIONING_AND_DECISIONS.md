@@ -144,3 +144,14 @@ select review_status,count(*) from research.wecs_review_flags group by review_st
 - **12072 (F030):** 1988 PM death, source `SU062988-NOT TRUE MOVE`. Literal SU E406200 N198800 rejected as an approved recovery/movement location. Accepted XY now NULL; original PM death/cause and preceding capture history retained. Flag `SPATIAL-F030-12072` requires clarification of the historical annotation.
 
 **Verified after migration:** 17,586 unique source records; **57 corrected provisional grid points; 40 withheld; 981 source rows without XY; 1,304 recorded death events; 1,300 candidate terminal deaths (430 without XY), four held; 17 paired episodes**. There are **14 live issues** (5 resolved, 4 source checks, 4 open, 1 field-team). No raw Access/research capture records overwritten.
+
+### Visual map sign-off and candidate review layer — 5 November 2026
+
+The investigator examined the interactive overview and Woodchester mapping layers and accepted **all 57 remaining corrected points** as geographically plausible, **excluding two explicitly rejected source records** (UN260 17254 and F030 12072, retained WITHHELD). No source OS string, uncertainty, or death event was changed. Visual confirmation means **VISUALLY_VERIFIED map plausibility**, *not* surveyed precision, verified grid prefix, or exact recovery location.
+
+Applied SQL:
+- `20261105_wecs_57_map_verified_provisional.sql` adds `map_review_status`, `map_review_note` and `map_reviewed_at` to the existing grid-decision table; 57 corrected cases are VISUALLY_VERIFIED, 2 withheld cases REJECTED_BY_INVESTIGATOR, and 38 withheld cases still PENDING_REVIEW.
+- `20261105_wecs_withheld_grid_100km_review_candidates.sql` creates researcher-readable `analysis.grid_withheld_candidate_review_v1` with 40 withheld cases: 30 **review-only** minus-100km northing alternatives (suspected SO/ST grid-square boundary mismatch), two already rejected without alternatives, and eight other problematic grids. **Test columns are not applied to cleaned XY**. Of the 39 records in the `ORIGINAL_GRID_VERIFY` worklist: 30 suspected 100km shifts, 5 irregular/distant grids, 2 Leg of Mutton grids and 2 rejected. The 40th is PM capture 17427 (separately categorised as mortality recovery in the missing-XY worklist).
+
+**QA baseline after both migrations:** 57 VISUALLY_VERIFIED corrected source grid points; 40 WITHHELD grid decisions; 981 source encounters without accepted XY. 1,304 recorded death episodes and the 17 confirmed field–PM pairs are unchanged. Remaining grid points must be reviewed, not automatically changed.
+
