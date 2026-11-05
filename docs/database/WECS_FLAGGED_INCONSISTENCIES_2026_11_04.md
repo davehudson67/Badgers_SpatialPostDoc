@@ -63,3 +63,8 @@ Source **17285 UN221** corrected from `014795` to `SO795014` E379500 N201400; th
 ### Grid/locality close-out — 5 November 2026
 
 **Cockadilly marked RESOLVED:** two approximate hamlet-centre RTA proxies, capture 18 and 3382; both source records/mortality preserved. **Tinkley Lane 16869** and **Woodcock entrance 17117 (UN492)** resolved as source-corroborated transposed 100m OS grids. **Six withheld grid records remain**, only if model-specific spatial precision becomes essential: F030/12072, UN260/17254, Leg of Mutton shot/PM 16861 and 17477, Watts Farm RTA 17376, and 017R PM companion 17427 (field episode 8377 at Larch already locatable). No need to chase every uncertain location where biological death information is sufficient. Source original grid references and original typed locality remain unchanged.
+
+
+### Numeric source grid references in sett-name field — resolved 5 November 2026
+
+SPATIAL-UNNAMED-SETT is now RESOLVED: numeric grid strings 808011, 810997, 825008, 830028, 836008 and 837009 in the source SETT name column correspond to six already-georeferenced PM death/recovery entries (captures 30,32,57,62,73,77). All remain without assigned canonical sett IDs; recovered positions are approximate grid squares, not exact carcass or sett entrances. Original typed values unchanged, and no death event discarded. These six should not be sent as sett-alias or missing-XY problems.
