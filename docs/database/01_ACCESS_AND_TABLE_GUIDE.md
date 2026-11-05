@@ -102,3 +102,6 @@ where review_status <> 'RESOLVED';
 
 
 **Latest spatial case resolution (5 Nov 2026):** source capture 17285 (UN221) has original six-digit `014795` transposed to `SO795014`, BNG grid-square E379500 N201400, corroborated by the investigator's Woodchester Park west-gate coordinates and an independently documented historic gateway. This is a 100 m grid-square proxy, not an exact RTA point. **88** provisional corrected grids, **9** withheld, and **950** capture/PM rows without accepted XY. The Cockadilly and Leg of Mutton source names are locality/field descriptions, not newly created canonical setts; their ambiguous PM coordinates remain withheld.
+
+
+**Final proportional spatial pass (5 November 2026):** 92 curated coordinate decisions (90 grid interpretations, 2 approved Cockadilly hamlet-centre approximations); six historical grid points still withheld; **946 source rows without accepted XY**. Use `location_quality='LOCALITY_CENTROID_APPROXIMATE'` for the two Cockadilly RTA recoveries: locality centres are **NOT** exact animal locations or social-group evidence. Tinkley Lane 16869 and Woodcock entrance UN492/17117 were corrected using matching original references from other records. Mortality table remains 1,304 event rows (395 with XY missing). Do not insist on exact XY for unidentified badgers or non-spatial survival analyses.
