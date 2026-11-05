@@ -155,3 +155,10 @@ Applied SQL:
 
 **QA baseline after both migrations:** 57 VISUALLY_VERIFIED corrected source grid points; 40 WITHHELD grid decisions; 981 source encounters without accepted XY. 1,304 recorded death episodes and the 17 confirmed field–PM pairs are unchanged. Remaining grid points must be reviewed, not automatically changed.
 
+
+
+### Approved 30 additional grid corrections — 5 November 2026
+
+Applied migration: `sql/migrations/20261105_wecs_accept_30_proposed_grid_northings.sql`. Investigator approved the thirty hypothetical minus-100km northing locations shown on the Woodchester map. Each is now CORRECTED and VISUALLY_VERIFIED, still `GRID_REFERENCE_CORRECTED_PROVISIONAL` in cleaned analysis. Original grid strings and preceding parser coordinates are preserved, and this approval does not imply exact survey accuracy. All PM mortality events remain in the scientific database.
+
+**Current verified counts (supersede earlier intermediate figures above):** 17,586 original encounter source rows; **87** corrected map-verified grid positions; **10** withheld, of which eight await review and two were rejected (F030/UN260); **951** source rows missing accepted XY; **1,304** death-event rows, of which **400** have no accepted XY; **1,300** candidate terminal deaths and four held; **17** curated field/PM pairs. The current original-grid missing-XY worklist contains nine records. Historical counts elsewhere in this log describe earlier migration snapshots.
