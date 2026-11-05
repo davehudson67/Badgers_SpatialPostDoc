@@ -105,7 +105,6 @@ old <- dplyr::left_join(old,old_xy,by=c("legacy_key"="key"))
 old$in_old_movement_likelihood <- is.finite(old$x) & is.finite(old$y)
 
 con <- badger_db_connect()
-on.exit(DBI::dbDisconnect(con), add=TRUE)
 new <- DBI::dbGetQuery(con,"
  select upper(trim(i.tattoo)) as tattoo,
  c.capture_id,c.capture_date as event_date,
@@ -119,6 +118,7 @@ new <- DBI::dbGetQuery(con,"
  and e.encounter_type in ('TRAP','NET','SNARE','DART','FOUND_ALIVE')
  and c.capture_date < '2026-01-01'
 ")
+DBI::dbDisconnect(con)
 new <- dplyr::filter(new,tattoo %in% pop_ids)
 new$event_date <- as.Date(new$event_date)
 new$has_accepted_xy <- is.finite(new$location_easting) & is.finite(new$location_northing)
