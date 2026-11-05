@@ -1,5 +1,12 @@
 # Woodchester Badger Modelling Development Roadmap
 
+> **CANONICAL MODELLING RECORD — 5 November 2026**  
+> This is the **one living chronological record** for Woodchester movement, spatial/social structure, demography and disease-model decisions. The other model guides and annotated code in `docs/`, `markdown/` and `data/` remain historical technical references, not independent current plans. Database access, field definitions, capture/PM cleaning and inconsistency flags are governed by the **four separate canonical database documents on `audit-tattoo-identifier`**.  
+> **Current model position:** freeze V11R2-50 geographical relocation with 25m sensitivity; integrated movement/social pathway analysis complete (6,316 intervals); proceed to **V12 demographic/survival input compatibility audit**, before writing/fitting a new likelihood. Source V11R2 scripts/results are on `main`, while the latest audited Supabase SQL/docs are currently on `audit-tattoo-identifier`. Do **not** blindly merge conflicting historical database docs or refit the movement model just because PM coordinates changed.  
+> **Reproducible audit:** [V12 survival eligibility SQL](../sql/audit/WECS_V12_readonly_survival_eligibility_audit.sql).  
+> **Next action:** reconcile old V11R2 local RDS/sett-coordinate inputs with 2026-11-05 Supabase *live* encounters, then define and fit a staged V12 survival/death model.
+
+
 **Status:** Living project document  
 **Last updated:** 26 October 2026
 **Purpose:** Prevent duplicated modelling, preserve decisions across chat windows, and keep the route from movement modelling to demography, infectiousness and social structure explicit.
@@ -4555,3 +4562,63 @@ Key V12 safeguards:
 - the 25/50 movement-resolution robustness flag should remain available;
 - territory-lineage and resident-SG evidence should remain separate columns
   rather than being collapsed into one social-state variable.
+
+
+## 5 November 2026 — V12 survival eligibility and restart audit
+
+**This section is the newest scientific decision; previous chronological updates document earlier states.** SQL audit is version-controlled on `main` at `sql/audit/WECS_V12_readonly_survival_eligibility_audit.sql` and is read-only. Snapshotted from the Supabase data after capture/PM identity, spatial and OS-grid curation on 5 November 2026. These counts are **V12 candidate input evidence**, not already-fixed model inclusions or posterior estimates.
+
+### Scientific purpose
+
+V12 moves beyond V11R2 movement to model imperfect detection, survival and observed terminal outcomes, and—only where identified by data—emigration/unavailability, immigration-like entry and settlement. **Apparent survival is not necessarily true survival**, and permanent emigration cannot be distinguished from death without external information, informative recovery observations or structural assumptions. Death-only road/PM recoveries do not automatically join a previously marked CMR individual. Do not infer an immigrant simply from adult age at first capture, a local SG-name change or an unmatched recovery position.
+
+### Live Supabase data audit
+
+| Quantity | Verified |
+|---|---:|
+| Source capture/PM rows, all uniquely ID-ed and dated | 17,586 |
+| Research animal IDs / distinct tattoos | 3,791 |
+| Individuals with at least one qualifying live TRAP/NET/SNARE/DART/FOUND_ALIVE observation | **3,224** |
+| Animals with no qualifying live capture but candidate death event(s) | **567** |
+| Of death-only identities: `UN` tattoos | **498** |
+| Of death-only identities: other tattoos | **69** |
+| Qualifying live encounter rows | **16,273** |
+| Animals observed in >=2 calendar years | **1,971** |
+| Animals observed in one year | **1,253** |
+| Animals with exactly one qualifying live encounter | **909** |
+| Qualifying live animals with sex UNKNOWN | **0** |
+| Qualifying live animals with age at first capture UNKNOWN | **1** |
+| Qualifying live animals without recorded first-capture year | **0** |
+| Qualifying live rows lacking accepted XY | **538** |
+| Qualifying live animals with every live XY missing | **51** |
+| Qualifying live animals with both mapped and unmapped encounters | **285** |
+| Missing-XY live observations at named setts awaiting field-team coordinates | **306, involving 162 animals** |
+| Primary recorded mortality events (paired PM companion removed from event count) | **1,304** |
+| Candidate terminal death events | **1,300** |
+| Identity-conflict terminal deaths held | **2** |
+| Possible duplicate-carcass terminal deaths held | **2** |
+| Candidate terminal deaths associated with >=1 live history | **733 animals/events in audited join** |
+
+**Importantly these are not final exclusion counts.** A one-live-capture animal can contribute to a properly specified conditional CMR likelihood. A single-year capture history need not be dropped; nor should sex/age unknown force exclusion when an explicit missing-covariate or marginalization strategy is used. Missing XY alone is **never a reason to exclude an animal from survival**; the spatial movement submodel must separately decide whether an encounter can enter its distance likelihood. The 567 dead-only recoveries remain a *separate mortality evidence stream*, not 567 newly marked, released badgers. The 498 UN animals must not be assigned resident social groups, and a coarse Cockadilly locality centroid is not an exact recovery point.
+
+### What genuinely needs an inclusion/exclusion rule
+
+1. **Four held mortality terminal assignments**: U005 and 020D identity contradictions, plus W023 and Q082 possible repeated dead-carcass reports. Retain source death rows and audit flags; do not silently terminate a linked live history until resolved. The source chronology anomaly check also found three encounter records dated before their individual's metadata first-capture year (020D, UN117, UN619); these require separate interpretation rather than deleting all animal histories.
+2. **Episode matching**: 17 linked field/PM source pairs represent **one** biological episode per pair. No double death or additional recapture occasion from PM companion.
+3. **Encounter-fate ambiguity**: the core qualifying live definition excludes exceptional `FOUND_IN_EXTREMIS` and non-PM `REMOVAL` records, which need a distinct explicit alive/terminal coding. It also excludes `UNKNOWN` outcome until checked. An apparent routine trap and presumed release is a documented assumption, not directly observed survival.
+4. **Entry/age and observation time**: preserve exact capture dates, annual/quarterly effort opportunities, age-at-first capture and chronological age uncertainty. There are 52 source calendar years (1975--2026), including 12 qualifying live encounters before 1977 and 43 in 2026; the previous movement model's year windows may differ. The 2026 year may be incomplete and cannot automatically be treated as fully observed.
+5. **Detection/effort and disappearances**: stopping observed encounters does not prove death or emigration. Design a robust-design/annual detection component accounting for quarterly occasions, nonuniform effort, outside area/unavailability and late-life observation censoring. Do not claim identifiability of true emigration or immigration without external evidence.
+6. **V11R2 input compatibility**: the frozen 1,932-animal movement population was derived from **local historic RDS and `WoodchesterSettLocations.csv`**, not direct live Supabase views. Model code on `main` uses aliases including `FOXCUB -> FOX`, `DINGLEVALLEY -> DINGLE`, `BLACKBERRY -> BRAMBLE`, which cannot be assumed biologically interchangeable or source-verified. Compare original detector/capture rows, dates, source sett names, canonical sett IDs, XY, eligibility and population/tattoo IDs against the audited live database **before deciding whether V11R2 needs a rerun**. Original model posterior files are not tracked by Git. The 3,224 live-observed animals and 1,932 previously movement-eligible animals are different populations by design; the difference **is not a demonstrated poor-data exclusion** until membership is reconciled.
+
+### Missing field-team sett XY: exact refit decision
+
+The recent GIS/PM grid audits primarily revised *recovery* evidence, which was deliberately excluded from V11R2 spatial likelihood; those changes alone do not require a movement refit. Field-team coordinates for previously unmapped **live-capture setts** may, however, add 306 source observations for 162 animals, and thus may alter movement state histories and detector geometry. These are upper bounds on possible effect: actual V11R2-population overlap, prior legacy CSV coverage and detection eligibility are unverified. **Do not refit automatically**; first run an old-vs-new capture-ID/date/sett/XY reconciliation. If newly mapped records alter meaningful observed locations or movement histories, rerun V11R2-50 and 25m sensitivity with harmonised vetted aliases and refreeze its posterior before using V12. If only PM/locality coordinates changed, retain V11R2.
+
+### V12 staged development gate
+
+- **V12a:** construct one *versioned, fully audited* animal-year and quarterly encounter/fate dataset (mark/release, live recaptures, PM/death, no observation, field/PM linked episodes, first/last seen, sex, age, optional location). Produce a complete inclusion and exclusion **reason** table at record and individual levels; no implicit dropping of missing XY or one-capture animals. Distinguish source-record, biological-episode and animal-year grains.
+- **V12b:** start with identifiable annual apparent survival + quarterly detection, with deaths as separate known-death evidence where valid. Estimate age, sex and temporal effects. Check posterior predictive recapture counts, time-to-last-observation and documented death histories; don't automatically identify death vs permanent emigration from missing recaptures.
+- **V12c:** propagate V11R2 relocation posterior uncertainty, not binary high-mover calls, as lagged survival/disappearance predictors; carry the 25m sensitivity, avoid reusing future observation data to define predictors. Add residence/settlement and possible immigration/emigration only when data support the extra latent states.
+- **V13 follows V12**, targeting infectiousness, introduction/reseeding and persistence across the changing social landscape; do not repeat generic earlier infection/movement associations without a new estimand.
+
+**Single-authoritative-document policy:** This file is the living modelling record. Earlier files `data/Woodchester_Formal_Model_Overview_UPDATED.md`, `markdown/Woodchester_Badger_Project_Live_Modelling_Roadmap.md`, `docs/V11_AGE_BADGER_RE_SPEC.md`, `docs/V10...` and `docs/PREVIOUS_MODEL_HISTORY.md` remain historical context or specialist annotations. Do not create another competing modelling roadmap. The separate four canonical database documents still govern the cleaned data and curation decisions. Maintain this modelling record and the executable V12 audit alongside any future code changes.
