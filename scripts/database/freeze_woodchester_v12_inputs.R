@@ -14,6 +14,7 @@ if (!nzchar(Sys.getenv("BADGER_DB_USER")) ||
     !nzchar(Sys.getenv("BADGER_DB_PASSWORD"))) {
   stop("BADGER_DB_USER and BADGER_DB_PASSWORD must be set")
 }
+main <- function() {
 host <- Sys.getenv("BADGER_DB_HOST",
   unset = "db.klpvihubzlyzubyyubtw.supabase.co")
 con <- DBI::dbConnect(RPostgres::Postgres(),
@@ -138,3 +139,5 @@ writeLines(manifest, file.path(dir, "MANIFEST.txt"), useBytes = TRUE)
 cat(paste(manifest, collapse = "\n"), "\n")
 cat("\nSnapshot saved: ", dir, "\n", sep = "")
 cat("NOT model-fit-ready until unresolved cases and model assumptions are reviewed.\n")
+}
+main()
