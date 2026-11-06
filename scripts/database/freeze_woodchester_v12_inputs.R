@@ -51,13 +51,16 @@ mort <- DBI::dbGetQuery(con, "
  FROM analysis.mortality_model_candidate_v1
  ORDER BY capture_id
 ")
+DBI::dbExecute(con, "SAVEPOINT migration_metadata")
 migration <- tryCatch(DBI::dbGetQuery(con, "
  SELECT version, name FROM supabase_migrations.schema_migrations
  ORDER BY version DESC LIMIT 1
 "), error = function(e) {
+ DBI::dbExecute(con, "ROLLBACK TO SAVEPOINT migration_metadata")
  warning("Read-only role cannot inspect migration history; version is UNKNOWN")
  data.frame(version = NA_character_, name = NA_character_)
 })
+DBI::dbExecute(con, "RELEASE SAVEPOINT migration_metadata")
 DBI::dbExecute(con, "COMMIT")
 transaction_open <- FALSE
 
