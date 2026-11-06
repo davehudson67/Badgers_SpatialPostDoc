@@ -1,0 +1,4 @@
+# Supabase-derived model snapshots (contains observational research data).
+# Keep untracked; commit code + manifest schema, not individual-level inputs.
+*
+!.gitignore
