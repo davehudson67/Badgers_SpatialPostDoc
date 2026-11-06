@@ -31,7 +31,35 @@ transaction_open <- TRUE
 on.exit(if (transaction_open) try(DBI::dbExecute(con, "ROLLBACK"), silent = TRUE),
         add = TRUE)
 
-enc <- DBI::dbGetQuery(con, "
+# The audited views are complex. Range filtering by capture_id avoids a full
+# unrestricted query that exceeds the default 2-minute Supabase timeout.
+# All ranges share ONE repeatable-read transaction, so the combined input is
+# a coherent snapshot even if live data change concurrently.
+bounds <- DBI::dbGetQuery(con, "
+  SELECT min(capture_id) AS first_id, max(capture_id) AS last_id,
+         count(*) AS n_capture_rows FROM research.captures
+")
+if (!nrow(bounds) || is.na(bounds$first_id[1]) || is.na(bounds$last_id[1]))
+  stop("No capture records in research.captures")
+step <- as.integer(Sys.getenv("WOODCHESTER_BATCH_IDS", "2000"))
+if (is.na(step) || step < 1L || step > 5000L)
+  stop("WOODCHESTER_BATCH_IDS must be between 1 and 5000")
+start_ids <- seq(from = as.numeric(bounds$first_id[1]),
+                 to = as.numeric(bounds$last_id[1]), by = step)
+
+get_batches <- function(sql_template, label) {
+  parts <- vector("list", length(start_ids))
+  for (j in seq_along(start_ids)) {
+    lo <- start_ids[j]
+    hi <- min(lo + step - 1, as.numeric(bounds$last_id[1]))
+    cat(sprintf("%s: capture IDs %.0f-%.0f (%d/%d)\n",
+                label, lo, hi, j, length(start_ids)))
+    parts[[j]] <- DBI::dbGetQuery(con, sprintf(sql_template, lo, hi))
+  }
+  do.call(rbind, parts)
+}
+
+enc <- get_batches("
  SELECT e.capture_id, upper(trim(e.tattoo)) AS tattoo,
         e.capture_date, e.is_pm, e.sett_id,
         e.episode_primary_capture_id, e.episode_record_role,
@@ -41,16 +69,23 @@ enc <- DBI::dbGetQuery(con, "
  FROM analysis.encounters_clean_v1 e
  JOIN research.captures c ON c.capture_id = e.capture_id
  JOIN research.individuals i ON i.individual_id = c.individual_id
- ORDER BY e.capture_id
-")
-mort <- DBI::dbGetQuery(con, "
+ WHERE e.capture_id BETWEEN %.0f AND %.0f
+", "encounters")
+mort <- get_batches("
  SELECT capture_id, upper(trim(tattoo)) AS tattoo, recorded_event_date,
         mortality_outcome, encounter_type, source_is_pm,
         linked_pm_capture_id, linked_pm_date, next_live_capture_date,
         mortality_review_status, terminal_model_status, terminal_model_note
  FROM analysis.mortality_model_candidate_v1
- ORDER BY capture_id
-")
+ WHERE capture_id BETWEEN %.0f AND %.0f
+", "mortality")
+enc <- enc[order(enc$capture_id), , drop = FALSE]
+mort <- mort[order(mort$capture_id), , drop = FALSE]
+# Match the source captures exactly; this also detects missing rows from joins
+# and protects against partial extraction or accidental range omissions.
+if (nrow(enc) != as.numeric(bounds$n_capture_rows[1]))
+  stop("Encounter row count differs from source captures: ",
+       nrow(enc), " vs ", bounds$n_capture_rows[1])
 DBI::dbExecute(con, "SAVEPOINT migration_metadata")
 migration <- tryCatch(DBI::dbGetQuery(con, "
  SELECT version, name FROM supabase_migrations.schema_migrations
@@ -129,6 +164,8 @@ manifest <- c(
   "rule_live=non-PM non-companion TRAP/NET/SNARE/DART/FOUND_ALIVE; unknown episode role held",
   "rule_death=CANDIDATE_TERMINAL_DEATH; held candidates not treated as confirmed",
   "scope=pre-fit scientific evidence extraction; NOT an approved likelihood",
+  paste("batch_id_width", step, sep = "="),
+  paste("n_source_captures", bounds$n_capture_rows[1], sep = "="),
   paste("n_encounters", nrow(enc), sep = "="),
   paste("n_qualifying_live", nrow(live), sep = "="),
   paste("n_candidate_deaths", nrow(candidate), sep = "="),
