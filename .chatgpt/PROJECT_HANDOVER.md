@@ -185,3 +185,12 @@ docs/archive/sql_legacy/:
 Do not replay the consolidated migration history against
 the production database or treat the schema-only export
 as a complete reconstruction of the research data.
+
+
+## Supabase-first data policy — 6 November 2026
+
+For all new V12/V13 analyses use approved Supabase research/analysis data through versioned read-only R extraction. No historical local RDS is an authoritative data source. Archive old local inputs for historic reproducibility, never delete fitting outputs or overwrite saved inputs blindly.
+
+Initial work-in-progress extractor: scripts/database/freeze_woodchester_v12_inputs.R. It creates a SHA-256-labelled, Git-ignored evidence snapshot from analysis.encounters_clean_v1 and analysis.mortality_model_candidate_v1. It does NOT create approved V12 model matrices or fit a model. Review the live checks and assumptions before fitting.
+
+Historical Phase/RD-SCR scripts still read local RDS, but are archival/reproducibility code; update active models only after model-specific rule approval. Keep code and five authoritative documents in sync. Do not commit snapshot contents or credentials.
