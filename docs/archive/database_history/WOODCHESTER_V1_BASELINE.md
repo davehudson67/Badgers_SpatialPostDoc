@@ -15,7 +15,7 @@ The stable researcher-facing V1 location interfaces are:
 - `analysis.sett_coordinate_unmatched_v1`: definitive-coordinate-list names not yet linked to a canonical sett.
 - `analysis.unmatched_capture_sett_review`: original unmatched recorded location names for independent review.
 
-The V1 designation is entered into `ingest.woodchester_data_baseline_versions`; SQL defining the interfaces is kept in `sql/migrations/woodchester_v1_baseline_stable_interfaces_20261023.sql`.
+The V1 designation is entered into `ingest.woodchester_data_baseline_versions`; SQL defining the interfaces is kept in `docs/archive/sql_legacy/woodchester_v1_baseline_stable_interfaces_20261023.sql`.
 
 ## What I standardised
 

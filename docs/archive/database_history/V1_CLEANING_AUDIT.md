@@ -8,12 +8,12 @@ I've been working through the original Access database and documenting the chang
 
 | Area | Rule or decision | SQL reference |
 |---|---|---|
-| Individual identity | I use tattoo as the scientific identifier and retain internal individual IDs solely for joins. | Versioned original migration scripts in `sql/migrations/` |
+| Individual identity | I use tattoo as the scientific identifier and retain internal individual IDs solely for joins. | Historical SQL in `docs/archive/sql_legacy/` |
 | Sex | `sex_clean`: trim and uppercase MALE/FEMALE; other or blank values become UNKNOWN. I retain `sex`. | `woodchester_v1_minimal_clean_columns_20261026.sql` |
 | Age at first capture | `age_first_capture_clean`: CUB/YEARLING/ADULT; other or blank become UNKNOWN. I retain the original field. | Same migration |
 | Sett names | `sett_name_clean` follows a confirmed canonical sett ID. Unresolved entries stay NULL; the original recorded string is retained. | `woodchester_v1_minimal_clean_columns_20261026.sql`; `woodchester_v1_clean_names_trigger_20261026.sql` |
 | Social groups | `social_group_name_clean` is the canonical label associated with the **recorded** social group ID, not proof of residence. | Same clean-name migrations |
-| Coordinates | I retain original sett evidence and distinguish mapped sett locations from provisional PM grid-square corners, with their sources. | V1 coordinate matching and PM grid migrations in `sql/migrations/` |
+| Coordinates | I retain original sett evidence and distinguish mapped sett locations from provisional PM grid-square corners, with their sources. | Historical V1 SQL in `docs/archive/sql_legacy/` |
 | Captures | I brought the sampling, welfare assessment and collar fields into `research.captures`. | `woodchester_v1_consolidate_capture_fields_20261026.sql`; `woodchester_v1_retire_split_capture_detail_tables_20261026.sql` |
 | Analysis views | I have created five useful views. Legacy/internal SQL views were moved to `internal_v1` so their definitions and dependencies remain available. | `woodchester_v1_minimal_public_schemas_20261026.sql` |
 | Code lists | I removed three tiny standalone tables after recording their entries here; I retained actual assay measurements and historical many-to-one/many-to-many relationships. | `woodchester_v1_remove_redundant_code_lookups_20261026.sql` |
@@ -26,7 +26,7 @@ I've set out the rules below in plain language so it's possible to see what we'v
 
 I'm using the tattoo number as the main identifier for an individual badger. The database still uses an internal numeric ID to link tables together.
 
-**Where this is implemented:** the original import and identity migrations in `sql/migrations/`.
+**Where this is implemented:** the historical import and identity SQL in `docs/archive/sql_legacy/`.
 
 ### Sex and age at first capture
 
@@ -154,7 +154,7 @@ For full executable details I use the SQL migrations rather than duplicating cod
 
 ## Earlier notes: condition and ear tags
 
-I preserve the recorded `condition` and `eartags` columns and use generated cleaned fields for unambiguous variants. In `condition_clean`, V.GOOD → VERY GOOD (700 records), alongside 1,068 original VERY GOOD records. Other categories are FAIR (4,789), GOOD (8,809), POOR (1,281); missing remains NULL (939). In `eartags_clean`, NEITHER, NONE, NOT TAGGED and the encoding variant NOT TAGûGED → NONE; RETAGGEûD → RETAGGED; BOTH, LEFT, RIGHT and REMOVED remain separate. I don't equate REMOVED with NONE. Source values are unchanged. SQL: `sql/migrations/woodchester_v1_standardise_condition_and_eartags_20261026.sql`.
+I preserve the recorded `condition` and `eartags` columns and use generated cleaned fields for unambiguous variants. In `condition_clean`, V.GOOD → VERY GOOD (700 records), alongside 1,068 original VERY GOOD records. Other categories are FAIR (4,789), GOOD (8,809), POOR (1,281); missing remains NULL (939). In `eartags_clean`, NEITHER, NONE, NOT TAGGED and the encoding variant NOT TAGûGED → NONE; RETAGGEûD → RETAGGED; BOTH, LEFT, RIGHT and REMOVED remain separate. I don't equate REMOVED with NONE. Source values are unchanged. SQL: `docs/archive/sql_legacy/woodchester_v1_standardise_condition_and_eartags_20261026.sql`.
 
 
 ## Earlier notes: collar and ELISA labels
@@ -163,7 +163,7 @@ I added `research.captures.collar_transmitter_clean` as a generated field: FIT/F
 
 I added `research.elisa_tests.test_result_clean` as a generated field: NO SERA/NO SERUM → NO SERUM. All other recorded codes, including I, ITT and BIT, remain unaltered; no clinical interpretation is inferred. Counts: N 13,297, P 1,554, I 163, ITT 15, BIT 2, NO SERUM 99, NULL 32.
 
-SQL: `sql/migrations/v1_collar_label_normalisation_20261026.sql` and `sql/migrations/v1_elisa_result_label_normalisation_20261026.sql`.
+SQL: `docs/archive/sql_legacy/v1_collar_label_normalisation_20261026.sql` and `docs/archive/sql_legacy/v1_elisa_result_label_normalisation_20261026.sql`.
 
 
 ## Earlier notes: sett coordinates and group links
@@ -174,7 +174,7 @@ I renamed `research.sett_social_group_history` to `research.sett_social_group_li
 
 A distinct **annual point-in-polygon** result is the appropriate next dataset: for each year, compare the mapped sett point with that year's social-group territory polygons, keep exact polygon source/year and all matches, and explicitly flag points outside every polygon, on boundaries or in overlaps. Do not silently force a single SG in ambiguous cases. The annual polygon inputs are not yet present as queryable tables in Supabase, so no year-specific membership has been generated here.
 
-SQL: `sql/migrations/v1_consolidate_sett_coordinates_and_rename_undated_links_20261026.sql`.
+SQL: `docs/archive/sql_legacy/v1_consolidate_sett_coordinates_and_rename_undated_links_20261026.sql`.
 
 
 ## Earlier notes: annual territory overlays
@@ -183,7 +183,7 @@ I use the 49 annual territory shapefiles (`data/spatial/social_group_boundaries/
 
 The script writes an all-matches CSV and annual status counts to `outputs/V1_annual_sett_polygon_membership/`. By default this is an audit-only export; `UPLOAD_ANNUAL_CROSSWALK=1` additionally loads `research.sett_annual_territory_matches` in one transaction using a database connection with write permission. Source polygons are unchanged. The calculation has now been run locally, producing 9,140 records covering all 8,624 sett-year combinations; the 9,140 records have since been imported into Supabase. This is a data organisation step only; I do not use the overlaps to infer social-group residency.
 
-SQL: `sql/migrations/v1_annual_sett_polygon_crosswalk_20261026.sql`; `sql/migrations/v1_annual_sett_crosswalk_readonly_grants_20261026.sql`.
+SQL: `docs/archive/sql_legacy/v1_annual_sett_polygon_crosswalk_20261026.sql`; `docs/archive/sql_legacy/v1_annual_sett_crosswalk_readonly_grants_20261026.sql`.
 
 
 ## Earlier notes: annual crosswalk upload
@@ -221,7 +221,7 @@ I am treating `040l` as a **case variant of the same tattoo**, not a separate ba
 
 **Rule:** use the canonical scientific identifier **`040L`**, retaining the leading zero; when matching original tattoo text, compare `upper(trim(tattoo))`, but keep the original `040l` value in `access_raw` for provenance. This is a confirmed **case-only correction for this tattoo**, not permission to merge other visually similar tattoos or drop leading zeros.
 
-**Audit/verification script:** `sql/migrations/v1_040l_tattoo_case_audit_20261028.sql`. **Database action:** original source records unchanged; existing research links already correct. This is a documented interpretation and reproducibility check.
+**Audit/verification script:** `docs/archive/sql_legacy/v1_040l_tattoo_case_audit_20261028.sql`. **Database action:** original source records unchanged; existing research links already correct. This is a documented interpretation and reproducibility check.
 
 
 ## 2 November 2026 — spatial interpretation and UN social groups
@@ -230,4 +230,4 @@ I've now agreed the following **firm biological cleaning rule**: **no badger who
 
 I'm deliberately **not deleting or blanking the original `recorded_social_group_*`, `recorded_sett_name` or `sett_id` fields** in `research` or `access_raw`. The rule must be applied to a separate derived *residency* field in the analysis extract: for a `UN%` tattoo, resident SG ID/name are NULL and residency evidence eligibility is FALSE. The existing views are **not yet updated** to enforce this rule, so the presence of a recorded or normalised SG in those views should not be mistaken for an inferred resident group.
 
-The spatial audit also identified **102 TRAP records without linked sett IDs** (81 with recorded names and 21 without). These need targeted sett-name and original-field-record review before spatial assignment; they should not be discarded or automatically matched to the nearest sett. Current spatial classifications and polygon-match counts, and remaining field-team questions, are documented in [Spatial Audit and Decisions](V1_SPATIAL_AUDIT_DECISIONS_20261102.md). No source data have been changed as part of this decision.
+The spatial audit also identified **102 TRAP records without linked sett IDs** (81 with recorded names and 21 without). These need targeted sett-name and original-field-record review before spatial assignment; they should not be discarded or automatically matched to the nearest sett. Current spatial classifications and polygon-match counts, and remaining field-team questions, are documented in [Spatial Audit and Decisions](../spatial_audits/V1_SPATIAL_AUDIT_DECISIONS_20261102.md). No source data have been changed as part of this decision.

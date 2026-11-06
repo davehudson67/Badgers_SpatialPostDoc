@@ -4,7 +4,7 @@
 > pure-quarterly state-space formulation. The primary V10a development now keeps
 > **year as the robust-design primary period** and Q1-Q4 as secondary trapping
 > campaigns, while adding quarter-specific spatial-use centres around an annual
-> activity centre. See `docs/V10A_RD_SCR_MULTILOC_SPEC.md`.
+> activity centre. See `docs/archive/model_development/V10A_RD_SCR_MULTILOC_SPEC.md`.
 
 ## Why V10 exists
 

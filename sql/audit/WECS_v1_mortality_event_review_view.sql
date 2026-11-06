@@ -89,4 +89,4 @@ WITH deaths AS (
    FROM tested;
 
 -- Expected at export: 1311 event rows (10 linked PM companion source rows excluded); 401 event rows with no XY.
--- Documented identity conflicts and repeated death entries: docs/database/WECS_MORTALITY_SPATIAL_INDEPENDENCE_AUDIT_2026_11_04.md
+-- Documented identity conflicts and repeated death entries: docs/archive/spatial_audits/WECS_MORTALITY_SPATIAL_INDEPENDENCE_AUDIT_2026_11_04.md

@@ -61,7 +61,7 @@ The study trapping area, annual bait-marking territories and carcass collection 
 
 ## What is left, in priority order
 
-**Priority 1 — recognised setts and name reconciliation:** review `docs/database/V1_SETT_AND_SOCIAL_GROUP_RECONCILIATION_STATUS.md`, the 168 XY source entries, 173 Access setts, 176 research setts, and the 'names outside XY list'. Build a source-to-canonical name crosswalk, including *do not merge* decisions and no-XY names. Field team should check the master sett map for unresolved genuine setts.
+**Priority 1 — recognised setts and name reconciliation:** review `docs/archive/spatial_audits/V1_SETT_AND_SOCIAL_GROUP_RECONCILIATION_STATUS.md`, the 168 XY source entries, 173 Access setts, 176 research setts, and the 'names outside XY list'. Build a source-to-canonical name crosswalk, including *do not merge* decisions and no-XY names. Field team should check the master sett map for unresolved genuine setts.
 
 **Priority 2 — the 102 TRAP records without linked sett ID:** review 21 absent names, and 81 named records. Verify capture method, original location text, likely known sett/outlier, and dates. Assign only those supported by sources; leave the remainder unresolved and count exactly how that affects our movement sample.
 

@@ -34,11 +34,11 @@
 | `woodchester_v1_1_sett_review_cardinality_fix_20261023.sql` | Fix duplicate-row/cardinality issue |
 | `woodchester_v1_2_revert_pm_inferred_setts_20261023.sql` | Reverse unsafe PM-inferred sett assignment |
 
-All names are relative to `sql/migrations/`. These older scripts establish the starting environment; source import and external dependencies must already exist. The review/cardinality correction follows its earlier review migration. The 2026-10-23 scripts may have been applied in a different live-history sequence; consult migration history before replay.
+Historical individual SQL filenames in this section now refer to `docs/archive/sql_legacy/`. These older scripts establish the starting environment; source import and external dependencies must already exist. The review/cardinality correction follows its earlier review migration. The 2026-10-23 scripts may have been applied in a different live-history sequence; consult migration history before replay.
 
 ### Current encounter, spatial and mortality curation
 
-**`sql/migrations/20261104_wecs_curated_v1_snapshot.sql`** is a **replayable WECS curation baseline** exported from live database definitions and decision rows on 4 November 2026. It contains:
+**`docs/archive/sql_legacy/20261104_wecs_curated_v1_snapshot.sql`** is a **replayable WECS curation baseline** exported from live database definitions and decision rows on 4 November 2026. It contains:
 - The current 17 linked field–PM episode pairs and one explicit **nonlink** (Y030 netting versus later independent starvation recovery).
 - All **23 manual outcome/encounter overrides**, including 1979 REMOVAL→KILLED (11 records), D061 RTA survival correction, 014D false-euthanasia correction, and 024Y explicit euthanasia.
 - Nine approved **capture-specific sett aliases** (MRS MACKS, STONEY TRACK, S PEGLARS→SOUTH PEGLARS, WEST MAIN→WEST) and the distinct canonical SOUTH PEGLARS name (ID 555, no XY).
@@ -49,7 +49,7 @@ All names are relative to `sql/migrations/`. These older scripts establish the s
 
 ### Collaborator permissions (applied and saved)
 
-**`sql/migrations/20261104_wecs_readonly_access_grants.sql`** must run **after** the curated WECS snapshot on fresh/rebuilt databases. It grants `SELECT` on the four curated WECS analysis views to both read-only roles, restricts direct curation-table SELECT to the advanced `badger_research_readonly` role, and establishes read-only row-level policies for that advanced role. These curated analysis views are view-owner secured to expose **only their selected columns**, without needing to grant unrestricted write access to original observations.
+**`docs/archive/sql_legacy/20261104_wecs_readonly_access_grants.sql`** must run **after** the curated WECS snapshot on fresh/rebuilt databases. It grants `SELECT` on the four curated WECS analysis views to both read-only roles, restricts direct curation-table SELECT to the advanced `badger_research_readonly` role, and establishes read-only row-level policies for that advanced role. These curated analysis views are view-owner secured to expose **only their selected columns**, without needing to grant unrestricted write access to original observations.
 
 **Verified 4 November 2026:** both `badger_readonly` and `badger_research_readonly` have `SELECT` on `analysis.encounters_clean_v1`, `analysis.mortality_events_review_v1`, and `analysis.wecs_review_flags_v1`; advanced role also has SELECT on `research.wecs_review_flags`. These checks verify role-level grants, not a real end-to-end individual collaborator login; verify with the user's actual login when available.
 
@@ -57,7 +57,7 @@ All names are relative to `sql/migrations/`. These older scripts establish the s
 
 Run these **in order after** `20261104_wecs_curated_v1_snapshot.sql` and the read-only grants migration:
 
-| Saved migration in `sql/migrations/` | Implemented decision |
+| Historical SQL file in `docs/archive/sql_legacy/` | Implemented decision |
 |---|---|
 | `20261104_wecs_grid_square_qa_and_safe_corrections.sql` | Named Woodchester-area ST references were mapped ~100 km south by the original parser. **50** provisionally reinterpreted in the SO square; **four** embedded ST/SU original prefixes mechanically corrected; **33** uncertain coordinates withheld. Source unchanged |
 | `20261104_wecs_six_digit_precision_and_additional_quarantine.sql` | A six-digit OS reference represents a **100 m square**, not an exact observed point. Separates explicitly recorded SO prefixes from unverified assumed prefixes; **five** additional suspect points withheld |
@@ -68,7 +68,7 @@ These corrections preserve the original OS reference and its interpretation befo
 
 ### Further record-level mortality audit (applied after the migrations above)
 
-| SQL file in `sql/migrations/` | Why it exists |
+| Historical SQL file in `docs/archive/sql_legacy/` | Why it exists |
 |---|---|
 | `20261104_wecs_seven_confirmed_death_episode_pairs.sql` | Original Access/capture notes confirm seven more single-event field–PM pairs: **001R, 017R, 045W, D007, I022, M012 and Q070**. The database now has **17** linked pairs. D007 explicitly states its PM was entered the following day because historic Access could not record both rows on the true date. Six episodes are EUTHANISED; D007 is DIED under anaesthetic |
 | `20261104_wecs_pm_companion_spatial_provenance.sql` | PM companions retain their own independent grid-square recovery location if recorded; a nominal sett point is **not** copied onto PM rows without independent evidence. The field record retains its own supported sett/capture location. Original spatial text unchanged |
@@ -79,7 +79,7 @@ These corrections preserve the original OS reference and its interpretation befo
 
 ### Continuing spatial cleanup: malformed OS strings and one live review queue
 
-**`sql/migrations/20261104_wecs_five_malformed_grids_and_spatial_review_queue.sql`** is applied and version-controlled. It preserves five original malformed PM grid references (capture IDs **16859, 16967, 16997, 17043, 17500**) while adding defensible, **provisional** grid-square interpretations from their named recovery localities. These points are **not certified 1 m/10 m precise observations** even when original digits describe small grid cells. The other ambiguous strings remain unlocated.
+**`docs/archive/sql_legacy/20261104_wecs_five_malformed_grids_and_spatial_review_queue.sql`** is applied and version-controlled. It preserves five original malformed PM grid references (capture IDs **16859, 16967, 16997, 17043, 17500**) while adding defensible, **provisional** grid-square interpretations from their named recovery localities. These points are **not certified 1 m/10 m precise observations** even when original digits describe small grid cells. The other ambiguous strings remain unlocated.
 
 The view **`analysis.spatial_missing_review_v1`** is the single queryable worklist; it replaces the need for another descriptive audit document. All **979** rows without accepted XY fall into exactly one reason category: 331 mortality/recovery location; 306 field-team sett XY; 163 named nonsett capture sites; 107 sett-versus-physical-site conflict (already **RESOLVED** as legitimately unknown); 39 original grid to verify; 26 source-unspecified locations; and 9 PM companion records with no independent point. Totals are mutually exclusive in the view; underlying issue types can overlap.
 
@@ -138,7 +138,7 @@ select review_status,count(*) from research.wecs_review_flags group by review_st
 
 ### Investigator-reviewed map outliers — 5 November 2026
 
-**Applied SQL:** `sql/migrations/20261105_wecs_withhold_un260_f030_map_outliers.sql`.
+**Applied SQL:** `docs/archive/sql_legacy/20261105_wecs_withhold_un260_f030_map_outliers.sql`.
 
 - **17254 (UN260):** 2002 RTA PM, source `ST900022`, location described as Stanley Wood roadside verge opposite glider field gate. Earlier SO reinterpretation E390000 N202200 rejected on the interactive map; accepted XY now NULL, `GRID_REFERENCE_AMBIGUOUS_WITHHELD`. Original grid, PM death and date preserved. Flag `SPATIAL-UN260-17254` requires original grid/map evidence.
 - **12072 (F030):** 1988 PM death, source `SU062988-NOT TRUE MOVE`. Literal SU E406200 N198800 rejected as an approved recovery/movement location. Accepted XY now NULL; original PM death/cause and preceding capture history retained. Flag `SPATIAL-F030-12072` requires clarification of the historical annotation.
@@ -159,7 +159,7 @@ Applied SQL:
 
 ### Approved 30 additional grid corrections — 5 November 2026
 
-Applied migration: `sql/migrations/20261105_wecs_accept_30_proposed_grid_northings.sql`. Investigator approved the thirty hypothetical minus-100km northing locations shown on the Woodchester map. Each is now CORRECTED and VISUALLY_VERIFIED, still `GRID_REFERENCE_CORRECTED_PROVISIONAL` in cleaned analysis. Original grid strings and preceding parser coordinates are preserved, and this approval does not imply exact survey accuracy. All PM mortality events remain in the scientific database.
+Applied migration: `docs/archive/sql_legacy/20261105_wecs_accept_30_proposed_grid_northings.sql`. Investigator approved the thirty hypothetical minus-100km northing locations shown on the Woodchester map. Each is now CORRECTED and VISUALLY_VERIFIED, still `GRID_REFERENCE_CORRECTED_PROVISIONAL` in cleaned analysis. Original grid strings and preceding parser coordinates are preserved, and this approval does not imply exact survey accuracy. All PM mortality events remain in the scientific database.
 
 **Current verified counts (supersede earlier intermediate figures above):** 17,586 original encounter source rows; **87** corrected map-verified grid positions; **10** withheld, of which eight await review and two were rejected (F030/UN260); **951** source rows missing accepted XY; **1,304** death-event rows, of which **400** have no accepted XY; **1,300** candidate terminal deaths and four held; **17** curated field/PM pairs. The current original-grid missing-XY worklist contains nine records. Historical counts elsewhere in this log describe earlier migration snapshots.
 
@@ -175,7 +175,7 @@ Applied migration: `sql/migrations/20261105_wecs_accept_30_proposed_grid_northin
 
 ### Proportional close-out of grid-reference work — 5 November 2026
 
-**Applied SQL:** `sql/migrations/20261105_wecs_cockadilly_locality_and_tinkley_woodcock_grid.sql`. The investigator approved coarse Cockadilly village-centre placement for source RTA records 18 and 3382, both marked **`LOCALITY_CENTROID_APPROXIMATE`** at rounded BNG E379800 N200200 (from mapped hamlet node 412786736). That XY is explicitly a *locality proxy* and not a surveyed capture/PM location. The Cockadilly issue is RESOLVED. Two source-record corroborations established C016/16869 `008802` → `802008` (E380200 N200800), and UN492/17117 `SO988808` → `ST808988` (E380800 N198800). Their points are provisional grid-square approximations; neither implies social-group assignment for an UN badger.
+**Applied SQL:** `docs/archive/sql_legacy/20261105_wecs_cockadilly_locality_and_tinkley_woodcock_grid.sql`. The investigator approved coarse Cockadilly village-centre placement for source RTA records 18 and 3382, both marked **`LOCALITY_CENTROID_APPROXIMATE`** at rounded BNG E379800 N200200 (from mapped hamlet node 412786736). That XY is explicitly a *locality proxy* and not a surveyed capture/PM location. The Cockadilly issue is RESOLVED. Two source-record corroborations established C016/16869 `008802` → `802008` (E380200 N200800), and UN492/17117 `SO988808` → `ST808988` (E380800 N198800). Their points are provisional grid-square approximations; neither implies social-group assignment for an UN badger.
 
 **After migration:** 17,586 original encounter source rows; **92 CORRECTED spatial decisions (90 grid interpretations and two hamlet-centre proxies)**; **six WITHHELD** (two investigator-rejected, two Leg of Mutton PMs, one Watts Farm RTA, one PM companion whose primary trap episode is located). **946 source rows lack XY**; all **1,304 recorded death-event rows remain**, 395 of them without XY. 17 curated field–PM same-event links, and four held mortality terminal assignments remain unchanged. Older figures in this chronological log are historical checkpoints; this is the current state.
 
@@ -184,4 +184,44 @@ Applied migration: `sql/migrations/20261105_wecs_accept_30_proposed_grid_northin
 
 ### Numeric source grid references in sett-name field — resolved 5 November 2026
 
-The six six-digit numeric source SETT-field values (captures 30, 32, 57, 62, 73, 77) are grid-referenced PM/road recovery sites, not sett names or aliases. The existing cleaned encounter view already supplies 100m BNG approximate locations. Migration sql/migrations/20261105_wecs_numeric_sett_field_grid_recoveries_resolution.sql changed only the audit issue SPATIAL-UNNAMED-SETT to RESOLVED with provenance and rationale. No raw/research capture strings, accepted XY, mortality events, setts or SG identities modified. Nearness of CHESTNUT to 808011 and PARK MILL to 837009 is not proof of recovery at those setts. Current missing-XY totals remain 946/17586 encounters and 395/1304 mortality events.
+The six six-digit numeric source SETT-field values (captures 30, 32, 57, 62, 73, 77) are grid-referenced PM/road recovery sites, not sett names or aliases. The existing cleaned encounter view already supplies 100m BNG approximate locations. Migration docs/archive/sql_legacy/20261105_wecs_numeric_sett_field_grid_recoveries_resolution.sql changed only the audit issue SPATIAL-UNNAMED-SETT to RESOLVED with provenance and rationale. No raw/research capture strings, accepted XY, mortality events, setts or SG identities modified. Nearness of CHESTNUT to 808011 and PARK MILL to 837009 is not proof of recovery at those setts. Current missing-XY totals remain 946/17586 encounters and 395/1304 mortality events.
+
+
+
+
+## Consolidated SQL history — 6 November 2026
+
+The canonical recorded migration history is:
+
+`sql/WOODCHESTER_APPLIED_MIGRATIONS.sql`
+
+This contains the 73 migrations recorded in the live
+Supabase migration history, in execution order.
+
+The current schema-only export is:
+
+`sql/WOODCHESTER_DATABASE_BASELINE.sql`
+
+This captures current PostgreSQL object definitions,
+but does not contain the underlying Access-derived data,
+and has not yet passed a fresh-database restoration test.
+
+### Legacy migration reconciliation
+
+The 54 earlier individual migration files have been
+retained under `docs/archive/sql_legacy/` for provenance.
+
+Comparison against the 73 recorded migration statements:
+
+- 36 exact SQL matches
+- 3 formatting/comment differences
+- 10 substantive or potentially substantive differences
+- 5 without matching migration names
+
+The consolidated Supabase export is authoritative
+for the recorded executed statements.
+
+Legacy migration files are not to be replayed blindly.
+
+Future changes must be recorded as new migrations,
+with their execution status documented here.

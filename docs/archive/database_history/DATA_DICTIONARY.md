@@ -267,7 +267,7 @@ These are import/staging tables rather than canonical records.
 
 The curated views are documented in detail in:
 
-`markdown/Woodchester_SQL_R_Analysis_and_Infection_Guide.md`
+`docs/archive/database_history/Woodchester_SQL_R_Analysis_and_Infection_Guide.md`
 
 Important grain:
 

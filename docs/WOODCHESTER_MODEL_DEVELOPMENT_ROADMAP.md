@@ -1,5 +1,38 @@
 # Woodchester Badger Modelling Development Roadmap
 
+## Model status at a glance — 6 November 2026
+
+This table is a navigation summary, not a replacement for
+the dated analyses and scientific decisions below. See the
+full history before interpreting any model result.
+
+| Model / programme | Scientific purpose | Evidence and status | Current decision |
+|---|---|---|---|
+| V7 | Directional movement–infection relationships | Historical analyses completed; conclusions and limitations recorded below | Preserve results; avoid repeating the same estimands |
+| V8–V9 | Earlier model-development stages | Historical; consult model lineage for specifications and results | Retain as background |
+| V10A/B | Spatial capture, movement and detection formulations | Superseded model development, including unsuccessful approaches | Do not resume V10B by default |
+| V11 / V11S | Age, individual heterogeneity and movement-state development | Fitted and diagnostically investigated; limitations documented | Superseded as primary movement reference |
+| **V11R2** | Resolution-aware geographic movement estimation | Fitted with resolution sensitivities; legacy-input reconciliation outstanding | Current movement reference, subject to input audit |
+| Behavioural/social pathways | Excursions, residence changes, group reassignment and dispersal | Exploratory analyses completed; some interpretations depend on location and territory validation | Preserve uncertainty; review before publication |
+| **V12** | Detection, apparent survival, disappearance and movement–demography | Planned; data eligibility and source reconciliation underway | Next modelling priority |
+| **V13** | Infectiousness, introduction, transmission and persistence | Planned research programme | Develop after appropriate V12 and disease-data validation |
+
+### Evidence and status conventions
+
+- **Fitted** means an analysis was run, not necessarily
+  that its parameters or scientific interpretation are validated.
+- **Validated** requires appropriate diagnostics and
+  checks of the relevant data and model assumptions.
+- **Superseded** does not mean scientifically worthless;
+  preserve the reasons for abandoning or replacing a model.
+- **Planned** means no completed fit or result is implied.
+- The dated sections below provide numerical results,
+  model specifications, scripts, diagnostics and decisions.
+- Reassess this table whenever new results or audits
+  materially change the scientific position.
+
+---
+
 ## Living record: current position and update protocol
 
 **Last structural review:** 6 November 2026.
@@ -851,7 +884,7 @@ Documentation:
 
 ```
 docs/V10B_COLLAPSED_MODEL_ANNOTATED_GUIDE.md
-docs/V10B_MOVEMENT_BIOLOGY_AUDIT_PLAN.md
+docs/archive/model_development/V10B_MOVEMENT_BIOLOGY_AUDIT_PLAN.md
 ```
 
 V10B is frozen. The continuation jobs were stopped on 19 October 2026.
@@ -891,7 +924,7 @@ scripts/ModularFitting/run_V11_smoke.sh
 Specification:
 
 ```
-docs/V11_AGE_BADGER_RE_SPEC.md
+docs/archive/model_development/V11_AGE_BADGER_RE_SPEC.md
 ```
 
 ### V11 50-badger smoke status
@@ -1267,8 +1300,8 @@ research.social_group_supergroup_history
 Rules/provenance:
 
 ```
-docs/database/SETT_SOCIAL_GROUP_RULES.md
-markdown/Woodchester_SQL_R_Analysis_and_Infection_Guide.md
+docs/archive/spatial_audits/SETT_SOCIAL_GROUP_RULES.md
+docs/archive/database_history/Woodchester_SQL_R_Analysis_and_Infection_Guide.md
 ```
 
 ---
@@ -2165,7 +2198,7 @@ Project consequence:
 The literature-backed rules are now recorded in:
 
 ```
-docs/database/SETT_SOCIAL_GROUP_RULES.md
+docs/archive/spatial_audits/SETT_SOCIAL_GROUP_RULES.md
 ```
 
 and the reproducible derived assignment script is:
@@ -4692,7 +4725,7 @@ The recent GIS/PM grid audits primarily revised *recovery* evidence, which was d
 - **V12c:** propagate V11R2 relocation posterior uncertainty, not binary high-mover calls, as lagged survival/disappearance predictors; carry the 25m sensitivity, avoid reusing future observation data to define predictors. Add residence/settlement and possible immigration/emigration only when data support the extra latent states.
 - **V13 follows V12**, targeting infectiousness, introduction/reseeding and persistence across the changing social landscape; do not repeat generic earlier infection/movement associations without a new estimand.
 
-**Reproducible legacy-vs-audited input check:** \`scripts/data_audits/WECS_V12_compare_V11R2_legacy_to_Supabase.R\` is read-only, uses the existing BADGER_DB_* connection, and writes capture-date mismatch and unmapped-live reports to \`outputs/v12_input_audit/\`. It must run on the RStudio server where original V11R2 input RDS/sett CSV files exist. It screens tattoo/date/sett changes, and **cannot assert precise row identity on repeated same-day captures** without manual capture-ID reconciliation. Do not treat generated CSVs as approved data changes.\n\n**Single-authoritative-document policy:** This file is the living modelling record. Earlier files `data/Woodchester_Formal_Model_Overview_UPDATED.md`, `markdown/Woodchester_Badger_Project_Live_Modelling_Roadmap.md`, `docs/V11_AGE_BADGER_RE_SPEC.md`, `docs/V10...` and `docs/PREVIOUS_MODEL_HISTORY.md` remain historical context or specialist annotations. Do not create another competing modelling roadmap. The separate four canonical database documents still govern the cleaned data and curation decisions. Maintain this modelling record and the executable V12 audit alongside any future code changes.
+**Reproducible legacy-vs-audited input check:** \`scripts/data_audits/WECS_V12_compare_V11R2_legacy_to_Supabase.R\` is read-only, uses the existing BADGER_DB_* connection, and writes capture-date mismatch and unmapped-live reports to \`outputs/v12_input_audit/\`. It must run on the RStudio server where original V11R2 input RDS/sett CSV files exist. It screens tattoo/date/sett changes, and **cannot assert precise row identity on repeated same-day captures** without manual capture-ID reconciliation. Do not treat generated CSVs as approved data changes.\n\n**Single-authoritative-document policy:** This file is the living modelling record. Earlier files `docs/archive/model_development/Woodchester_Formal_Model_Overview_UPDATED.md`, `docs/archive/model_development/Woodchester_Badger_Project_Live_Modelling_Roadmap.md`, `docs/archive/model_development/V11_AGE_BADGER_RE_SPEC.md`, `docs/V10...` and `docs/archive/model_development/PREVIOUS_MODEL_HISTORY.md` remain historical context or specialist annotations. Do not create another competing modelling roadmap. The separate four canonical database documents still govern the cleaned data and curation decisions. Maintain this modelling record and the executable V12 audit alongside any future code changes.
 
 
 ### 5 November 2026 — final missing-live-location and legacy-alias audit

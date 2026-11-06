@@ -74,7 +74,7 @@ These are matching-key and selected-field checks. A complete value-by-value assa
 
 ## Reproducibility
 
-Implemented SQL is preserved under `sql/migrations/`. The executable checks are under `sql/audit/`. The table-and-field reference is [DATA_DICTIONARY.md](DATA_DICTIONARY.md); the current location-data interpretation is [SETT_SOCIAL_GROUP_RULES.md](SETT_SOCIAL_GROUP_RULES.md).
+Historical individual SQL files are preserved under `docs/archive/sql_legacy/`; the recorded applied history is in `sql/WOODCHESTER_APPLIED_MIGRATIONS.sql`. The executable checks are under `sql/audit/`. The table-and-field reference is [DATA_DICTIONARY.md](DATA_DICTIONARY.md); the current location-data interpretation is [SETT_SOCIAL_GROUP_RULES.md](../spatial_audits/SETT_SOCIAL_GROUP_RULES.md).
 
 **Status:** Working baseline. Version 1 will be signed off following the remaining Access migration integrity checks and database documentation review.
 

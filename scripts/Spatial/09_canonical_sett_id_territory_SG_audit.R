@@ -23,7 +23,7 @@ clean <- function(z) {
 load_snapshot <- function(file,required) {
  path <- file.path(snapshot_dir,file)
  if(!file.exists(path)) stop("Missing snapshot ",path,
-   ". See docs/database/ANNUAL_SETT_TERRITORY_CROSSWALK.md")
+   ". See docs/archive/spatial_audits/ANNUAL_SETT_TERRITORY_CROSSWALK.md")
  x <- read_csv(path,show_col_types=FALSE)
  if(!all(required %in% names(x))) stop("Snapshot ",path,
   " missing columns: ",paste(setdiff(required,names(x)),collapse=", "))
