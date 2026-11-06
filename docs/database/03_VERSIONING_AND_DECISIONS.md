@@ -225,3 +225,14 @@ Legacy migration files are not to be replayed blindly.
 
 Future changes must be recorded as new migrations,
 with their execution status documented here.
+
+
+## Supabase-first modelling inputs — decision, 6 November 2026
+
+**Decision:** The original Access import and centrally approved Supabase research/analysis layers are the source of truth. Historical locally generated RDS datasets, including `data/badger_final_CMRready_wDisease.rds`, are **not** approved inputs for new V12/V13 development. Preserve them in Git history/backups only for reproducing older studies. Do not resolve conflicting local RDS versions by choosing the larger or newest file.
+
+**Workflow:** Each new analysis must use a version-controlled, read-only Supabase extractor; run a coherent database transaction; validate row grain and identity; then freeze the precise input in a run-specific *untracked* snapshot with extraction date, Git SHA, latest available recorded migration and SHA-256 hashes. Freeze once per fit; do not change data during MCMC. Model-specific filters, aggregation, detection, survival and disease rules must be explicit in reviewed R code, not improvised at database extraction or silently inferred from missing values.
+
+**Initial implementation:** `scripts/database/freeze_woodchester_v12_inputs.R` reads `analysis.encounters_clean_v1`, `research.captures`, `research.individuals` and `analysis.mortality_model_candidate_v1` without modifying Supabase. It preserves encounter-level evidence and separates qualifying live observations, candidate terminal deaths and cases held for review. Missing XY is not grounds to exclude live survival evidence. This extractor is a **pre-fit evidence snapshot**, not an approved CMR likelihood or a verified disease-state model.
+
+**Outstanding:** Check authenticated read-only access, run the extractor and verify counts against the live eligibility audit; review unresolved episode roles, mortality contradictions and appropriate time discretisation; design and test model-specific input construction; reconcile historical V11R2 input eligibility with approved sett aliases before any refit. Existing historical scripts remain for reproducibility but must not be silently treated as compliant with this new policy.
