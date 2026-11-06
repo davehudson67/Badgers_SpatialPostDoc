@@ -1,5 +1,69 @@
 # Woodchester Badger Modelling Development Roadmap
 
+## Living record: current position and update protocol
+
+**Last structural review:** 6 November 2026.
+
+This document is the sole authoritative scientific record
+for Woodchester model development.
+
+### Current position
+
+- **V11R2:** fitted movement reference, including resolution
+  sensitivities and retained posterior chains.
+- **V11R2 input audit:** outstanding comparison of historic
+  RDS-based data against curated Supabase encounters.
+- **Sett/location review:** awaiting further field-team
+  evidence; do not invent missing locations or merge
+  biologically distinct sett identities.
+- **V12:** next main scientific development programme,
+  beginning with auditable encounter/fate histories,
+  detection and apparent survival.
+- **V13:** subsequent disease and transmission modelling,
+  informed by movement, demography and dynamic social
+  structure.
+
+### How this roadmap must be maintained
+
+Every substantive new analysis or modelling decision
+must be appended as a dated entry.
+
+Each entry should record:
+
+1. Date, model version and status.
+2. Scientific question and hypotheses.
+3. Data version, sample size and inclusion/exclusion rules.
+4. Executable scripts, commands and settings.
+5. Model structure, assumptions and priors.
+6. Fitting progress, convergence and model checks.
+7. Numerical results with reproducible output references.
+8. Biological interpretation and limitations.
+9. Decision made, rationale and rejected alternatives.
+10. Next action and any dependencies.
+
+Use explicit statuses:
+**PLANNED**, **RUNNING**, **PRELIMINARY**,
+**VALIDATED**, **REJECTED**, **SUPERSEDED** or **BLOCKED**.
+
+Do not change historical entries to make them appear
+more certain than the original evidence justified.
+Append dated corrections or revised interpretations.
+
+### Scientific priorities
+
+**Immediate:** Reconcile V11R2 legacy inputs with the
+curated spatial and encounter data.
+
+**Next:** Establish V12 survival and observation models
+before integrating movement/dispersal with survival.
+
+**Longer term:** Investigate disease introduction,
+infectiousness, transmission, persistence and the effects
+of changing social-group geography.
+
+---
+
+
 > **CANONICAL MODELLING RECORD — 5 November 2026**  
 > This is the **one living chronological record** for Woodchester movement, spatial/social structure, demography and disease-model decisions. The other model guides and annotated code in `docs/`, `markdown/` and `data/` remain historical technical references, not independent current plans. Database access, field definitions, capture/PM cleaning and inconsistency flags are governed by the **four separate canonical database documents on `audit-tattoo-identifier`**.  
 > **Current model position:** freeze V11R2-50 geographical relocation with 25m sensitivity; integrated movement/social pathway analysis complete (6,316 intervals); proceed to **V12 demographic/survival input compatibility audit**, before writing/fitting a new likelihood. Source V11R2 scripts/results are on `main`, while the latest audited Supabase SQL/docs are currently on `audit-tattoo-identifier`. Do **not** blindly merge conflicting historical database docs or refit the movement model just because PM coordinates changed.  
@@ -1761,7 +1825,8 @@ V10B had three spatial scales:
 
 The quarterly deviation scale (omega) represented the extent to which a
 badger's latent spatial centre changed among quarters within the same year.
-V10B additionally estimated AR(1) persistence (ho), asking whether a
+V10B additionally estimated AR(1) persistence (
+ho), asking whether a
 quarterly displacement from the annual centre persisted into the next quarter.
 
 Annual centre-to-centre displacement was separately classified by a two-state
@@ -1772,7 +1837,8 @@ local/high movement HMM.
 V11 retained the annual/quarterly spatial hierarchy but changed the annual
 movement biology:
 
-- quarterly AR(1) persistence was removed ((ho=0)); quarterly deviations
+- quarterly AR(1) persistence was removed ((
+ho=0)); quarterly deviations
   became iid around the annual centre;
 - chronological age at the start of each annual movement interval replaced the
   cruder adult-entry formulation;
@@ -2758,7 +2824,8 @@ scripts/behaviour/Woodchester_intergroup_excursion_analysis.R
 It defines a capture as extra-group when:
 
 [
-SOCG_{m capture} 
+SOCG_{
+m capture} 
 e ResidentGroup_{i,y}.
 ]
 
@@ -3187,9 +3254,13 @@ The flagship observed sequence is therefore:
 
 [
 Resident_{y-1}=A
-ightarrow
-A ightarrow B ightarrow A; 	ext{during year } y
-ightarrow
+
+ightarrow
+A 
+ightarrow B 
+ightarrow A; 	ext{during year } y
+
+ightarrow
 Resident_{y+1}=? 
 ]
 
