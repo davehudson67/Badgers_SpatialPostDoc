@@ -32,8 +32,8 @@ for ((r=1;r<=reps;r++)); do
   printf -v rr '%02d' "$r"
   printf -v cc '%02d' "$ch"
   dir="$base/rep${rr}_chain${cc}"
-  mkdir -p "$dir"
-  cat > "$dir/run.sh" <<EOF
+  mkdir -p "$base/jobs"
+  cat > "$base/jobs/rep${rr}_chain${cc}.sh" <<EOF
 #!/usr/bin/env bash
 cd "${HOME}/Badgers_SpatialPostDoc" || exit 1
 export V12I_OUT="$dir"
@@ -42,12 +42,12 @@ export V12I_SEED="$((20261109+1000*r+ch))"
 export V12I_N="$n" V12I_T="$t"
 export V12I_NITER="$niter" V12I_NBURN="$nburn"
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
-Rscript "$script" > "$dir/fit.log" 2>&1
+Rscript "$script" > "$base/jobs/rep${rr}_chain${cc}.log" 2>&1
 status=\$?
-echo "\$status" > "$dir/exit_status.txt"
+echo "\$status" > "$base/jobs/rep${rr}_chain${cc}.exit_status.txt"
 exit "\$status"
 EOF
-  chmod 700 "$dir/run.sh"
+  chmod 700 "$base/jobs/rep${rr}_chain${cc}.sh"
  done
 done
 for ((r=1;r<=reps;r++)); do
@@ -68,7 +68,7 @@ for ((r=1;r<=reps;r++)); do
    ((active<parallel)) && break
    sleep 5
   done
-  tmux new-session -d -s "$session" "bash '$base/rep${rr}_chain${cc}/run.sh'"
+  tmux new-session -d -s "$session" "bash '$base/jobs/rep${rr}_chain${cc}.sh'"
   echo "Launched $session"
  done
 done
