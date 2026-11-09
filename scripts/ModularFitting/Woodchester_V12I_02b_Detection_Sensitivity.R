@@ -36,8 +36,8 @@ for (k in seq_len(nrow(scenarios))) {
   outside<-alive & !is.na(z$outside_hull) & z$outside_hull
   n<-rowSums(seen)
   origin<-z$origin_truth
-  r1<-mean(n[origin=="immigrant"]>0)
-  r2<-mean(n[origin=="local_recruit"]>0)
+  r1<-mean(n[which(origin=="immigrant")]>0)
+  r2<-mean(n[which(origin=="local_recruit")]>0)
   results[[k]]<-data.frame(
     scenario=d$name, p0=d$p0, sigma_m=d$sigma,
     ever_detected=sum(n>0), single_capture=sum(n==1),
