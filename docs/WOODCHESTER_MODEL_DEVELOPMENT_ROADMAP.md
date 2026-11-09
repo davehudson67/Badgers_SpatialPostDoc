@@ -5277,3 +5277,8 @@ Rscript scripts/ModularFitting/Woodchester_V11R2_Historical_Sett_Network_Review.
 ```
 
 **Next spatial decision:** Review historical spatial network maps and which named setts disappear from the recent positive-capture record, identify monitoring-contracting eras from field-study records if possible, and define a fixed named-sett core only once actual active-trapping evidence is reconciled. Then reconsider V11R2 zone occupancy, transition and likelihood support under era-specific detection. Demography, density and disease/infection modelling intentionally deferred.
+
+
+### 9 November 2026 — Correct unsupported 120-detector count in historical network review
+
+**Status: R script corrected / awaiting rerun.** The read-only `Woodchester_V11R2_Historical_Sett_Network_Review.R` initially failed with `Unexpected count of V11R2 legacy detector sites: 119` because its author incorrectly hard-coded 120 detectors. The established zone sensitivity configurations of 60/78/96 central detectors are consistent with **119 reference detectors** (ceil of 50%, 65%, 80% of 119). Prior roadmap references to 120 detectors should be treated as unverified/incorrect until the detector reference CSV is checked. No scientific inference or output should be discarded on account of this mismatch. The patched script uses the actual distinct IDs from `01_legacy_detectors_near_captures_by_period.csv`, validates a complete three-period detector grid and can compare IDs with `01_detector_geometry_reference.csv` if `ZONE_AUDIT_DIR` is supplied. The user should rerun it; no database or model fit changes.
