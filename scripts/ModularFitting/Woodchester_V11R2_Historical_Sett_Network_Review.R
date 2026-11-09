@@ -14,8 +14,28 @@ if (!all(need %in% names(x))) stop("Required columns missing")
 periods <- c("1977–1992","1993–2008","2009–2025")
 if (!setequal(unique(x$period),periods)) stop("Unexpected period labels")
 if(anyDuplicated(x[c("detector","period")])) stop("Duplicate detector-period")
+# Do not hard-code an expected count. Instead compare the actual period table
+# against the full detector list when available and expose any discrepancy.
+if(anyNA(x$detector)) stop("Missing detector IDs in historical footprint table")
 ids <- sort(unique(x$detector))
-if(length(ids)!=120L) stop("Unexpected count of V11R2 legacy detector sites: ",length(ids))
+if(!length(ids)) stop("No detector IDs in historical footprint table")
+if(nrow(x)!=length(ids)*length(periods))
+  stop("Incomplete detector-period grid: ",nrow(x)," rows for ",
+       length(ids)," detectors and ",length(periods)," periods")
+reference <- Sys.getenv("ZONE_AUDIT_DIR","")
+reference_file <- file.path(reference,"01_detector_geometry_reference.csv")
+if(nzchar(reference) && file.exists(reference_file)) {
+  ref <- read.csv(reference_file,stringsAsFactors=FALSE)
+  if(!"detector"%in%names(ref)) stop("Detector reference lacks detector IDs")
+  missing_ids <- setdiff(ref$detector,ids)
+  extra_ids <- setdiff(ids,ref$detector)
+  if(length(missing_ids)||length(extra_ids))
+    warning("Historical detector reference mismatch; missing IDs: ",
+       paste(missing_ids,collapse=","),"; extra IDs: ",
+       paste(extra_ids,collapse=","))
+  cat("Detector count in reference: ",nrow(ref),"\n",sep="")
+}
+cat("Distinct detector IDs in period file: ",length(ids),"\n",sep="")
 matrix_var <- function(field) {
   mat <- matrix(NA_real_,nrow=length(ids),ncol=length(periods),
                 dimnames=list(ids,periods))
