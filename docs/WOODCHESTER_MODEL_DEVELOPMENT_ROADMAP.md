@@ -5457,3 +5457,26 @@ Rscript scripts/ModularFitting/Woodchester_V11R2_Contracting_Footprint_Sensitivi
 **Limitations and pending decision:** Provisional SETT_POINT_PROVISIONAL means coordinates were assigned from canonical fixed-sett reference locations; this is appropriate in principle for captures known to be at that sett, given investigator confirmation of fixed trapping sett coordinates, but exact identity/alias and source provenance need review before approval. The 161 non-sett locations may include genuine off-sett live encounter types; do not force to an associated sett. Missing XY events can count as dated encounters but their observation likelihood requires explicit handling to avoid incorrectly coding a detected animal as absent. No age/sex/cohort/quarter or detection model fitted in this screen; no claim of 3,143 model-fit-ready badgers.
 
 **Single next gate:** Review `03_location_type_quality.csv` and `07_legacy_detector_coordinate_screen.csv` from `outputs/v12_spatial_eligibility/audit_20261109T163932Z`; inspect status breakdown of withheld 161 off-sett entries and any candidate points not equal to known legacy sett XY. If coherent and approved, freeze a high-confidence spatial event filter with explicit use of missing-location encounter evidence and document discrepancy from legacy V11R2 cohort. Only then design/fit detector-availability sensitivity. Keep annual SG polygons external and defer survival/infection/density.
+
+
+### 9 November 2026 — Spatial fixed-sett quality-category and legacy-coordinate cross-check
+
+**Status:** Existing Supabase snapshot eligibility details REVIEWED; final coordinate exceptions check CODE COMMITTED / NOT RUN ON RSTUDIO. No spatial refit yet.
+
+**Question:** Are dominant provisional fixed-sett XY values sufficiently coherent to support the primary V11R2 coverage-aware spatial observation likelihood, and where do unlocated or non-sett records affect the sampling history?
+
+**Input/results:** User printed `03_location_type_quality.csv`, `07_legacy_detector_coordinate_screen.csv` and early-year rows of `04_inclusion_by_year.csv` from `outputs/v12_spatial_eligibility/audit_20261109T163932Z`. Of 16,218 qualifying live rows (1977–2025), 15,521 carry `SETT | SETT_POINT_PROVISIONAL` and meet candidate fixed-sett criteria; 536 lack XY, 161 have XY but are non-SETT location types. In the candidate data, 15,518 match exactly one legacy V11R2 detector reference XY; 3 do not match exactly and 1 is more than 100 m from nearest legacy point. Exact agreement is expected where the same canonical sett point was used for both datasets, not independent capture-position verification. The non-sett/uncertain categories include 159 `SETT_ASSOCIATION | SETT_ASSOCIATION_PROVISIONAL` and field/wood/boundary records with unresolved locations or conflict; do not treat an assigned sett as the physical trapping site. Note that `SETT | UNRESOLVED` 301 is held because missing/untrusted XY, not an approved observer location.
+
+**Temporal missingness:** 1977 only 29 of 47 (61.7%) eligible live capture rows are spatial candidates; 1978 101/116, 1979 97/106, 1980 77/92, 1981 103/136, 1982 143/153, 1983 212/240, 1984 251/263, 1985 305/309, 1986 298/316, 1987 364/393, 1988 539/576. Recent years mostly retain nearly all records. Early versus late spatial exclusion is therefore nonuniform and must be reported in any fitted movement analysis.
+
+**Decision:** Provisionally approve the class of `SETT_POINT_PROVISIONAL` **as candidates** for known fixed-sett capture XY, given investigator confirmation that trap positions are fixed named setts, subject to exactly three source-coordinate exceptions and alias/sett identity reconciliation. Do not silently approve remaining doubtful records or discard their dated alive encounters. These 15,521 records are not yet the full movement-model fitting population: cohort eligibility and legacy-to-Supabase source-row changes remain to be reconciled. No trapping-effort data are available; eventual dynamic observation availability scenarios must remain explicit assumptions.
+
+**New targeted local-only script:** `scripts/ModularFitting/Woodchester_V12_Spatial_Coordinate_Exceptions.R`, reading event-level review CSV from eligibility audit and legacy detector reference CSV. Prints source capture ID, tattoo, capture date, canonical sett ID, location type/quality, current source XY, closest legacy named sett/XY and distance for non-exact matches. No database writes, coordinates changed or fit eligibility automatically adjusted. Run:
+
+    cd ~/Badgers_SpatialPostDoc
+    git pull --ff-only
+    V12_ELIGIBILITY_DIR="outputs/v12_spatial_eligibility/audit_20261109T163932Z" \
+    ZONE_AUDIT_DIR="outputs/v11r2_core_periphery/audit_20261109T134751Z" \
+    Rscript scripts/ModularFitting/Woodchester_V12_Spatial_Coordinate_Exceptions.R
+
+**Next gate:** Review the 3 actual source exceptions and clarify their coordinates and sett identities. Then make a reproducible, investigator-approved spatial input manifest and compare with the original V11R2 1,932-badger movement cohort before modifying/refitting likelihood. Continuous activity centres remain the primary spatial process; moving annual social-group polygons are a separate postfit interpretation step.
