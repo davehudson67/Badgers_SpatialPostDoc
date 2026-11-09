@@ -4848,3 +4848,24 @@ V12I_REPS=3 V12I_CHAINS=3 V12I_MAX_PARALLEL=3 \
 ### 9 November 2026 — V12I-03c summariser syntax hotfix
 
 **Status: PRELIMINARY / summarisation BLOCKED pending rerun.** All nine synthetic NIMBLE chains for `v12i03b_20261109T100318Z` reportedly exited with code 0. A prior posterior-summary repair accidentally inserted literal `\\n` sequences outside quoted R strings, yielding `unexpected symbol` during R parse. This was a code-generation error, not a model failure. Both `Woodchester_V12I_03c_Summarise_Parallel.R` and the related sequential `Woodchester_V12I_03b_Validate.R` have been patched to use real source newlines. No fits, model inputs or saved chain outputs were changed. **Required gate:** run `Rscript -e 'parse(file="scripts/ModularFitting/Woodchester_V12I_03c_Summarise_Parallel.R")'` on RStudio, then rerun the read-only summariser and inspect its diagnostics before any biological interpretation.
+
+
+### 9 November 2026 — V12I-03b multi-chain parameter and spatial recovery results
+
+**Status:** PRELIMINARY; validation gates NOT yet passed.
+
+**Scientific question:** Does the synthetic spatial observation model recover latent annual centres and known baseline detection (`p0=0.42`) with multiple independent chains, and do diagnostics support reliable inference?
+
+**Input/version & sample:** three independently simulated datasets, each 10 individuals × 4 annual states × four quarterly occasions × 8 detectors using historic V11R2 RES50 XY solely for geographical context; no real encounter likelihood. Run `outputs/v12_immigration_prototype/v12i03_validation/v12i03b_20261109T100318Z/`, 3 independent chains per dataset; 12,000 iterations, 4,000 burn-in, 8,000 retained per chain; initial locations simulated with fitting-matched uniform prior. All 9 fits reportedly returned exit code 0.
+
+**User-reported numerical results** (`Woodchester_V12I_03c_Summarise_Parallel.R`):
+- Dataset 1: 99 live detection indicators; p0 mean 0.390647, 95% posterior interval 0.300790–0.499703, p0 Rhat 1.003269, bulk ESS 804.6, tail ESS 1910.9; worst monitored-node Rhat 1.028223, lowest bulk ESS 128.37; median/max annual position error 121.23/863.67 m.
+- Dataset 2: 99 indicators; p0 mean 0.534272, interval 0.413178–0.674721; p0 Rhat 1.007532, bulk ESS 902.1, tail ESS 1929.8; worst Rhat 1.030602, minimum bulk ESS 90.84; median/max position error 76.66/343.20 m.
+- Dataset 3: 125 indicators; p0 mean 0.510589, interval 0.413236–0.617134; p0 Rhat 1.002792, bulk ESS 1001.7, tail ESS 2046.7; worst Rhat 1.036104, minimum bulk ESS 107.27; median/max position error 92.21/242.38 m.
+- All 3 nominal 95% credible intervals contain simulated true p0 0.42. Three replicates cannot establish credible-interval coverage or systematic bias.
+
+**Interpretation:** Overall p0 mixing is acceptable in these runs (Rhat <1.01, bulk and tail ESS >400), but multiple latent spatial coordinates fail the provisional diagnostic targets (worst Rhat 1.028–1.036, minimum bulk ESS 91–128). The large position error could arise from sparse encounter information, genuine location ambiguity or under-mixing; must distinguish using animal-year capture counts, spatial monitor diagnostics and posterior uncertainty. The model is not yet statistically validated. This test did not estimate survival, immigration or emigration, and cannot establish their identifiability.
+
+**Decision:** Continue staged model development without claiming V12I-03b validated. First examine worst coordinate/animal-year diagnostics from existing outputs, checking how position error varies with observed quarters and detector encounters and diagnosing latent-location mixing. Next run independent V12I-04 synthetic survival+quarterly detection smoke, then implement joint spatial survival-detection while retaining a simulation-based validation gate. Do not refit historical V11R2 or fit real data until approved Supabase-first encounter/fate reconciliation. Preserve all previous outputs.
+
+**Next model-development dependencies:** Check latent coordinates rather than only p0, sensitivity to detector geometry and initial state assumptions, repeat simulated datasets to assess calibration, model-specific selection of clean live encounters and reviewed terminal death episodes, and explicitly separate apparent survival from true mortality/emigration absent external evidence.
