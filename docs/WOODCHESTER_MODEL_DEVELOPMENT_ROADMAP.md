@@ -5216,3 +5216,26 @@ Rscript scripts/ModularFitting/Woodchester_V11R2_Zone_Geometry_Review.R
 ```
 
 **Decision gate:** Review actual shape/extent of candidate core regions and selected detector coverage; decide whether geometric core is defensible or period-specific sampling/effective survey coverage needed before substantive core/periphery interpretation. Do not advance density, survival, immigration or infection models until spatial data/source reconciliation and spatial inference are addressed.
+
+
+### 9 November 2026 — Visual review of candidate V11R2 zone geometry and historical footprint next step
+
+**Status:** User-supplied V11R2 candidate hull map VISUALLY REVIEWED; historical footprint audit CODE COMMITTED / NOT EXECUTED. No new model fitting.
+
+**Observation from `01_candidate_zone_boundaries.png`:** The legacy all-detector convex hull is extended northeast/east by comparatively isolated detector points, enclosing a broad eastern sector with visibly sparse detector coverage. The central_50 hull excludes a substantial group of west/southwest detectors that appear within the main network. The central_80 hull comes near the full outer hull along the south edge, resulting in very little intervening periphery there but more in the east. The central_65 hull is a plausible **visual starting scenario only**, not an effort-verified biologically defined core. A detector centroid-ranked convex hull need not match long-run trapping footprint or actual ecological core; current zone transition results must retain sensitivity caveats.
+
+**Scientific question:** Do historically recorded, quality-tagged Supabase capture coordinates support broadly similar capture footprints over decades; how far are those source XY positions from the old V11R2 detector coordinates? Does the candidate core require period-specific geography or another approach?
+
+**Script:** `scripts/ModularFitting/Woodchester_V11R2_Historical_Capture_Footprint_Audit.R` uses (a) legacy V11R2 detector XY saved in the prior zone audit's `01_detector_geometry_reference.csv`; (b) frozen read-only Supabase evidence snapshot's `qualifying_live.rds`, `MANIFEST.txt`, tattoo, dates, capture_id, XY and location_quality. It shows three selected capture-history eras (1977–1992, 1993–2008, 2009–2025). It reports total live capture evidence, missing XY, distance to nearest legacy detector, positive capture records near each legacy site (100-m proximity sensitivity setting), location-quality counts and a 3-panel geographic plot. **Near-detector matching is geographic proximity alone and must NOT be used to assert recorded sett identity, an audited location match or actual trapping effort**: some curated capture coordinates can indicate sett reference, physical catch location, road recovery or low precision, and no zero-capture effort data are included. Existing modelled detector set may not cover all historical locations. No animal-level data are exported; aggregate CSV/PNG only, timestamped new output, fail if output path exists. No Supabase modifications or refit.
+
+**Run:**
+```bash
+cd ~/Badgers_SpatialPostDoc
+git pull --ff-only
+V12_SNAPSHOT="data/model_snapshots/v12_20261106T103144Z_1079872" \
+ZONE_AUDIT_DIR="outputs/v11r2_core_periphery/audit_20261109T134751Z" \
+ZONE_MATCH_THRESHOLD_M=100 \
+Rscript scripts/ModularFitting/Woodchester_V11R2_Historical_Capture_Footprint_Audit.R
+```
+
+**Decision gate:** Examine 3-panel capture map and location-quality table, identify whether long-term coordinate evidence and the historic detector network are sufficiently compatible to justify any static core. Then investigate historical field trapping effort and specific subset of verified location records if needed; do not infer animal-density gradients, emigration, true survival or between-zone biological transition rates from these geometric exercises. Infection/survival phases explicitly deferred until the spatial foundation is evaluated.
