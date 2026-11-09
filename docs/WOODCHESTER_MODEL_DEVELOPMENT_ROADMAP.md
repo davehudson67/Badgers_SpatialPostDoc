@@ -4981,3 +4981,29 @@ After all nine chains exit 0, run the summariser command printed by the launcher
 **Working-tree safeguard:** Immediately before this entry the user displayed a locally dirty `main` worktree: eight tracked CSV paths deleted under `docs/database/`, new `docs/database/csv/` directory, modified `scripts/WECS_39_remaining_grid_review.R`, and untracked `Woodchester_V12A_CJS_Baseline.R`, `Woodchester_V12_Movement_Recapture_Audit.R` and `Woodchester_V12_Spatial_Position_Audit.R`. `git pull --ff-only` succeeded without disturbing those changes. Do not assume these are redundant; audit/commit the CSV relocation and independent modelling work deliberately. Never reset/clean them.
 
 **Real-data scale & dependencies:** Previous source audits identify thousands of tattoos and ~50 years of captures, but the entire historical population cannot be treated as an initially known capture cohort. Real-life entry, unknown pre-first-capture states, effort history, spatial boundary/sett quality, confirmed mortality with missing XY and selection bias must be addressed through reviewed Supabase-first snapshots before fitting V12 to Woodchester data. No real-data or database changes made here.
+
+
+### 9 November 2026 — V12I-05b joint spatial/survival validation and focused follow-up
+
+**Status:** PRELIMINARY; latent spatial-state validation FAILED; focused diagnostic PLANNED.
+
+**Scientific question and hypothesis:** Does uncertainty in spatial capture location undermine estimation of annual survival and baseline detection? Are poorly mixing location nodes primarily from truly dead animal-years (where location is not observed) or from sparsely detected but alive animal-years? Synthetic truth is used only for diagnostic classification.
+
+**Inputs and fitting:** `outputs/v12_immigration_prototype/v12i05_validation/v12i05b_20261109T103847Z`, 3 synthetic datasets × 3 chains, N=12 animals × T=4 years, Q=4 quarterly detection occasions, J=8 detectors for each replicate; 12,000 iterations/4,000 burn-in per chain. All initially alive; true annual phi=0.82, true baseline p0=0.42; movement SD=60 m and spatial detection scale=170 m fixed. No real Woodchester data likelihood, no birth/entry, immigration, permanent emigration or post-mortem observation.
+
+**User-reported numerical findings** (posterior mean, 95% interval, Rhat, bulk ESS, tail ESS):
+- Replicate 1: phi 0.70612 (0.51928–0.86540), 1.00065, 3461, 4480; p0 0.35769 (0.24465–0.50397), 1.00687, 493, 1202.
+- Replicate 2: phi 0.63934 (0.44723–0.81370), 1.00123, 4026, 4809 — **nominal 95% CI excludes generating truth 0.82**; p0 0.45492 (0.33704–0.59827), 1.00255, 658, 1828.
+- Replicate 3: phi 0.74769 (0.57736–0.88923), 1.00139, 3587, 4789; p0 0.39380 (0.28172–0.52946), 1.00473, 439, 1420.
+- Spatial location nodes (96 per replicate) have worst Rhat 1.1091, 1.0489, 1.1583 and minimum bulk ESS 22.15, 90.80, 15.18, respectively: unsatisfactory spatial mixing. Survival-state nodes (48 per replicate) worst finite Rhat 1.00923, 1.00469, 1.01007 with 30, 27 and 32 undefined Rhat entries, consistent with many fixed/degenerate states; need classification.
+
+**Interpretation:** Global phi and p0 MCMC convergence is promising; one of three survival credible intervals misses the truth and all point estimates are lower than the generating parameter. This alone cannot establish systematic bias. Latent spatial mixing clearly fails stated targets. The present model propagates S after death, with no capture likelihood for truly dead years; those locations may be weakly informed or largely prior-driven, but cannot be declared the sole cause without inspecting results. The model also conditions on known cohort entry and does not estimate emigration.
+
+**Follow-up code:** `scripts/ModularFitting/Woodchester_V12I_05c_Inspect_State_Mixing.R` added as a read-only analysis of the existing saved posterior draws; for every simulated individual-year it computes true alive/dead category, posterior alive probability, number of detections, distance to nearest detector, location error and worst coordinate Rhat/min bulk ESS, and saves `animal_year_spatial_state_audit.csv` inside the existing validation directory. Run via:
+```bash
+V12I_VALIDATION_OUT="outputs/v12_immigration_prototype/v12i05_validation/v12i05b_20261109T103847Z" \
+V12I_REPS=3 V12I_CHAINS=3 \
+Rscript scripts/ModularFitting/Woodchester_V12I_05c_Inspect_State_Mixing.R
+```
+
+**Decision and next gate:** Diagnose alive versus dead location mixing first. If most problematic nodes concern post-death positions, consider removing or analytically marginalising their influence on the likelihood or redefining monitored quantities, while retaining a coherent state transition model; validate that any modification does not use simulation truth in the fit. If alive/observed states still mix poorly, inspect spatial MCMC samplers, posterior location intervals, detector geometry and conditional survival detection. Avoid arbitrary refitting with more iterations. Before real-data analysis: Supabase-first audited encounter/fate input, effort and spatial coordinate provenance checks and prior V11R2 input reconciliation. All outputs and prior decisions retained.
