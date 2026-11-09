@@ -123,9 +123,7 @@ for(ch in seq_along(files)) {
    zone <- matrix(2L,nrow=nr,ncol=ns)
    zone[core] <- 1L
    zone[outside] <- 3L
-   occ_sum[[scenario]] <- if(is.null(occ_sum[[scenario]]))
-       colSums(zone==1L)*0 else occ_sum[[scenario]]
-   # State tallies per individual and year, retaining posterior uncertainty.
+    # State tallies per individual and year, retaining posterior uncertainty.
    if(is.null(occ_sum[[paste0(scenario,"_zone")]]))
      occ_sum[[paste0(scenario,"_zone")]] <- matrix(0,ns,3)
    for(k in 1:3)
@@ -160,8 +158,9 @@ write.csv(occ,file.path(out,"04_individual_annual_zone_probabilities.csv"),
  row.names=FALSE)
 trans <- if(length(from)) do.call(rbind,lapply(names(geoms),function(scenario) {
  p <- move_sum[[scenario]]/total_draws
- colnames(p) <- as.vector(outer(c("core","periphery","outside"),
-        c("core","periphery","outside"),paste,sep="_to_"))
+ colnames(p) <- unlist(lapply(c("core","periphery","outside"),
+       function(a) paste0(a,"_to_",c("core","periphery","outside"))),
+       use.names=FALSE)
  data.frame(scenario=scenario,tattoo=idx$tattoo[from],
   from_year=idx$year[from],to_year=idx$year[to],
   observed_both=idx$observed_in_year[from]&idx$observed_in_year[to],
