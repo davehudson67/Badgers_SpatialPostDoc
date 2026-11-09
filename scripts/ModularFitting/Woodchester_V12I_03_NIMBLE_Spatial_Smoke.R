@@ -12,7 +12,9 @@ if (!requireNamespace("nimble",quietly=TRUE))
 suppressPackageStartupMessages(library(nimble))
 seed <- as.integer(Sys.getenv("V12I_SEED", "20261109"))
 if(is.na(seed)) stop("Invalid V12I_SEED")
-set.seed(seed)
+data_seed <- as.integer(Sys.getenv("V12I_DATA_SEED", as.character(seed)))
+if(is.na(data_seed)) stop("Invalid V12I_DATA_SEED")
+set.seed(data_seed)
 out <- Sys.getenv("V12I_OUT", "outputs/v12_immigration_prototype/v12i03_spatial_smoke")
 dir.create(out,recursive=TRUE,showWarnings=FALSE)
 f <- Sys.glob("results/V11R2_RES50_*_1932_CHAIN1.rds")
@@ -136,6 +138,7 @@ initialise <- function() {
   }
   list(p0=runif(1,.25,.55),S=loc)
 }
+set.seed(seed) # independent chain RNG; synthetic history uses data_seed
 cat("Compiling and running one NIMBLE MCMC chain...\n")
 samples <- nimble::nimbleMCMC(
   code=code,constants=constants,data=list(y=y),
@@ -186,7 +189,7 @@ write.csv(data.frame(p0=as.numeric(p0draw)),
           file.path(out,"posterior_p0.csv"),row.names=FALSE)
 write.csv(data.frame(detector=det$Sett_Clean,x=det$x,y=det$y),
           file.path(out,"detectors_used.csv"),row.names=FALSE)
-saveRDS(list(model="V12I03 spatial synthetic smoke",seed=seed,matched_prior=matched_prior,
+saveRDS(list(model="V12I03 spatial synthetic smoke",seed=seed,data_seed=data_seed,matched_prior=matched_prior,
              p0_true=p0_true,sigma_det=sigma_det,sigma_move=sigma_move,
              true_positions=Strue,y=y,detectors=det,
              posterior_samples=samples,location_recovery=locations),
