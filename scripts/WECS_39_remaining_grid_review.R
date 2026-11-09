@@ -46,6 +46,7 @@ review$review_date <- ''
 csv_file <- file.path(out_dir, 'remaining_grid_reference_review.csv')
 if (!file.exists(csv_file)) {
   write.csv(review, csv_file, row.names = FALSE, na = '')
+  message('Review CSV saved: ', csv_file)
 } else {
   message('Existing review CSV preserved: ', csv_file)
 }
