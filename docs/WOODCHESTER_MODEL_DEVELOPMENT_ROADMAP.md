@@ -4832,3 +4832,14 @@ V12I_REPS=3 V12I_CHAINS=3 V12I_MAX_PARALLEL=3 \
 **Data safeguards:** Do not modify Supabase source tables or assign UN badgers social groups. Preserve original capture and mortality evidence, associated sett vs recovery coordinates, unresolved identity conflicts and location quality. Preserve local RStudio outputs and do not commit large RDS or credentials.
 
 **Documentation correction:** The previously created `docs/V12I_BAYESIAN_DEMOGRAPHIC_ROADMAP.md` was a competing live document. On 9 November it was archived at `docs/archive/model_development/V12I_BAYESIAN_DEMOGRAPHIC_ROADMAP_20261109_SUPERSEDED.md`. This canonical document remains the only active scientific roadmap.
+
+
+### 9 November 2026 — V12I-03b tmux execution and summariser repair
+
+**Status:** PRELIMINARY (fit execution successful; statistical validation pending).
+
+**Run:** `v12i03b_20261109T100318Z`, 3 synthetic datasets × 3 MCMC chains, 12,000 iterations and 4,000 burn-in per chain, maximum 3 simultaneous tmux sessions. User-reported run manifest shows 9 `exit_status.txt` files, all status 0. This establishes computational completion only; posterior diagnostics and recovery have not been examined.
+
+**Issue:** Initial execution of `Woodchester_V12I_03c_Summarise_Parallel.R` halted while building the aggregate data.frame because the returned `posterior::summarise_draws` fields did not have the expected short names (`rhat`, `ess_bulk`, `ess_tail`). This is a summary implementation error, not evidence of fit failure. The same issue was corrected in the sequential script. The implementation now passes explicit named statistic functions and checks expected diagnostic columns. Saved chain-level fits are retained.
+
+**Next:** `git pull --ff-only` after checking local status; rerun read-only summariser on the existing run directory, inspect p0 posterior recovery, worst Rhat across latent coordinates, bulk/tail ESS and location recovery before assigning VALIDATED status. No database inputs or outcomes changed.
