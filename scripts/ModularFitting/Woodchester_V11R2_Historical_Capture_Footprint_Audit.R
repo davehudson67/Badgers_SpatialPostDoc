@@ -91,7 +91,7 @@ all_period <- do.call(rbind,lapply(periods,function(p) {
   median_nearest_legacy_m=if(nrow(c0))median(c0$nearest_distance_m) else NA_real_,
   p90_nearest_legacy_m=if(nrow(c0))unname(quantile(c0$nearest_distance_m,.9)) else NA_real_,
   n_legacy_sites_with_near_capture=sum(site$n_positive_capture_rows[
-       site$period==p]>0)))
+       site$period==p] > 0))
 }))
 quality <- as.data.frame(table(period=raw$period,
   location_quality=ifelse(is.na(raw$location_quality),
