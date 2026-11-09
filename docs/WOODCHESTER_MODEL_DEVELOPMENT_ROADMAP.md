@@ -5188,3 +5188,31 @@ Rscript scripts/ModularFitting/Woodchester_V11R2_Core_Periphery_Transition_Summa
 **Interpretation/uncertainty:** Conditional same-zone probabilities 88–97% imply strong apparent annual spatial persistence in fitted retrospective locations, and inferred transitions more often cross adjacent zone boundaries than core→outside. Boundaries are central-detector convex hulls selected by ranked detector distance; the outside convex hull remains unchanged, hence its inferred self-transition is identical in all scenarios by construction. The three candidate core boundaries materially alter conditional movement probabilities and the number of posterior expected origin intervals. Do not report the values as independently fitted transition parameters, biological social-group residency, emigration, survival or density; global historic detector geometry is not an era-specific trapping footprint, model S may be constrained by its movement prior, and smoothed positions can use later observations. In particular, these values could be prior/likelihood smoothing over weakly observed intervals rather than direct evidence of residence.
 
 **Next decision gate:** First examine `subset=detected_both_years` in the existing conditional transition CSV, comparing its conditional matrix and support with `all_modelled_intervals`. This comparison is strongly selected on observed recapture, so must NOT be interpreted as independent validation or population transition rates; it is a sensitivity diagnostic of observational support. Next inspect/map the actual core hull boundaries, detector site historical quality, years with few modelled states, and 50/65/80% sensitivity. Reconcile V11R2 legacy inputs against audited Supabase capture coordinates before selecting biological core boundaries or committing to a refit. No new model and no database changes.
+
+
+### 9 November 2026 — V11R2 core/periphery spatial stability among consecutively recaptured badgers
+
+**Status:** PRELIMINARY descriptive posterior check COMPLETED; geographical boundary plot CODE COMMITTED, NOT EXECUTED.
+
+**Question:** Is strong annual zone persistence robust when considering only badgers caught in both consecutive years, compared with all V11R2 modelled intervals? The observed-both selection is not independent validation because its captures informed V11R2 and because of selection on recapture.
+
+**Input:** Existing `outputs/v11r2_core_periphery/conditional_20261109T135150Z/01_conditional_zone_transitions.csv`, central_65 candidate core hull, 6,316 total consecutive modelled intervals, of which expected zone-origin masses (all) sum to 6,316 and observed-in-both-year masses sum to approximately 4,609. Historical 1977–2025 detector geometry, not era-specific vetted effort or cleaned capture XY. No new fit.
+
+**User-reported central_65 posterior conditional probabilities (origin -> [core, periphery, outside]):**
+- All modelled intervals: core (0.93005, 0.06538, 0.00457), periphery (0.05742, 0.90714, 0.03544), outside (0.00832, 0.10741, 0.88427).
+- Observed both consecutive years: core (0.93381, 0.06338, 0.00281), periphery (0.06555, 0.89767, 0.03679), outside (0.00584, 0.12513, 0.86903).
+- Expected origin interval masses in both-observed subset: core ~2,184, periphery ~1,923, outside ~502; total ~4,609.
+
+**Interpretation/uncertainty:** Dominant same-zone posterior transitions persist under observation restriction: core 93.0 vs 93.4%, periphery 90.7 vs 89.8%, outside 88.4 vs 86.9%. Outside-to-periphery increases 10.7 to 12.5% in observed-both-year subset. The selected subset may overrepresent animals remaining available for capture; spatial posterior uses same data and movement prior; values are NOT independently predictive transition rates or evidence of permanent emigration. Existing V11R2 input coordinates/sett aliases still require audit before adopting zone boundaries.
+
+**New script:** `scripts/ModularFitting/Woodchester_V11R2_Zone_Geometry_Review.R` uses prior output `01_detector_geometry_reference.csv`, `02_core_hull_vertices.csv`, `03_outer_detector_hull_vertices.csv` to plot all three 50/65/80% candidate nested detector hulls in three equal-aspect panels (PNG), save legacy detector geometry extent and caveat text; new timestamped output, no DB or model changes. No script execution results yet.
+
+**Run:**
+```bash
+cd ~/Badgers_SpatialPostDoc
+git pull --ff-only
+ZONE_AUDIT_DIR="outputs/v11r2_core_periphery/audit_20261109T134751Z" \
+Rscript scripts/ModularFitting/Woodchester_V11R2_Zone_Geometry_Review.R
+```
+
+**Decision gate:** Review actual shape/extent of candidate core regions and selected detector coverage; decide whether geometric core is defensible or period-specific sampling/effective survey coverage needed before substantive core/periphery interpretation. Do not advance density, survival, immigration or infection models until spatial data/source reconciliation and spatial inference are addressed.
