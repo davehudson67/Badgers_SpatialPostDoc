@@ -66,8 +66,12 @@ new_start <- function() {
   immigrant <- runif(1) < .5
   step <- if(immigrant) 600 else 55
   angle <- runif(1,0,2*pi)
-  c(x=xy[j,1]+step*cos(angle), y=xy[j,2]+step*sin(angle),
-    immigrant=as.numeric(immigrant))
+  s <- c(x=unname(xy[j,1])+step*cos(angle),
+         y=unname(xy[j,2])+step*sin(angle),
+         immigrant=as.numeric(immigrant))
+  stopifnot(identical(names(s),c("x","y","immigrant")),
+            all(is.finite(s)))
+  s
 }
 for(i in seq_len(N)) {
   if (runif(1)<par["psi"]) {
@@ -127,6 +131,11 @@ for(tt in seq_len(T)) {
 stopifnot(all(state %in% 1:3))
 stopifnot(!any(obs==1L & state!=2L))
 stopifnot(!any(obs==2L & state!=3L))
+bad_alive <- which(state==2L & (!is.finite(posx) | !is.finite(posy)), arr.ind=TRUE)
+if (nrow(bad_alive)) {
+  print(utils::head(bad_alive,10))
+  stop("Alive individuals missing valid positions: ",nrow(bad_alive))
+}
 stopifnot(all(is.finite(posx[state==2L])),all(is.finite(posy[state==2L])))
 stopifnot(all(is.na(posx[state!=2L])),all(is.na(posy[state!=2L])))
 # Alive animals can be beyond hull. No absorbing emigration state in this model.
