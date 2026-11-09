@@ -145,7 +145,7 @@ saveRDS(list(truth=truth, observation=obs, origin_truth=origin,
         file.path(out,"simulation_and_fits.rds"))
 cat("\n=== SYNTHETIC IMMIGRATION / AVAILABILITY PROTOTYPE ===\n")
 cat("Candidates:", N, "| Years:", T, "\n")
-cat("Individuals ever detected alive:", sum(rowSums(y %in% 1:2)>0), "\n")
+cat("Individuals ever detected alive:", sum(rowSums(y == 1L | y == 2L)>0), "\n")
 cat("Dead recoveries:", sum(y == 3L), "\n")
 cat("Convergence codes (0 expected):",
     with_recoveries$convergence, without_recoveries$convergence, "\n")
