@@ -10,8 +10,10 @@ if (!requireNamespace("nimble",quietly=TRUE))
 # NIMBLE generated model methods require the package to be attached, not just
 # available via nimble:: namespace calls (getNimbleOption lookup).
 suppressPackageStartupMessages(library(nimble))
-set.seed(20261109)
-out <- "outputs/v12_immigration_prototype/v12i03_spatial_smoke"
+seed <- as.integer(Sys.getenv("V12I_SEED", "20261109"))
+if(is.na(seed)) stop("Invalid V12I_SEED")
+set.seed(seed)
+out <- Sys.getenv("V12I_OUT", "outputs/v12_immigration_prototype/v12i03_spatial_smoke")
 dir.create(out,recursive=TRUE,showWarnings=FALSE)
 f <- Sys.glob("results/V11R2_RES50_*_1932_CHAIN1.rds")
 if(length(f)!=1L) stop("Expected one V11R2 RES50 chain 1 file")
@@ -42,15 +44,25 @@ p0_true <- .42
 sigma_det <- 170
 sigma_move <- 60
 sigma_spawn <- 65
-xmin <- min(DX)-600; xmax <- max(DX)+600
-ymin <- min(DY)-600; ymax <- max(DY)+600
+# Matched-prior validation mode draws the initial activity centre from the
+# same spatial uniform distribution used in the fitted model. The historical
+# smoke remains unchanged unless explicitly requested.
+matched_prior <- identical(Sys.getenv("V12I_MATCHED_PRIOR","0"),"1")
+margin <- if(matched_prior) 150 else 600
+xmin <- min(DX)-margin; xmax <- max(DX)+margin
+ymin <- min(DY)-margin; ymax <- max(DY)+margin
 
 # Truth is used exclusively to GENERATE observations and evaluate recovery.
 Strue <- array(NA_real_,c(N,2,T))
 for(i in seq_len(N)) {
-  j <- sample.int(J,1L)
-  Strue[i,1,1] <- rnorm(1,DX[j],sigma_spawn)
-  Strue[i,2,1] <- rnorm(1,DY[j],sigma_spawn)
+  if(matched_prior) {
+    Strue[i,1,1] <- runif(1,xmin,xmax)
+    Strue[i,2,1] <- runif(1,ymin,ymax)
+  } else {
+    j <- sample.int(J,1L)
+    Strue[i,1,1] <- rnorm(1,DX[j],sigma_spawn)
+    Strue[i,2,1] <- rnorm(1,DY[j],sigma_spawn)
+  }
   for(t in 2:T) {
     Strue[i,1,t] <- rnorm(1,Strue[i,1,t-1],sigma_move)
     Strue[i,2,t] <- rnorm(1,Strue[i,2,t-1],sigma_move)
@@ -129,7 +141,7 @@ samples <- nimble::nimbleMCMC(
   code=code,constants=constants,data=list(y=y),
   inits=initialise,monitors=c("p0","S"),
   niter=niter,nburnin=nburn,thin=1,
-  nchains=1,setSeed=20261109,
+  nchains=1,setSeed=seed,
   samplesAsCodaMCMC=FALSE,summary=FALSE,
   progressBar=FALSE
 )
@@ -174,7 +186,7 @@ write.csv(data.frame(p0=as.numeric(p0draw)),
           file.path(out,"posterior_p0.csv"),row.names=FALSE)
 write.csv(data.frame(detector=det$Sett_Clean,x=det$x,y=det$y),
           file.path(out,"detectors_used.csv"),row.names=FALSE)
-saveRDS(list(model="V12I03 spatial synthetic smoke",
+saveRDS(list(model="V12I03 spatial synthetic smoke",seed=seed,matched_prior=matched_prior,
              p0_true=p0_true,sigma_det=sigma_det,sigma_move=sigma_move,
              true_positions=Strue,y=y,detectors=det,
              posterior_samples=samples,location_recovery=locations),
