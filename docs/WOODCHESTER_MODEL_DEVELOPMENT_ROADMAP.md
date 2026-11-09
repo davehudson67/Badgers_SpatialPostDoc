@@ -4869,3 +4869,20 @@ V12I_REPS=3 V12I_CHAINS=3 V12I_MAX_PARALLEL=3 \
 **Decision:** Continue staged model development without claiming V12I-03b validated. First examine worst coordinate/animal-year diagnostics from existing outputs, checking how position error varies with observed quarters and detector encounters and diagnosing latent-location mixing. Next run independent V12I-04 synthetic survival+quarterly detection smoke, then implement joint spatial survival-detection while retaining a simulation-based validation gate. Do not refit historical V11R2 or fit real data until approved Supabase-first encounter/fate reconciliation. Preserve all previous outputs.
 
 **Next model-development dependencies:** Check latent coordinates rather than only p0, sensitivity to detector geometry and initial state assumptions, repeat simulated datasets to assess calibration, model-specific selection of clean live encounters and reviewed terminal death episodes, and explicitly separate apparent survival from true mortality/emigration absent external evidence.
+
+
+### 9 November 2026 — V12I-03b individual spatial diagnostic review
+
+**Status: PRELIMINARY; spatial validation criterion not met.** User executed existing read-only reports for run `v12i03b_20261109T100318Z`; no new fitting or database changes.
+
+**Hypothesis under review:** Sparse detections and/or difficult latent-coordinate sampling drive poor activity-centre recovery, potentially limiting future survival-versus-emigration discrimination.
+
+**Dataset 1:** Badger 7 annual posterior-mean position errors: year 1 723.87 m (undetected), year 2 705.14 m (detected), year 3 724.94 m (undetected), year 4 863.67 m (undetected). Its annual coordinate nodes include worst Rhat 1.0282 and bulk ESS as low as 128.4, tail ESS as low as ~66.8. For all badger-years: 7 not detected (median error 268.5 m) versus 33 detected (median 97.6 m). A single detected year does not guarantee location identifiability.
+
+**Dataset 2:** Badgers 5 and 8 account for most of the highest Rhat nodes (up to 1.0306) and weak ESS (as low as 90.8). Largest position error is badger 1 year 1, 343.2 m, with no detection. Five unobserved years had median error 87.0 m versus 35 observed years median 76.6 m. Thus worst mixing nodes are not necessarily the worst error nodes.
+
+**Dataset 3:** Badger 4 coordinates have the weakest convergence (Rhat up to 1.0361, bulk ESS 107.3). All 40 badger-years have at least one detection, so sparse *annual presence* alone cannot explain poor mixing. Worst position error is badger 8 year 4, 242.4 m; this further separates sampler mixing from estimation error.
+
+**Interpretation and limitation:** These are known-truth synthetic datasets with fixed survival/entry and fixed movement/detection scales. Poor latent-coordinate mixing and high spatial error must be distinguished from genuinely weak location information. Need capture counts by detector/quarter, true distance to trapping network, posterior location uncertainty and chain-specific traces for these animals. No evidence yet that death versus emigration can be separated by a joint model.
+
+**Decision/next action:** Retain V12I-03b status PRELIMINARY, no further blind iteration increases. Diagnose badger 7 in replicate 1, badgers 5 and 8 in replicate 2 and badger 4 in replicate 3. In parallel, test the independent V12I-04 synthetic survival–detection model, and only then develop a staged joint spatial-demographic model. Current historic V11R2 detector geometry is contextual only; Supabase-first data and V11R2 input reconciliation are required before fitting to actual Woodchester records.
