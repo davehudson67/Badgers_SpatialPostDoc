@@ -44,8 +44,8 @@ for (b in seq_len(reps)) {
                  n_alive_detected=sum(rowSums(yy == 1L | yy == 2L) > 0L),
                  n_dead_recoveries=sum(yy == 3L),
                  convergence=v$convergence,
-                 gamma=v$estimate["gamma"], phi=v$estimate["phi"],
-                 exit=v$estimate["exit"], return_prob=v$estimate["return"])
+                 gamma=unname(v$estimate["gamma"]), phi=unname(v$estimate["phi"]),
+                 exit=unname(v$estimate["exit"]), return_prob=unname(v$estimate["return"]))
     } else rows[[b]]
     if (model == "without_deaths")
       rows[[b]] <- rbind(rows[[b]],
@@ -53,8 +53,8 @@ for (b in seq_len(reps)) {
                    n_alive_detected=sum(rowSums(yy == 1L | yy == 2L) > 0L),
                    n_dead_recoveries=sum(yy == 3L),
                    convergence=v$convergence,
-                   gamma=v$estimate["gamma"], phi=v$estimate["phi"],
-                   exit=v$estimate["exit"], return_prob=v$estimate["return"]))
+                   gamma=unname(v$estimate["gamma"]), phi=unname(v$estimate["phi"]),
+                   exit=unname(v$estimate["exit"]), return_prob=unname(v$estimate["return"])))
   }
   cat(sprintf("Replication %d/%d: recoveries=%d, return fits %.3f / %.3f\n",
               b, reps, sum(yy == 3L),
@@ -65,13 +65,15 @@ rownames(result) <- NULL
 write.csv(result, file.path(out, "parameter_recovery_replicates.csv"),
           row.names=FALSE)
 cat("\n=== PARAMETER RECOVERY OVER REPLICATES ===\n")
-truth_vals <- c(gamma=e$truth["gamma"], phi=e$truth["phi"],
-                exit=e$truth["exit"], return_prob=e$truth["return"])
+truth_vals <- c(gamma=unname(e$truth["gamma"]), phi=unname(e$truth["phi"]),
+                exit=unname(e$truth["exit"]), return_prob=unname(e$truth["return"]))
 summary_rows <- list()
 for (model in unique(result$model)) {
   d <- result[result$model == model,]
   for (key in names(truth_vals)) {
+    if (!key %in% names(d)) stop("Missing numeric parameter column: ", key)
     estimates <- d[[key]]
+    if (!is.numeric(estimates)) stop("Non-numeric parameter column: ", key)
     true <- unname(truth_vals[key])
     summary_rows[[length(summary_rows)+1L]] <- data.frame(
       model=model, parameter=key, truth=true,
