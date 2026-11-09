@@ -4843,3 +4843,8 @@ V12I_REPS=3 V12I_CHAINS=3 V12I_MAX_PARALLEL=3 \
 **Issue:** Initial execution of `Woodchester_V12I_03c_Summarise_Parallel.R` halted while building the aggregate data.frame because the returned `posterior::summarise_draws` fields did not have the expected short names (`rhat`, `ess_bulk`, `ess_tail`). This is a summary implementation error, not evidence of fit failure. The same issue was corrected in the sequential script. The implementation now passes explicit named statistic functions and checks expected diagnostic columns. Saved chain-level fits are retained.
 
 **Next:** `git pull --ff-only` after checking local status; rerun read-only summariser on the existing run directory, inspect p0 posterior recovery, worst Rhat across latent coordinates, bulk/tail ESS and location recovery before assigning VALIDATED status. No database inputs or outcomes changed.
+
+
+### 9 November 2026 — V12I-03c summariser syntax hotfix
+
+**Status: PRELIMINARY / summarisation BLOCKED pending rerun.** All nine synthetic NIMBLE chains for `v12i03b_20261109T100318Z` reportedly exited with code 0. A prior posterior-summary repair accidentally inserted literal `\\n` sequences outside quoted R strings, yielding `unexpected symbol` during R parse. This was a code-generation error, not a model failure. Both `Woodchester_V12I_03c_Summarise_Parallel.R` and the related sequential `Woodchester_V12I_03b_Validate.R` have been patched to use real source newlines. No fits, model inputs or saved chain outputs were changed. **Required gate:** run `Rscript -e 'parse(file="scripts/ModularFitting/Woodchester_V12I_03c_Summarise_Parallel.R")'` on RStudio, then rerun the read-only summariser and inspect its diagnostics before any biological interpretation.
