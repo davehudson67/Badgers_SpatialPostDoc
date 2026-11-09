@@ -5282,3 +5282,27 @@ Rscript scripts/ModularFitting/Woodchester_V11R2_Historical_Sett_Network_Review.
 ### 9 November 2026 — Correct unsupported 120-detector count in historical network review
 
 **Status: R script corrected / awaiting rerun.** The read-only `Woodchester_V11R2_Historical_Sett_Network_Review.R` initially failed with `Unexpected count of V11R2 legacy detector sites: 119` because its author incorrectly hard-coded 120 detectors. The established zone sensitivity configurations of 60/78/96 central detectors are consistent with **119 reference detectors** (ceil of 50%, 65%, 80% of 119). Prior roadmap references to 120 detectors should be treated as unverified/incorrect until the detector reference CSV is checked. No scientific inference or output should be discarded on account of this mismatch. The patched script uses the actual distinct IDs from `01_legacy_detectors_near_captures_by_period.csv`, validates a complete three-period detector grid and can compare IDs with `01_detector_geometry_reference.csv` if `ZONE_AUDIT_DIR` is supplied. The user should rerun it; no database or model fit changes.
+
+
+### 9 November 2026 — Fixed-sett historical network reviewed; annual continuity next gate
+
+**Status:** Observed three-era fixed-sett map and summary completed by user. New annual capture continuity script COMMITTED but NOT EXECUTED; no spatial refit.
+
+**Question:** Which fixed trapping setts provide temporally sustained observation evidence rather than appearing only once during each multi-year historical period? Can this inform (but not independently determine) the core of the Woodchester spatial model?
+
+**Data and results:** Existing fixed V11R2 reference network is **119 distinct detector/sett points**, confirmed by user run (`Detector count in reference: 119`, period file 119). Read-only `Woodchester_V11R2_Historical_Sett_Network_Review.R` output `outputs/v11r2_core_periphery/sett_network_20261109T145040Z`, with map `03_sett_network_period_comparison.png`. Sites with >=1 recorded live capture in 1977–1992: **83**; in 1993–2008: **105**; in 2009–2025: **66**. Captures in all three: **46**; recorded previously but not in latest era **52**; recorded only in recent era **4**. These counts reflect positive capture histories at historical detector-reference points, not independently observed trapping effort. The recorded network contracts in the latest era, consistent with investigator's historical knowledge that geographical monitoring really shrank. The map shows losses particularly in the northeastern/eastern portion and additional gaps elsewhere.
+
+**Interpretation:** The 46 all-three-period capture setts are a reasonable candidate *pool* of historically persistently sampled sites, not a validated biological core or proof of continuous trapping. Even one capture per 16–17 year block meets the three-era definition. Some previously captured sites may have continued being trapped without captures. Neither current outer hull nor centroid-ranked inner hull accounts for era-specific site availability; previously reported core↔periphery posterior transitions remain exploratory.
+
+**New read-only audit:** `scripts/ModularFitting/Woodchester_V11R2_Sett_Annual_Continuity_Audit.R` links frozen `qualifying_live.rds` source XY (dated captures only) to nearest 119 reference sett locations, reports number of distinct calendar years with positive captures at each, first/last capture years, longest *observed capture* gap, years with captures per era and 2019–2025, and creates full detector × 1977–2025 annual panel plus map shaded by observed-capture continuity. Uses 100-m nearest-reference threshold by default and produces timestamped local CSV/PNG outputs. Does NOT equate capture-negative years with no active trapping; no final core assignment, biological density or movement parameter fitting. Proximity matching and unresolved location provenance remain constraints.
+
+**Run:**
+```bash
+cd ~/Badgers_SpatialPostDoc
+git pull --ff-only
+V12_SNAPSHOT="data/model_snapshots/v12_20261106T103144Z_1079872" \
+ZONE_AUDIT_DIR="outputs/v11r2_core_periphery/audit_20261109T134751Z" \
+Rscript scripts/ModularFitting/Woodchester_V11R2_Sett_Annual_Continuity_Audit.R
+```
+
+**Decision:** Examine continuous annual support among the 46 historically observed setts and inspect the geographical pattern without assuming stable effort. A defensible spatial core should eventually be based on field monitoring records and a consistent era-aware trap-availability process; do not expand project into demographic or infection models at this step.
