@@ -5026,3 +5026,30 @@ Rscript scripts/ModularFitting/Woodchester_V12I_05c_Inspect_State_Mixing.R
 **Run:** `V12I_VALIDATION_OUT="outputs/v12_immigration_prototype/v12i05_validation/v12i05b_20261109T103847Z" V12I_REPS=3 V12I_CHAINS=3 Rscript scripts/ModularFitting/Woodchester_V12I_05d_Spatial_Uncertainty_Audit.R`.
 
 **Decision:** Keep V12I-05b PRELIMINARY, do not claim the model is ready for true death versus emigration inference. First compare uncertainty/radial coverage for alive detected versus alive undetected individuals, inspect high-error well-mixed cases, and test stronger, justified spatial samplers and/or marginalisation after death as necessary. Develop realistic temporally heterogeneous trapping-effort and capture-location model, reconcile V11R2 with curated Supabase data and establish observed-history conditioning vs open-population data augmentation before full Woodchester fitting. No database write or previous fitting output changes.
+
+
+### 9 November 2026 — V12I-05d uncertainty calibration and targeted detector audit
+
+**Status:** PRELIMINARY (read-only uncertainty analysis completed; spatial calibration remains unverified); V12I-05e CODE COMMITTED / NOT EXECUTED.
+
+**Scientific question:** Are large errors of posterior mean activity centres consistent with stated posterior spatial uncertainty, and does a detector-specific capture pattern explain a persistently displaced fitted trajectory?
+
+**Data and fitting:** Existing V12I-05b 3-dataset, 3-chain synthetic output under `outputs/v12_immigration_prototype/v12i05_validation/v12i05b_20261109T103847Z`; 12 simulated animals × 4 years per replicate, 4 quarterly occasions × 8 detectors. No new fitting and no real-data observations. Reported uncertainty regions are posterior-mean-centred radial balls containing 95% of pooled spatial draw distances from the posterior mean; they are not 2D HPD regions and will be influenced by the unresolved spatial MCMC mixing problems.
+
+**User-reported `Woodchester_V12I_05d_Spatial_Uncertainty_Audit.R` results:**
+- Truly alive and detected: 75 animal-years, median position error 108.1 m, median posterior radial 95% radius 214.8 m, 92.0% of true points inside radius.
+- Truly alive and undetected: 19 animal-years, median error 146.9 m, radius 281.7 m, 84.2% inside.
+- Truly dead and undetected: 50 animal-years, median error 163.8 m, radius 332.4 m, 92.0% inside.
+- Replicate 3 animal 11 was alive, detected in all four years (1,2,4,1 encounter indicators by year), but its four position errors were 398.2,347.8,354.2,412.4 m versus posterior 95% radii 191.4,178.2,173.9,220.0 m; the true centre is outside each year's radial ball even though latent coordinate Rhat was around 1.004–1.009. Year-specific failures for one animal are correlated and should not be counted as four independent tests.
+
+**Interpretation:** Spatial uncertainty tends to widen when encounters are absent and when animals are dead. Empirical observed coverage over these small, dependent samples is close to but cannot confirm nominal 95% calibration; alive-undetected undercoverage may be concerning. The persistent offset for replicate 3 animal 11 despite moderately good sampler mixing suggests possible alternative spatial modes, non-identifiability from detector geometry and/or inadequacy in the assumed observation and movement process. No cause is established. Aggregate Rhat for phi/p0 cannot validate all latent S or z.
+
+**New diagnostic and run:** `scripts/ModularFitting/Woodchester_V12I_05e_Capture_Geometry_Audit.R` reads original saved simulated truth, detector locations and 3-chain posterior, reports each quarter's captures by named detector, true and posterior mean distance to each detector, and expected capture indicators conditional on survival at true and posterior locations (simple Gaussian detection kernel). The test targets replicate 3, animal 11 by default and writes a new CSV without refitting. Run:
+```bash
+V12I_VALIDATION_OUT="outputs/v12_immigration_prototype/v12i05_validation/v12i05b_20261109T103847Z" \
+V12I_REPLICATE=3 V12I_BADGER=11 V12I_CHAINS=3 \
+Rscript scripts/ModularFitting/Woodchester_V12I_05e_Capture_Geometry_Audit.R
+```
+Inspect whether the captured detector pattern supports the shifted centres, whether the detector geometry has mirror/alternative solutions, and whether observed versus posterior-predicted detector counts disagree. Do not claim a complete posterior predictive check: predicted counts are conditional on being alive.
+
+**Decision:** Retain V12I-05b PRELIMINARY. Examine detector geometry and uncertainty before changing code or extending MCMC. Then build realistic effort-aware capture likelihood and approved Supabase historical encounter/fate preparation for full Woodchester open-population modelling. The original V11R2 source still needs Supabase reconciliation; no database changes were made.
