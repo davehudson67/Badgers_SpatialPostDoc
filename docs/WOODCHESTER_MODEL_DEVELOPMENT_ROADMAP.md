@@ -5140,3 +5140,33 @@ Rscript scripts/ModularFitting/Woodchester_V11R2_Core_Periphery_Posterior_Audit.
 **Expected files:** `01_detector_geometry_reference.csv`, `02_core_hull_vertices.csv`, `03_outer_detector_hull_vertices.csv`, `04_individual_annual_zone_probabilities.csv`, `05_consecutive_year_transition_probabilities.csv`, `06_annual_model_state_occupancy.csv`, `07_annual_mean_transition_probabilities.csv`, `08_scenario_sensitivity_summary.csv`, and `README_ASSUMPTIONS.txt`. Run not yet verified on RStudio server. All current model outputs and database unchanged.
 
 **Decision gate:** First inspect historical V11R2 detector hull and sample years and compare across all three candidate inner boundaries; check any implausible core geometry and whether interval zone occupancy is driven by model tails or observationally supported movement. If results appear robust, choose a biological/study-design core using independent evidence on actual trapping coverage and audited capture XY, and only then develop a final geographically coherent V11/V12 spatial specification. Avoid using zone classifications as an unvalidated proxy for disease, movement direction, emigration or survival.
+
+
+### 9 November 2026 — V11R2 empirical core/periphery/outside sensitivity completed
+
+**Status: PRELIMINARY descriptive posterior analysis COMPLETED, not validated new spatial model; conditional transition summary code COMMITTED / NOT EXECUTED.**
+
+**Question:** What proportion of V11R2 modelled badger-years fall in candidate core, periphery and outside zones, and what do posterior transitions reveal across zone boundaries? Does this interpretation depend strongly on core size?
+
+**Input, eligibility and settings:** User ran `scripts/ModularFitting/Woodchester_V11R2_Core_Periphery_Posterior_Audit.R` successfully (exit 0) with frozen `data/model_snapshots/v12_20261106T103144Z_1079872` used solely for observational flags, three legacy `V11R2_RES50` posterior chains (60 sampled draws each, 180 draws total), 8,248 annual individual spatial states, 6,316 consecutive tattoo-year intervals. Run output `outputs/v11r2_core_periphery/audit_20261109T134751Z`. Three nested central detector hull scenarios: 60, 78 and 96 of the 120 legacy detector sites (50%, 65%, 80%); same full global detector hull as outside boundary. Model lineage and historical alias/coordinate reconciliation are still outstanding.
+
+**Numerical results:**
+- central_50: mean posterior p(core)=0.2957714, p(periphery)=0.5662713, p(outside)=0.1379573; fraction of annual states with maximum-zone-probability below 0.75 = 0.2194471; mean *joint across all intervals* p(core→periphery)=0.02155636, p(periphery→core)=0.02106731.
+- central_65: p(core)=0.4186759, p(periphery)=0.4433667, p(outside)=0.1379573; uncertain fraction 0.2766731; mean joint core→periphery 0.02772940, periphery→core 0.02540901.
+- central_80: p(core)=0.5932280, p(periphery)=0.2688147, p(outside)=0.1379573; uncertain fraction 0.1664646; mean joint core→periphery 0.01540796, periphery→core 0.01540444.
+- Outside posterior fraction constant at 13.8% **by construction**, as only the inner core boundary changes. The mean core↔periphery joint transition probabilities are ~1.5–2.8% of all intervals, NOT conditional p(destination | origin), and do NOT yet establish movement symmetry or transition rates among core residents.
+
+**Interpretation:** Definition of the inner zone materially affects classification, uncertainty, and estimates of between-zone movement. A core defined by 50–80% of detector locations is only a geometric sensitivity test and should not be adopted as biological territory or historical trapping-effort boundary. The 13.8% posterior outside-hull occupancy is conditional on V11R2 modelled animal-year states, NOT an emigration probability or population density. Changes through time can be affected by animals/years selected into V11R2, global historical detector geometry, and unverified legacy locators.
+
+**New read-only summary:** `scripts/ModularFitting/Woodchester_V11R2_Core_Periphery_Transition_Summary.R` reads existing 04 and 05 audit CSVs, forms conditional origin-to-destination probabilities as summed joint posterior counts divided by summed posterior origin occupancy across consecutive modelled intervals, and repeats the exercise restricted to animals observed both years (a selected, potentially biased subset). Reports all 9 zone-to-zone transitions and annual occupancy support; creates a new output folder without changing previous results. `V11R2` posterior draws remain smoothed/retrospective, so neither exercise is an independent predictive validation or a fitted transition-rate model. Script not yet run on RStudio.
+
+**Run command:**
+```bash
+cd ~/Badgers_SpatialPostDoc
+git pull --ff-only
+Rscript -e 'invisible(parse(file="scripts/ModularFitting/Woodchester_V11R2_Core_Periphery_Transition_Summary.R"));cat("Syntax OK\\n")'
+ZONE_AUDIT_DIR="outputs/v11r2_core_periphery/audit_20261109T134751Z" \
+Rscript scripts/ModularFitting/Woodchester_V11R2_Core_Periphery_Transition_Summary.R
+```
+
+**Next decision:** Examine conditional transition probabilities, transitions crossing the global hull boundary, time coverage and whether annual zone results are unstable due to boundary choice. Then audit/visualise detector hulls against actual trapping footprint and historical coordinate reliability before committing to biologically named core/periphery zones or refitting V11R2. Do not advance demographic/disease models in this spatial-only decision gate.
