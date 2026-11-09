@@ -5112,3 +5112,31 @@ Rscript scripts/ModularFitting/Woodchester_V12_Zone_FirstRecapture_Audit.R
 **New read-only SQL audit:** `sql/audit/WECS_V12_V13_Diagnostic_Observation_Year_Audit.sql` aggregates yearly capture and PM rows, culture tests/capture-events, M. bovis-positive versus negative versus unresolved culture rows, and DPP rows/coverage, without classifying unknown DPP outcomes or defining disease prevalence from tested samples. Output is a per-year aggregate to review against changing live capture intensity. No database writes, no fitted infection or transmission results. Run in Supabase SQL editor with appropriate read-only role; report aggregate table. Test data are not independent of capture/detection.
 
 **Decisions/next actions:** (1) Audit historical trapping effort/zero-capture sessions and changing trapping footprint, and distinguish core, peripheral and outside zones with boundary sensitivity; (2) audit availability and provenance of dated diagnostic assays and link with capture and mortality episodes without double counting; (3) define biologically interpretable multi-state entry/dispersal/temporary emigration with realistic observation histories and known-death constraints; (4) test infection observation model, latent time-varying infection and excretion, then investigate spatial importation, persistence and feedback on survival/movement; (5) keep V12 and V13 components part of one coherent scientific programme, not disconnected final extensions. No audited effort results or V13 fits yet.
+
+
+### 9 November 2026 — V11R2 core/periphery/outside posterior sensitivity audit
+
+**Status:** CODE COMMITTED / NOT EXECUTED ON RSTUDIO; scientific baseline assessment, not new fit.
+
+**Question/hypothesis:** Do V11R2 annual latent activity-centre posterior draws support useful interpretation as core residence, peripheral residence and positions beyond the detector footprint, and which inferred movements are sensitive to the location of the inner core boundary? Does the existing spatial posterior show defensible core-to-periphery versus periphery-to-core geographic redistribution?
+
+**Data, provenance and eligibility:** Three historical `results/V11R2_RES50_*_1932_CHAIN[123].rds` model chains, `annual_state_index` and detector XY; versioned Supabase evidence snapshot selected explicitly via `V12_SNAPSHOT`, with manifest + `qualifying_live.rds` used *only* to mark which tattoo-years have qualifying observations. V11R2 old input aliases and sett/XY decisions have not been reconciled against audited Supabase capture locations; therefore no validated spatial mapping or independently estimated demographic parameter is claimed. Historical model smoothed positions may incorporate subsequent captures (future information).
+
+**Geographical scenarios:** The **outer** extent is the convex hull of all V11R2 model detector points; `outside` means a latent position beyond this hull, NOT known permanent emigration or the entirety of the biological outside population. The **core** is defined as the convex hull of the central 50%, 65% or 80% of legacy detector points ranked by distance from their coordinate medians, with at least four selected points; **periphery** is the remaining area inside the outer detector hull. These are *artificial sensitivity scenarios*, not validated biological boundaries or trapping-effort footprints. Output includes site coordinates and hull vertices for inspection before any biological labels or real-data fits.
+
+**Methods:** `scripts/ModularFitting/Woodchester_V11R2_Core_Periphery_Posterior_Audit.R` reads three posterior chains sequentially, samples up to 60 evenly spaced rows per chain by default (configurable `ZONE_DRAWS_PER_CHAIN`), calculates annual posterior probability of each zone, and for each consecutive modelled tattoo-year interval calculates nine joint zone-to-zone probabilities from **the same posterior draw row at both endpoints**, preserving spatial state dependence. Aggregates by calendar year and zone-scenario, and writes individual-level output to Git-ignored/local `outputs/v11r2_core_periphery/` directories (never commit these files without confidentiality review). Requires both actual files and manifest and refuses to overwrite existing output. Observed tattoo-year flags come from the frozen qualifying-live evidence, without excluding uncertain spatial states or treating gaps as adjacent-year transitions. No trap effort, density, recruitment, survival or immigration fit; occupancy means are conditional on the V11R2 modelled badger-years, not population prevalence or density.
+
+**Run command:**
+```bash
+cd ~/Badgers_SpatialPostDoc
+git status --short --branch
+git pull --ff-only
+Rscript -e 'invisible(parse(file="scripts/ModularFitting/Woodchester_V11R2_Core_Periphery_Posterior_Audit.R"));cat("Syntax OK\\n")'
+V12_SNAPSHOT="data/model_snapshots/v12_20261106T103144Z_1079872" \
+ZONE_DRAWS_PER_CHAIN=60 \
+Rscript scripts/ModularFitting/Woodchester_V11R2_Core_Periphery_Posterior_Audit.R
+```
+
+**Expected files:** `01_detector_geometry_reference.csv`, `02_core_hull_vertices.csv`, `03_outer_detector_hull_vertices.csv`, `04_individual_annual_zone_probabilities.csv`, `05_consecutive_year_transition_probabilities.csv`, `06_annual_model_state_occupancy.csv`, `07_annual_mean_transition_probabilities.csv`, `08_scenario_sensitivity_summary.csv`, and `README_ASSUMPTIONS.txt`. Run not yet verified on RStudio server. All current model outputs and database unchanged.
+
+**Decision gate:** First inspect historical V11R2 detector hull and sample years and compare across all three candidate inner boundaries; check any implausible core geometry and whether interval zone occupancy is driven by model tails or observationally supported movement. If results appear robust, choose a biological/study-design core using independent evidence on actual trapping coverage and audited capture XY, and only then develop a final geographically coherent V11/V12 spatial specification. Avoid using zone classifications as an unvalidated proxy for disease, movement direction, emigration or survival.
