@@ -4905,3 +4905,34 @@ V12I_REPS=3 V12I_CHAINS=3 V12I_MAX_PARALLEL=3 \
 **Limitations:** Single chain for V12I-04; no Rhat, joint ESS assessment, PPC or independent replication. V12I-03b location uncertainty is confounded with detector coverage, fixed detection scale, and random-walk assumptions; location-error summaries alone cannot establish emigration identifiability. V12I-04 NIMBLE's 'not fully initialized' note did not prevent a successful fit but warrants checking latent-state initialization if numerical warnings arise.
 
 **Decision:** Keep both models PRELIMINARY. Next validate V12I-04 across independent chains/replicated datasets, investigate V12I-03b posterior location uncertainty and mixing, and develop a joint spatial alive-state model only with explicit parameter-recovery gates. Continue toward open-population entry and possible immigration/emigration separation; do not conflate last capture with death. All future Woodchester fitting requires Supabase-first approved data and outstanding V11R2 input reconciliation.
+
+
+### 9 November 2026 — Progression to multi-chain demographic validation and joint spatial survival
+
+**Status:** PLANNED / CODE COMMITTED, NOT YET EXECUTED for V12I-04b and V12I-05.
+
+**Scientific question/hypotheses:** Can joint annual latent survival and quarterly capture probability be recovered from incomplete encounters across independent synthetic datasets? When spatially dependent observation is added, can posterior inference simultaneously recover annual survival, baseline detection and latent activity-centre trajectories? Only once stable should we add population entry and explore immigrant vs locally recruited classes and emigration versus death.
+
+**Input/version:** Synthetic data only, no real encounter or death histories in these likelihoods. V12I-05 uses historical V11R2 RES50 detector coordinates solely to supply a realistic small geographical layout; these coordinates are *not* an audited current detector data source. Synthetic population initially N=12, T=4 years, 4 quarters, 8 detectors; annual true phi 0.82 and p0 0.42, fixed spatial movement SD 60 m and detection scale 170 m. Initial positions uniform over detector range ±150 m, matching the fitting prior; alive at first year with no later entry; captures condition on alive status and distance. In V12I-04b synthetic cohort N=40 and T=6 years with 4 quarterly occasions, fixed seasonal multipliers, no spatial process. No UN social group assignment, no real data exclusion.
+
+**Scripts and reproducibility:**
+- `scripts/ModularFitting/Woodchester_V12I_04_Survival_Detection_Smoke.R` now supports independent `V12I_DATA_SEED` and `V12I_SEED` for same data across independent chains.
+- `scripts/ModularFitting/Woodchester_V12I_04b_Validate_Multichain.R`: sequential validation of 3 independently simulated datasets × 3 chains; rank-normalised Rhat and bulk/tail ESS via posterior, posterior-interval recovery for phi/p0; output to required NEW `V12I_OUT` path, never overwrite historical outputs.
+- `scripts/ModularFitting/Woodchester_V12I_05_Joint_Spatial_Survival_Smoke.R`: developmental joint NIMBLE state-space model. Latent annual survival z and activity centre S, distance-based quarterly detection, estimates phi and p0 with fixed movement and detection scales; known initial entry and survival state, no immigration/emigration or death recovery. Requires NEW `V12I_OUT` directory. Code not yet tested on server.
+
+**Suggested first runs** (after `git status --short --branch`, `git pull --ff-only`, and parse checks):
+```bash
+V12I_REPS=3 V12I_CHAINS=3 V12I_NITER=12000 V12I_NBURN=4000 \
+  V12I_OUT="outputs/v12_immigration_prototype/v12i04b_$(date -u +%Y%m%dT%H%M%SZ)" \
+  Rscript scripts/ModularFitting/Woodchester_V12I_04b_Validate_Multichain.R
+
+V12I_OUT="outputs/v12_immigration_prototype/v12i05_smoke_$(date -u +%Y%m%dT%H%M%SZ)" \
+  V12I_NITER=1200 V12I_NBURN=600 \
+  Rscript scripts/ModularFitting/Woodchester_V12I_05_Joint_Spatial_Survival_Smoke.R
+```
+
+**Convergence/PPC:** No new outputs or diagnostics presently exist. Inspect fitted versus simulated phi, p0, missing-capture patterns, survival-state recovery and latent spatial coordinate mixing, and increase independent simulations after basic computational smoke passes. Prior spatial model V12I-03b showed under-mixed coordinate nodes; this cannot be assumed solved by adding survival.
+
+**How the Woodchester data will inform the analysis:** A prior V12I-02c snapshot audit found 3,214 observed tattoos and 16,230 live capture-days over approximately 1976–2025; definitions differ from the annual resident-group and model-eligible subsets. Earlier audited quarterly summaries found 8,618 observed badger-years and 14,921 observed badger-quarter indicators in the specified snapshot. These are descriptive counts, not automatically the model population size, true annual survival denominator, or independently observed trapping effort. Real-data model fitting requires approved read-only Supabase freeze, explicit animal/encounter eligibility and episode de-duplication, audited alive/fate classification, spatial-provenance filtering, temporal effort proxies, and reconciliation of V11R2 legacy inputs with curated data before inference. Temporal coverage is sufficiently long that calendar period, season and demographic age dependence must be considered, but cannot be estimated indiscriminately without attention to effort and selection. Use staged fitting on biologically defined cohorts, then scale to full eligible histories rather than fitting the entire historical panel in the first smoke run.
+
+**Limitations/decision:** These synthetic experiments test code mechanics and parameter identifiability under selected assumptions, NOT whether true immigration and emigration can be distinguished from local recruitment and death using real data. Initial full model should report apparent survival/retention unless recovery information and spatial design provide identification. Continue gated joint development without re-starting V10B or replacing V11R2 outputs. No database changes.
