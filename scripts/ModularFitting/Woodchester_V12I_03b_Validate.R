@@ -60,7 +60,8 @@ for(r in seq_len(reps)) {
   dg <- posterior::summarise_draws(dr,
          rhat=posterior::rhat,ess_bulk=posterior::ess_bulk,ess_tail=posterior::ess_tail)
   stopifnot(all(c("variable","rhat","ess_bulk","ess_tail") %in% names(dg)),
-            sum(dg$variable=="p0")==1L)\n  write.csv(as.data.frame(dg),
+            sum(dg$variable=="p0")==1L)
+  write.csv(as.data.frame(dg),
        file.path(base,sprintf("rep%02d_diagnostics.csv",r)),
        row.names=FALSE)
   p0 <- unlist(lapply(mats,function(m) m[,"p0"]),use.names=FALSE)
