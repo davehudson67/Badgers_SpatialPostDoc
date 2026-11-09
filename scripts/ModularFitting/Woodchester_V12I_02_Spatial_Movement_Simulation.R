@@ -110,7 +110,7 @@ for(tt in seq_len(T)) {
       p<-par["p0_per_detector_year"]*exp(-d2/(2*par["sigma_detect_m"]^2))
       hit<-which(runif(length(p))<p)
       if(length(hit)) {
-        j<-sample(hit,1L)
+        j<-hit[sample.int(length(hit),1L)]
         obs[i,tt]<-1L
         obs_detector[i,tt]<-j
       }
