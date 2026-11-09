@@ -5414,3 +5414,27 @@ Rscript scripts/ModularFitting/Woodchester_V11R2_Contracting_Footprint_Sensitivi
 **Two evidence layers:** (1) Spatial encounters: qualifying non-PM capture episodes at named fixed setts with accepted XY, dates/quarters and unambiguous identity, retaining multiple observed sites within occasion according to established V11R2 process and episode deduplication. (2) Full histories: preserve encounters without reliable spatial XY as dated encounter evidence (and, when appropriate, captured/alive evidence), without fabricating the location or reducing individual history to a false gap. Missing spatial location is missing *spatial emission*, not automatically zero detection, death, departure or reason to exclude the entire tattoo. Separately evaluate whether original V11R2 likelihood architecture can accommodate unlocated observed encounters before inclusion in fitting; do not treat unspecified coordinates as detector locations.
 
 **Single immediate data audit before coverage-aware fit:** From a reviewed Supabase snapshot, classify every qualifying live event by recorded location type, XY present, location quality, audited sett identity, ambiguity/override and suitability for a fixed-sett spatial likelihood; tabulate retained vs withheld source rows, unique tattoos, capture days, annual/quarterly variation, and impact on eligible observed transitions. Preserve original event IDs and classify exact duplicate/PM companion events explicitly. Compare results to legacy V11R2 cohort/sett references; stratify temporal and geographical missingness, particularly historical periphery. Produce inclusion manifest and two linked evidence streams without rewriting research data. Sensitivity: strictly verified setts, vetted canonical SETT_POINT_PROVISIONAL setts, and broader quality categories only where documented. Only after the audit consider refitting the continuous spatial movement model with alternative detector-availability assumptions. Infection/demographic models remain deferred.
+
+
+### 9 November 2026 — High-confidence fixed-sett XY spatial inclusion audit prepared
+
+**Status:** CODE COMMITTED / NOT EXECUTED ON RSTUDIO; no fit-ready data approval or model refit.
+
+**Question:** How many eligible dated live captures have credible fixed-sett coordinates for the continuous V11R2 spatial likelihood, and how many tattoos and consecutive annual observed intervals remain if uncertain spatial coordinates are withheld? Do not discard valid dated encounters merely because the spatial emission is missing.
+
+**Authoritative input:** A reviewed Supabase-frozen V12 snapshot: MANIFEST.txt, qualifying_live.rds and encounters.rds. Optional original V11R2 detector geometry is used as a comparison of coordinate sets only; no historical V11R2 RDS is used as authoritative encounter evidence.
+
+**New code:** scripts/ModularFitting/Woodchester_V12_Spatial_Eligibility_Audit.R. Uses source capture_id, tattoo, date, location_type, location_quality, sett_id, XY and episode role. A fixed-sett spatial **candidate** must have finite XY, SETT location_type, a canonical sett_id, and SETT_POINT_PROVISIONAL quality. This is a conservative **candidate, NOT automatically verified/fit-ready**, classification pending sett-identity/coordinate provenance review. Missing XY, non-sett physical locations, associated setts, unresolved conflicts, unknown quality and inconsistent XY attached to sett IDs are held for review. Multiple sett IDs using the same XY also flagged, never silently resolved. Preserve all other qualifying dated encounters as evidence while excluding their untrusted coordinates from the spatial observation stream. Do not equate postmortem/dead recovery with an ordinary trap detector. Retain multiple distinct capture IDs on one tattoo-date for audit rather than collapsing them blindly.
+
+**Output, local only:** timestamped outputs/v12_spatial_eligibility/audit_* directory, 01_inclusion_overview.csv; 02_inclusion_by_status.csv; 03_location_type_quality.csv; 04_inclusion_by_year.csv; 05_inclusion_by_year_quarter.csv; 06_source_pm_and_episode_roles.csv; 07_legacy_detector_coordinate_screen.csv; 08_EVENT_LEVEL_LOCAL_REVIEW_DO_NOT_COMMIT.csv; 09_spatial_interval_observed_gaps_LOCAL.csv; README_ASSUMPTIONS.txt. The individual-level review and gap files contain identifiers: do not commit or distribute. Historical read-only snapshot and model outputs unchanged.
+
+**Run from repo root:**
+
+    cd ~/Badgers_SpatialPostDoc
+    git pull --ff-only
+    Rscript -e 'invisible(parse(file="scripts/ModularFitting/Woodchester_V12_Spatial_Eligibility_Audit.R"));cat("Syntax OK\n")'
+    V12_SNAPSHOT="data/model_snapshots/v12_20261106T103144Z_1079872" \
+    ZONE_AUDIT_DIR="outputs/v11r2_core_periphery/audit_20261109T134751Z" \
+    Rscript scripts/ModularFitting/Woodchester_V12_Spatial_Eligibility_Audit.R
+
+**Decision:** Review eligibility status, year/quarter and peripheral-location patterns, loss of spatially paired annual transitions and identity/coordinate consistency. Obtain investigator approval for a fixed-sett XY inclusion rule before generating any fit-ready spatial model inputs. Then compare a coverage-aware V11R2 observation likelihood under explicit hypothetical detector availability scenarios. No demographic/disease or SG territory changes in this gate.
