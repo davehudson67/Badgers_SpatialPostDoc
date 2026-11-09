@@ -7,6 +7,9 @@
 
 if (!requireNamespace("nimble",quietly=TRUE))
   stop("The NIMBLE R package is required")
+# NIMBLE generated model methods require the package to be attached, not just
+# available via nimble:: namespace calls (getNimbleOption lookup).
+suppressPackageStartupMessages(library(nimble))
 set.seed(20261109)
 out <- "outputs/v12_immigration_prototype/v12i03_spatial_smoke"
 dir.create(out,recursive=TRUE,showWarnings=FALSE)
