@@ -12,8 +12,10 @@
 # Core tests: (i) live movement through unobserved years; (ii) occasional
 # outside-hull states; (iii) returns after missed years; (iv) all states valid.
 
-set.seed(20261109)
-out <- "outputs/v12_immigration_prototype"
+seed <- as.integer(Sys.getenv("V12I_SEED", "20261109"))
+if (is.na(seed)) stop("V12I_SEED must be an integer")
+set.seed(seed)
+out <- Sys.getenv("V12I_OUT", "outputs/v12_immigration_prototype")
 dir.create(out, recursive=TRUE, showWarnings=FALSE)
 f <- Sys.glob("results/V11R2_RES50_*_1932_CHAIN1.rds")
 if (length(f) != 1L) stop("Expected exactly one full V11R2 RES50 chain 1 RDS")
@@ -43,6 +45,21 @@ par <- c(psi=.12, entry=.15, annual_survival=.87,
          movement_switch=.08, local_step_sd_m=65,
          mobile_step_sd_m=650, sigma_detect_m=190,
          p0_per_detector_year=.035, death_recovery=.18)
+for (v in c("p0_per_detector_year", "sigma_detect_m", "local_step_sd_m",
+            "mobile_step_sd_m", "movement_switch", "annual_survival")) {
+  env <- paste0("V12I_", toupper(v))
+  provided <- Sys.getenv(env, unset="")
+  if (nzchar(provided)) {
+    value <- suppressWarnings(as.numeric(provided))
+    if (!is.finite(value)) stop(env, " must be numeric")
+    par[v] <- value
+  }
+}
+if (par["p0_per_detector_year"] <= 0 || par["p0_per_detector_year"] >= 1 ||
+    par["sigma_detect_m"] <= 0 || par["local_step_sd_m"] <= 0 ||
+    par["mobile_step_sd_m"] <= 0 || par["movement_switch"] < 0 ||
+    par["movement_switch"] > 1 || par["annual_survival"] <= 0 ||
+    par["annual_survival"] > 1) stop("Invalid V12I simulation settings")
 N <- as.integer(Sys.getenv("V12I_N", "400"))
 T <- as.integer(Sys.getenv("V12I_T", "16"))
 if (is.na(N) || is.na(T) || N<10L || T<3L) stop("N>=10 and T>=3 required")
