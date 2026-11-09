@@ -4886,3 +4886,22 @@ V12I_REPS=3 V12I_CHAINS=3 V12I_MAX_PARALLEL=3 \
 **Interpretation and limitation:** These are known-truth synthetic datasets with fixed survival/entry and fixed movement/detection scales. Poor latent-coordinate mixing and high spatial error must be distinguished from genuinely weak location information. Need capture counts by detector/quarter, true distance to trapping network, posterior location uncertainty and chain-specific traces for these animals. No evidence yet that death versus emigration can be separated by a joint model.
 
 **Decision/next action:** Retain V12I-03b status PRELIMINARY, no further blind iteration increases. Diagnose badger 7 in replicate 1, badgers 5 and 8 in replicate 2 and badger 4 in replicate 3. In parallel, test the independent V12I-04 synthetic survival–detection model, and only then develop a staged joint spatial-demographic model. Current historic V11R2 detector geometry is contextual only; Supabase-first data and V11R2 input reconciliation are required before fitting to actual Woodchester records.
+
+
+### 9 November 2026 — V12I-04 survival/detection smoke and V12I-03b detector-distance review
+
+**Status:** PRELIMINARY. Synthetic model execution successful; convergence and repeated parameter recovery not yet validated.
+
+**Scientific questions:** Can a simple Bayesian latent alive/dead state process jointly estimate annual survival and baseline quarterly detection? Are large spatial errors concentrated among badgers distant from spatial detectors and rarely caught?
+
+**Input/data:** Synthetic V12I-04 model: 40 simulated badgers, 6 annual states, 4 quarterly Bernoulli occasions per year; all animals initially present, no entry/migration or spatial detection, fixed seasonal multipliers; 198 positive capture indicators. Generated truth annual survival `phi=0.82`, baseline observation `p0=0.42`. No Woodchester records used in the likelihood. The separate V12I-03b spatial assessment uses saved 3 replicated synthetic datasets and 8 historical V11R2 detector XY positions as geographical context only.
+
+**Script/run:** `scripts/ModularFitting/Woodchester_V12I_04_Survival_Detection_Smoke.R`, `V12I_NITER=12000 V12I_NBURN=4000`, one NIMBLE chain. Saved fit to `outputs/v12_immigration_prototype/v12i04_survival_detection/` and log to `outputs_v12i04_survival_detection.log`. User reports exit status 0. V12I-03b detector-distance investigation calculated distances from simulated true activity centres to nearest contextual detector and summed simulated detector-specific captures per badger-year; no refitting.
+
+**Results:** `phi` posterior mean 0.834, 95% credible interval 0.765–0.893 (truth 0.82); `p0` posterior mean 0.423, interval 0.372–0.471 (truth 0.42). Encouraging one-run recovery, **not** evidence of repeated parameter recovery or adequate MCMC mixing.
+
+**Spatial case details:** V12I-03b dataset 1 badger 7 years 1–4 respectively had 0,1,0,0 detections and nearest-detector distances 332.1,284.8,325.5,426.7 m; earlier posterior location errors 723.9,705.1,724.9,863.7 m. Dataset 2 badger 5 detections 3,1,0,1 at 147.8,257.9,234.6,292.7 m; badger 8 detections 2,1,0,0 at 243.5,327.2,268.5,326.2 m. Dataset 3 badger 4 detections 1,1,1,2 at 192.3,215.1,200.4,218.6 m, with previous poor spatial coordinate mixing. These results suggest sparse spatial information contributes to difficult recovery, but do not distinguish weak identifiability from inadequate MCMC exploration.
+
+**Limitations:** Single chain for V12I-04; no Rhat, joint ESS assessment, PPC or independent replication. V12I-03b location uncertainty is confounded with detector coverage, fixed detection scale, and random-walk assumptions; location-error summaries alone cannot establish emigration identifiability. V12I-04 NIMBLE's 'not fully initialized' note did not prevent a successful fit but warrants checking latent-state initialization if numerical warnings arise.
+
+**Decision:** Keep both models PRELIMINARY. Next validate V12I-04 across independent chains/replicated datasets, investigate V12I-03b posterior location uncertainty and mixing, and develop a joint spatial alive-state model only with explicit parameter-recovery gates. Continue toward open-population entry and possible immigration/emigration separation; do not conflate last capture with death. All future Woodchester fitting requires Supabase-first approved data and outstanding V11R2 input reconciliation.
