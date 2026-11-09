@@ -6,7 +6,9 @@ if(!requireNamespace("nimble",quietly=TRUE)) stop("Install R package 'nimble'")
 suppressPackageStartupMessages(library(nimble))
 seed <- as.integer(Sys.getenv("V12I_SEED","20261109"))
 if(is.na(seed)) stop("Invalid seed")
-set.seed(seed)
+data_seed <- as.integer(Sys.getenv("V12I_DATA_SEED", as.character(seed)))
+if(is.na(data_seed)) stop("Invalid V12I_DATA_SEED")
+set.seed(data_seed)
 N <- as.integer(Sys.getenv("V12I_N","40"))
 T <- as.integer(Sys.getenv("V12I_T","6"))
 niter <- as.integer(Sys.getenv("V12I_NITER","12000"))
@@ -37,6 +39,9 @@ code <- nimble::nimbleCode({
     }
   }
 })
+# Use a distinct RNG stream for chain initialisation; within a replicate all
+# chains share identical simulated observations when V12I_DATA_SEED matches.
+set.seed(seed)
 # Consistent initial state: alive through last observed year,
 # with all later states initially marked dead.
 init <- function() {
@@ -59,7 +64,8 @@ s <- as.matrix(samples)
 out <- Sys.getenv("V12I_OUT","outputs/v12_immigration_prototype/v12i04_survival_detection")
 dir.create(out,recursive=TRUE,showWarnings=FALSE)
 write.csv(s,file.path(out,"posterior.csv"),row.names=FALSE)
-saveRDS(list(samples=s,truth=c(phi=phi_true,p0=p0_true),
+saveRDS(list(samples=s,seed=seed,data_seed=data_seed,
+             truth=c(phi=phi_true,p0=p0_true),
              latent_alive=z_true,encounters=y),
         file.path(out,"smoke_fit.rds"))
 for(nm in c("phi","p0")) {
