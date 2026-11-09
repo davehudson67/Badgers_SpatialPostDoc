@@ -70,7 +70,8 @@ assoc<-live$location_quality %in%
  c("SETT_ASSOCIATION_ONLY","SETT_ASSOCIATION_PROVISIONAL")
 live$spatial_eligibility[live$sett_candidate & assoc]<-
    "WITHHELD_SETT_ASSOCIATION"
-provisional<-live$location_quality=="SETT_POINT_PROVISIONAL"
+provisional<-!is.na(live$location_quality) &
+             live$location_quality=="SETT_POINT_PROVISIONAL"
 live$spatial_eligibility[live$sett_candidate & provisional]<-
    "CANDIDATE_FIXED_SETT_PROVISIONAL"
 # No category in the current frozen data is automatically known 'verified'.
