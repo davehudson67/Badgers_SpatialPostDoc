@@ -5170,3 +5170,21 @@ Rscript scripts/ModularFitting/Woodchester_V11R2_Core_Periphery_Transition_Summa
 ```
 
 **Next decision:** Examine conditional transition probabilities, transitions crossing the global hull boundary, time coverage and whether annual zone results are unstable due to boundary choice. Then audit/visualise detector hulls against actual trapping footprint and historical coordinate reliability before committing to biologically named core/periphery zones or refitting V11R2. Do not advance demographic/disease models in this spatial-only decision gate.
+
+
+### 9 November 2026 — Conditional V11R2 core/periphery/outside posterior transitions (completed)
+
+**Status: PRELIMINARY / retrospective posterior summary completed, NOT independently validated biological movement rates.**
+
+**Question:** After accounting for zone of origin, what do V11R2 posterior draws imply about annual core/periphery/outside transitions, and how sensitive are these to candidate core extent? Do we have sufficient evidence to describe observed spatial residence and movement without attributing missing observations to emigration?
+
+**Input/settings:** Existing V11R2 spatial posterior zone audit `outputs/v11r2_core_periphery/audit_20261109T134751Z` using three historical RES50 chains (60 posterior draws per chain) and Supabase-frozen observation flags; summarised by `scripts/ModularFitting/Woodchester_V11R2_Core_Periphery_Transition_Summary.R`. User completed audit successfully; new output `outputs/v11r2_core_periphery/conditional_20261109T135150Z`, including `01_conditional_zone_transitions.csv` and `02_annual_zone_occupancy_and_observation.csv`. 6,316 consecutive modelled tattoo-year intervals across 1977–2025; annual states ranged from 12 to 356 per year. The reported origin support is expected posterior origin-zone interval mass, not the count of uniquely classified animals.
+
+**Conditional posterior transition matrices** (row: origin; columns: core, periphery, outside):
+- central_50: core (0.92378, 0.07189, 0.00433), expected origin interval mass ~1894; periphery (0.03717, 0.93403, 0.02880), mass ~3580; outside (0.00656, 0.10917, 0.88427), mass ~842.
+- central_65: core (0.93005, 0.06538, 0.00457), mass ~2679; periphery (0.05742, 0.90714, 0.03544), mass ~2795; outside (0.00832, 0.10741, 0.88427), mass ~842.
+- central_80: core (0.96873, 0.02579, 0.00548), mass ~3774; periphery (0.05724, 0.88945, 0.05331), mass ~1700; outside (0.01613, 0.09960, 0.88427), mass ~842.
+
+**Interpretation/uncertainty:** Conditional same-zone probabilities 88–97% imply strong apparent annual spatial persistence in fitted retrospective locations, and inferred transitions more often cross adjacent zone boundaries than core→outside. Boundaries are central-detector convex hulls selected by ranked detector distance; the outside convex hull remains unchanged, hence its inferred self-transition is identical in all scenarios by construction. The three candidate core boundaries materially alter conditional movement probabilities and the number of posterior expected origin intervals. Do not report the values as independently fitted transition parameters, biological social-group residency, emigration, survival or density; global historic detector geometry is not an era-specific trapping footprint, model S may be constrained by its movement prior, and smoothed positions can use later observations. In particular, these values could be prior/likelihood smoothing over weakly observed intervals rather than direct evidence of residence.
+
+**Next decision gate:** First examine `subset=detected_both_years` in the existing conditional transition CSV, comparing its conditional matrix and support with `all_modelled_intervals`. This comparison is strongly selected on observed recapture, so must NOT be interpreted as independent validation or population transition rates; it is a sensitivity diagnostic of observational support. Next inspect/map the actual core hull boundaries, detector site historical quality, years with few modelled states, and 50/65/80% sensitivity. Reconcile V11R2 legacy inputs against audited Supabase capture coordinates before selecting biological core boundaries or committing to a refit. No new model and no database changes.
