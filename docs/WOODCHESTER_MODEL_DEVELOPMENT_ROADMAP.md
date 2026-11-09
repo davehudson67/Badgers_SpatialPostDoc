@@ -4951,3 +4951,33 @@ V12I_OUT="outputs/v12_immigration_prototype/v12i05_smoke_$(date -u +%Y%m%dT%H%M%
 **Decision:** The computational joint-likelihood smoke gate passes, but the scientific/statistical validation gate remains OPEN. Validate the simpler V12I-04 survival–detection likelihood across independent chains and datasets, then V12I-05 with independent chains, location/state mixing checks and posterior predictive comparisons. Avoid treating the simulated 12-individual model as equivalent to ~50-year Woodchester histories; candidate full-data scale previously audited as 3,214 observed tattoos and 16,230 live capture-days from a particular snapshot, and requires Supabase-first cohort eligibility, treatment of capture effort, death-episode and coordinate provenance, V11R2 source reconciliation, and careful long-term model structure. Do not claim immigration or emigration fitted at this stage.
 
 **Next action:** Run V12I-04b multi-chain validation with a unique output directory after Git status review; diagnose phi/p0 mixing before scaling V12I-05. Preserve all prior results and source records.
+
+
+### 9 November 2026 — V12I-04b multi-chain demographic validation complete; V12I-05b planned
+
+**V12I-04b status: PRELIMINARY (multi-chain convergence and point/interval recovery criteria met for three synthetic replicates; full calibration/PPC outstanding).** User-run `Woodchester_V12I_04b_Validate_Multichain.R` used three synthetic datasets × three independent NIMBLE chains (12,000 iter/4,000 burn-in each), N=40 simulated animals × T=6 years × Q=4 quarters, known initial presence; phi truth 0.82, p0 truth 0.42, fixed seasonal detection multipliers, no spatial process, entry or emigration. Exit status 0.
+
+**User-reported results (posterior mean, 95% interval, Rhat, bulk/tail ESS):**
+- Rep 1 phi: 0.778148 (0.699466–0.850323), Rhat 1.000283, bulk ESS 4432, tail 5513. p0: 0.409924 (0.357077–0.465103), Rhat 1.001030, bulk 4377, tail 5109.
+- Rep 2 phi: 0.790481 (0.715169–0.859338), Rhat 1.000535, bulk 4310, tail 5060. p0: 0.400355 (0.348107–0.453524), Rhat 1.000874, bulk 3854, tail 5559.
+- Rep 3 phi: 0.846169 (0.781478–0.901415), Rhat 1.000867, bulk 4212, tail 5493. p0: 0.406006 (0.358158–0.455669), Rhat 1.000541, bulk 4472, tail 5443.
+- Six of six nominal 95% intervals include known truth, but three replicates do NOT establish nominal coverage. Posterior mixing of monitored phi and p0 is excellent in this setting.
+
+**Scientific decision:** Proceed to repeated multi-chain validation of V12I-05 joint spatial survival and detection, retaining the unresolved V12I-03b spatial-location mixing issues. Do not claim inference on emigration or true survival in real Woodchester populations from these synthetic tests.
+
+**V12I-05b status: PLANNED / CODE COMMITTED, NOT EXECUTED.** `scripts/ModularFitting/launch_V12I_05b_tmux.sh` launches 3 synthetic datasets × 3 independent chains each, max 3 concurrent tmux sessions, with unique timestamped output directory and refusal to overwrite existing run IDs. `scripts/ModularFitting/Woodchester_V12I_05b_Validate.R` independently checks that chains in each replicate used identical synthetic encounters/latent true states/coordinates, aggregates `posterior` Rhat, bulk/tail ESS for phi/p0, saves full node diagnostics, and reports latent S and z mixing. The simulation uses N=12, T=4, Q=4, J=8 contextual detector points, fixed movement and detection scales and known entry.
+
+**Suggested execution:**
+```bash
+git status --short --branch
+git pull --ff-only
+Rscript -e 'invisible(parse(file="scripts/ModularFitting/Woodchester_V12I_05b_Validate.R"));cat("Validation syntax OK\\n")'
+V12I_REPS=3 V12I_CHAINS=3 V12I_MAX_PARALLEL=3 \
+V12I_NITER=12000 V12I_NBURN=4000 \
+bash scripts/ModularFitting/launch_V12I_05b_tmux.sh
+```
+After all nine chains exit 0, run the summariser command printed by the launcher. Assess spatial-node convergence, latent death-state Rhat issues (some z coordinates may have constant chains/undefined Rhat), marginal phi and p0 recovery and posterior predictive checks. No V12I-05b diagnostic outputs presently exist.
+
+**Working-tree safeguard:** Immediately before this entry the user displayed a locally dirty `main` worktree: eight tracked CSV paths deleted under `docs/database/`, new `docs/database/csv/` directory, modified `scripts/WECS_39_remaining_grid_review.R`, and untracked `Woodchester_V12A_CJS_Baseline.R`, `Woodchester_V12_Movement_Recapture_Audit.R` and `Woodchester_V12_Spatial_Position_Audit.R`. `git pull --ff-only` succeeded without disturbing those changes. Do not assume these are redundant; audit/commit the CSV relocation and independent modelling work deliberately. Never reset/clean them.
+
+**Real-data scale & dependencies:** Previous source audits identify thousands of tattoos and ~50 years of captures, but the entire historical population cannot be treated as an initially known capture cohort. Real-life entry, unknown pre-first-capture states, effort history, spatial boundary/sett quality, confirmed mortality with missing XY and selection bias must be addressed through reviewed Supabase-first snapshots before fitting V12 to Woodchester data. No real-data or database changes made here.
