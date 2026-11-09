@@ -57,20 +57,41 @@ latent_mobile <- matrix(FALSE,N,T)
 outside <- matrix(NA,N,T)
 years <- seq_len(T)
 
-# Starting points for recruitment/immigration are deliberately simplistic.
-# Locally recruited start near randomly selected detectors, immigrants start
-# somewhat beyond a randomly selected detector. Their true provenance is
-# known by the simulator but NOT identifiable from detections alone.
+# Entry is into the INSIDE population. We specify provenance
+# synthetically: a local recruit enters near an inside detector; an
+# immigrant is assigned to arrive across the hull perimeter and begins
+# just inside that boundary. This is a modelled provenance assumption,
+# not proof that a real badger originated outside the study population.
+# No explicit pre-entry trajectory is simulated at this stage.
 new_start <- function() {
-  j <- sample.int(nrow(xy),1L)
   immigrant <- runif(1) < .5
-  step <- if(immigrant) 600 else 55
-  angle <- runif(1,0,2*pi)
-  s <- c(x=unname(xy[j,1])+step*cos(angle),
-         y=unname(xy[j,2])+step*sin(angle),
+  if (immigrant) {
+    # Sample a hull edge and a point along it, then nudge inside.
+    j <- sample.int(length(h), 1L)
+    k <- if (j == length(h)) 1L else j + 1L
+    u <- runif(1)
+    boundary <- c((1-u)*hx[j]+u*hx[k], (1-u)*hy[j]+u*hy[k])
+    centre <- c(mean(hx), mean(hy))
+    point <- 0.96*boundary + 0.04*centre
+  } else {
+    # Rejection sampling keeps local recruitment inside the study proxy.
+    point <- NULL
+    for (attempt in seq_len(1000L)) {
+      j <- sample.int(nrow(xy), 1L)
+      candidate <- c(unname(xy[j,1])+rnorm(1,0,55),
+                     unname(xy[j,2])+rnorm(1,0,55))
+      if (in_poly(candidate[1], candidate[2], hx, hy)) {
+        point <- candidate
+        break
+      }
+    }
+    if (is.null(point)) stop("Could not place local recruit inside hull")
+  }
+  s <- c(x=unname(point[1]), y=unname(point[2]),
          immigrant=as.numeric(immigrant))
-  stopifnot(identical(names(s),c("x","y","immigrant")),
-            all(is.finite(s)))
+  stopifnot(identical(names(s), c("x","y","immigrant")),
+            all(is.finite(s)),
+            in_poly(s["x"],s["y"],hx,hy))
   s
 }
 for(i in seq_len(N)) {
@@ -159,10 +180,13 @@ for(i in seq_len(N)) {
 }
 validation<-data.frame(metric=c("candidate_individuals","ever_live_detected",
   "total_live_records","dead_recoveries","individuals_outside_then_inside",
-  "individuals_with_detection_gap_then_return","alive_outside_person_years"),
+  "individuals_with_detection_gap_then_return","alive_outside_person_years",
+  "synthetic_immigrant_origins","synthetic_local_recruit_origins"),
   value=c(N,sum(rowSums(obs==1L)>0),sum(obs==1L),sum(obs==2L),
           was_outside_then_inside,gap_then_seen,
-          sum(outside,na.rm=TRUE)))
+          sum(outside,na.rm=TRUE),
+          sum(origin=="immigrant",na.rm=TRUE),
+          sum(origin=="local_recruit",na.rm=TRUE)))
 enc<-which(obs>0,arr.ind=TRUE)
 records<-data.frame(id=enc[,1],year=enc[,2],
   event=ifelse(obs[enc]==1L,"LIVE","DEAD_RECOVERY"),
