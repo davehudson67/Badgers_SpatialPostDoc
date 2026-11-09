@@ -5306,3 +5306,18 @@ Rscript scripts/ModularFitting/Woodchester_V11R2_Sett_Annual_Continuity_Audit.R
 ```
 
 **Decision:** Examine continuous annual support among the 46 historically observed setts and inspect the geographical pattern without assuming stable effort. A defensible spatial core should eventually be based on field monitoring records and a consistent era-aware trap-availability process; do not expand project into demographic or infection models at this step.
+
+
+### 9 November 2026 — Annual capture continuity at 119 fixed legacy setts
+
+**Status:** Existing observational continuity audit COMPLETED; geographical interpretation pending inspection of new continuity map; no spatial model fit/recalibration.
+
+**Question:** Within the 46 legacy setts showing positive capture evidence in all three historic periods, how consistently were captures recorded annually? Do these sites provide a defensible *candidate pool* for a geographically coherent long-term monitoring core?
+
+**Input/execution:** `scripts/ModularFitting/Woodchester_V11R2_Sett_Annual_Continuity_Audit.R`, curated Supabase frozen capture evidence snapshot `data/model_snapshots/v12_20261106T103144Z_1079872` and historical V11R2 detector geometry reference `outputs/v11r2_core_periphery/audit_20261109T134751Z`. User reports successful run with output `outputs/v11r2_core_periphery/continuity_20261109T161513Z`; among 119 legacy detector setts, 46 had observed captures in all three eras. Among these 46, number of distinct years with >=1 observed capture: min 7, Q1 20, median 35.5, mean 31.3, Q3 44, max 47 of 49 calendar years (1977–2025). One finite-coordinate capture fell outside the nearest-detector 100-m proximity criterion and was excluded, without silently reassigning a sett.
+
+**Illustrative long-term setts and observed years:** ARTHURS 47 (16/16/15 years in the three eras), KENNEL 47 (15/16/16), OLDOAK 47 (15/16/16), WINDSOREDGE 47 (14/16/17), BEECH 46 (16/16/14), WEST 46 (16/16/14), INCHBROOK 45 (12/16/17), PARKMILL 45 (13/16/16), TOP 45 (15/16/14), YEW 45 (16/13/16), HONEYWELL 44, LARCH 44, NETTLE 44, COLLIERSWOOD 43, TAXUS 42. These are not yet formal core members; density, study effort, capture probability, and biological residency not estimated. Zero recorded captures in a year does NOT identify absent trapping effort.
+
+**Output:** annual per-sett year panel `02_sett_year_observed_capture_panel.csv`, ranking `01_sett_annual_capture_continuity.csv`, and geographic plot `03_sett_capture_continuity.png`. User's attached three-panel historical map reproduces prior period comparison; new annual continuity map has not yet been visually reviewed.
+
+**Decision:** Review the new spatially coloured annual continuity plot to see whether the high-frequency capture setts constitute one coherent spatial area or multiple clusters. Avoid choosing a capture-year threshold or forcing an enclosing convex hull before viewing geometry and considering monitoring contraction. Only then propose a *provisional*, field-verifiable core/periphery boundary and rerun existing posterior zone occupancy against it; keep distinctions between long-term capture evidence and actual effort, and legacy setts vs audited capture positions. No additional modelling stages, density or infection analyses at this point.
