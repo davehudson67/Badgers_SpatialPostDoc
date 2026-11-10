@@ -139,11 +139,14 @@ pop_obj <- readRDS(population_file) # archival population/age: matched 1932 only
 sp <- readRDS(spatial_file)
 source("scripts/database/Woodchester_V12_Spatial_Eligibility_Rules.R",local=TRUE)
 enc <- v12_spatial_eligibility(enc,enforce_20261106_snapshot=FALSE)
-if(anyDuplicated(as.character(enc$capture_id)))stop("Duplicate snapshot capture IDs")
+enc$capture_id <- wecs_bigint_to_character(enc$capture_id)
+enc$sett_id <- wecs_bigint_to_character(enc$sett_id)
+if(anyNA(enc$capture_id)||anyDuplicated(enc$capture_id))
+ stop("Missing or duplicate decoded capture IDs")
 # K051 8810: geographically known, non-sett FOUND_ALIVE. The present
 # V11R3 fit does NOT yet use its coordinates as a likelihood observation:
 # retain the event in the frozen snapshot, never mislabel it as a detector.
-k051<-enc[as.character(enc$capture_id)=="8810",,drop=FALSE]
+k051<-enc[enc$capture_id=="8810",,drop=FALSE]
 if(nrow(k051)!=1L || as.character(k051$location_type)!="BUILDING" ||
    as.numeric(k051$location_easting)!=382442 ||
    as.numeric(k051$location_northing)!=201956 ||
