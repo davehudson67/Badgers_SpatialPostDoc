@@ -1,3 +1,20 @@
+# Preserve exact PostgreSQL BIGINT identifiers across DBI/RPostgres and RDS.
+# An integer64 is stored as doubles' underlying bits; dropping its class
+# before conversion can silently create tiny nonsensical numbers.
+wecs_bigint_to_character <- function(x) {
+ if(inherits(x,"integer64")) {
+  if(!requireNamespace("bit64",quietly=TRUE))
+   stop("bit64 is required to decode RPostgres BIGINT values")
+  return(bit64::as.character.integer64(x))
+ }
+ if(is.double(x) && any(is.finite(x) & x!=0 & abs(x)<1e-200)) {
+  if(!requireNamespace("bit64",quietly=TRUE))
+   stop("bit64 is required for legacy BIGINT representation")
+  return(bit64::as.character.integer64(structure(x,class="integer64")))
+ }
+ as.character(x)
+}
+
 # WECS V12 frozen evidence: approved model-specific fixed-sett eligibility.
 # Source classifications in analysis.encounters_clean_v1 remain unchanged.
 # Investigator-approved 2026-11-10: named-sett TRAP observations whose
