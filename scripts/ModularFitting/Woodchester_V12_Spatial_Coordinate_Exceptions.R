@@ -23,9 +23,23 @@ if(!all(req%in%names(d)))stop("Original snapshot missing fields")
 if(!all(c("detector","sett","x","y")%in%names(r)))
  stop("Legacy detector reference missing fields")
 to_text<-function(x,label) {
- if(is.double(x)&&!inherits(x,"integer64")&&
-    any(is.finite(x)&x!=0&abs(x)<1e-200))
-   stop(label," appears to contain corrupted integer64 bits")
+ if(inherits(x,"integer64")) {
+   if(!requireNamespace("bit64",quietly=TRUE))
+      stop("Install bit64 to decode original PostgreSQL BIGINT values")
+   return(bit64::as.character.integer64(x))
+ }
+ if(is.double(x)&&any(is.finite(x)&x!=0&abs(x)<1e-200)) {
+   if(!requireNamespace("bit64",quietly=TRUE))
+      stop("Install bit64 to re-interpret BIGINT bit-pattern values")
+   if(any(is.finite(x)&x!=0&abs(x)>=1e-200))
+      stop(label," mixes possible BIGINT bit patterns with regular numbers")
+   return(bit64::as.character.integer64(structure(x,class="integer64")))
+ }
+ if(is.numeric(x)) {
+   if(any(is.finite(x)&x!=floor(x)))
+      stop(label," contains fractional IDs")
+   return(format(x,scientific=FALSE,trim=TRUE))
+ }
  as.character(x)
 }
 # IMPORTANT: convert BIGINT fields BEFORE any subset/data-frame row bind.
