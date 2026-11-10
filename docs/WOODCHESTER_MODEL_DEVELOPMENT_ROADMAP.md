@@ -5660,3 +5660,32 @@ The distinct J011 death/recovery ID 17354 (1999-05-30), `RTA`, recorded St David
 **Date-level discrepancies:** 425 tattoo-date screens across 256 tattoos: 360 ONLY_CURATED, 14 ONLY_LEGACY, 51 different mapped row counts. Source-record identity not proven by date. Next audit should distinguish (i) legacy-only outer-year captures, (ii) true unlocated but observed-alive encounters in the same outer years, (iii) alias or old filtering differences. No support yet for attributing the 40 latent intervals to 40 lost observed moves.
 
 **Code housekeeping:** The prior triage script mistakenly warned that one badger *should* have no spatial capture; obsolete expectation removed and replaced with an integrity assertion comparing exported missing-tattoo list with cohort histories. New read-only `scripts/ModularFitting/Woodchester_V12_V11R2_Shortened_Spans_Audit.R` reads the local cohort and changed-date CSVs and lists the exact 22 tattoos, first/last spatial years, lost latent-span intervals and relevant changed dates. Does not query or change the database, modify frozen snapshots, refit movement or infer trapping coverage. Run on local `outputs/v12_v11r2_reconciliation/run_20261110T094951Z` and inspect before defining next input comparison.
+
+
+### 10 November 2026 — Source examination of the 22 shortened V11R2 spatial observation spans
+
+**Status: READ-ONLY SOURCE INSPECTION COMPLETE; 40 fewer LATENT spatial-span intervals EXPLAINED BY EVENT TYPE / LOCATION EVIDENCE; NO MODEL OR DB CHANGE.**
+
+The user ran `scripts/ModularFitting/Woodchester_V12_V11R2_Shortened_Spans_Audit.R` against `outputs/v12_v11r2_reconciliation/run_20261110T094951Z`. Exactly 22 old-cohort tattoos have shortened spatial-only first-to-last annual spans, losing 40 nominal latent movement intervals, with 1,910 tattoos unchanged. Four start later and 18 end earlier. One set of eight (R067 R068 R070 R074 R076 R078 R080 R083) had legacy-mapped terminal dates in October 1979; querying original `research.captures` and `analysis.encounters_clean_v1` confirms **all eight original capture methods are REMOVAL** (even though `is_pm=false`), and current `encounter_type=REMOVAL`. They should not automatically be counted as released live fixed-sett capture observations; existing investigator cleaning rule `REMOVAL=KILLED` requires appropriate mortal/terminal-evidence assessment, but explicit terminal modelling status was NOT verified in this query.
+
+Other nonstandard end-of-history source events:
+- W023 (1980-04-20 capture 4987) original `FOUND DEAD`, at GIANT BEECH sett, `encounter_type=FOUND_DEAD`, `is_pm=false`. Not an ordinary live trap.
+- Z045 (1998-06-01 capture 7882) original `FOUND DEAD`, location recorded `BOUNDARY`, curated `RECOVERY_SITE` with provisional association to KENNEL; not a known fixed-sett live trap.
+- N070 (1987-06-02 capture 1672) original `PUT DOWN`, recorded `FIELD` and named BOUNDARY COURT sett association, `encounter_type=PUT_DOWN` and `episode_record_role=FIELD_RECORD`. Must check linked PM/episode and mortality adjudication separately before calling confirmed terminal death or interpreting RTA. In particular, do not confuse MOC=PUT DOWN with live trapping.
+
+The remaining **11** shortened old-cohort tattoos have genuine live/nonterminal-source encounters at nonsett or location-uncertain sites, currently not suitable as fixed-sett spatial point detections:
+- 063G 2003-11-12 ID 11043, `TRAP` at PEGLARS name but explicit `FIELD`;
+- F074 1989-02-21 ID 9573, `TRAP` OLD OAK but `WOOD`;
+- G044 1978-09-04 ID 4196, `NET` DEN but `WOOD`;
+- G046 1977-07-18 ID 8975, `NET` MEAD but `FIELD`;
+- K049 1988-06-21 ID 616, `TRAP` ATCOMBE CORNER but `BOUNDARY`;
+- W033 1981-09-23 ID 2516, `SNARE` BREAKHEART but `BOUNDARY`;
+- W049 1980-07-31 ID 8946, `TRAP` MEAD but `WOOD`;
+- W056 1980-08-18 ID 10010, `SNARE` OPEN but `WOOD`;
+- Y004 1989-06-21 ID 8463, `TRAP` LARCH but `BUILDING`;
+- Y046 1981-11-24 ID 8277, `SNARE` LARCH but `BOUNDARY`; another earlier Y046 1981-10-20 ID 9091 is `SNARE` at `BOUNDARY` with unassigned `MIKES BIG FIELD 2`;
+- K051 1999-10-27 ID 8810, `FOUND_ALIVE` in `BUILDING`, name LISTERS associated, provisional sett reference XY is **NOT** evidence of capture at the sett; K051 has other earlier fixed-sett captures. K051 alone spans 7 of the 40 difference; the 1999 record remains valid observed-alive evidence, not a fixed-sett spatial detection.
+
+**Interpretation and decision:** These are explainable eligibility/provenance differences. Old V11R2 used a name-to-sett XY join with broader live indicator, whereas current cleaned input properly separates death/removal events and explicitly nonsett capture context. Do not repair these differences by reassigning field/wood/boundary/building/PM records to nearest or named sett coordinates. All relevant authentic live nonsett encounters should still inform encounter/time histories and survival/observation models, with unresolved spatial position explicit. Fatal/removal/death information belongs in adjudicated mortality/terminal modelling evidence, not ordinary live capture arrays. **40 fewer latent annual span intervals are not 40 actual observed movements lost.** Confirm death/episode status before mortality effects; no change to frozen snapshot, current Supabase source, or movement fit. Future coverage-aware movement likelihood must address nonsett location evidence without fabricating exact XY.
+
+A supplementary read-only query joining `analysis.mortality_model_candidate_v1` for all 12 targeted records timed out; consequently no new mortality-model candidate classification is asserted here. The 425 global date-key differences across 256 tattoos remain as reconciliation diagnostics, but this targeted source audit explains the 22 shortened spatial spans without justifying any arbitrary restoration of old detections.
