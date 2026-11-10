@@ -20,31 +20,42 @@ ids<-unique(toupper(trimws(as.character(p$tattoo[!is.na(p$movement_eligible)&p$m
 if(length(ids)!=1932L||anyNA(ids))stop("Historic cohort reference is not the verified 1932 tattoos")
 source("scripts/database/Woodchester_V12_Spatial_Eligibility_Rules.R")
 x<-v12_spatial_eligibility(x,enforce_20261106_snapshot=FALSE)
+x$capture_id <- wecs_bigint_to_character(x$capture_id)
+x$sett_id <- wecs_bigint_to_character(x$sett_id)
 x$capture_date<-as.Date(x$capture_date)
 x$tattoo<-toupper(trimws(as.character(x$tattoo)))
 x$year<-as.integer(format(x$capture_date,"%Y"))
 x$quarter<-(as.integer(format(x$capture_date,"%m"))-1L)%/%3L+1L
 x<-x[!is.na(x$year)&x$year>=1977L&x$year<=2025L,,drop=FALSE]
 if(anyNA(x$tattoo)||any(!nzchar(x$tattoo)))stop("Missing tattoo")
-if(anyDuplicated(as.character(x$capture_id)))stop("Duplicate source capture ID")
+if(anyNA(x$capture_id)||anyDuplicated(x$capture_id))stop("Missing/duplicate source capture ID")
 fixed<-x[x$v12_fixed_sett_spatial,,drop=FALSE]
 if(!nrow(fixed))stop("No approved fixed-sett observations")
 fixed$easting<-as.numeric(fixed$location_easting)
 fixed$northing<-as.numeric(fixed$location_northing)
 if(any(!is.finite(fixed$easting)|!is.finite(fixed$northing)))
  stop("Approved fixed-sett points contain invalid XY")
-fixed$sett_id<-as.character(fixed$sett_id)
+fixed$sett_id<-wecs_bigint_to_character(fixed$sett_id)
 pairs<-unique(fixed[,c("sett_id","easting","northing")])
 if(anyDuplicated(pairs$sett_id))stop("One canonical sett ID has multiple spatial XY; source review required")
 # K051 nonsett locality must be retained in the new snapshot but never
 # included in the fixed-detector universe.
-j<-x[as.character(x$capture_id)=="8810",,drop=FALSE]
-if(nrow(j)!=1L || j$tattoo!="K051" || j$encounter_type!="FOUND_ALIVE" ||
-   j$location_type!="BUILDING" ||
-   as.numeric(j$location_easting)!=382442 ||
-   as.numeric(j$location_northing)!=201956 ||
-   j$v12_fixed_sett_spatial)
- stop("Capture 8810 K051 nonsett-location correction missing or misclassified")
+j<-x[x$capture_id=="8810",,drop=FALSE]
+cat("K051 source capture ID 8810 matches:",nrow(j),"\n")
+if(nrow(j)==1L)
+ print(j[,c("capture_id","tattoo","capture_date","encounter_type",
+   "location_type","location_quality","location_easting",
+   "location_northing","v12_fixed_sett_spatial")],row.names=FALSE)
+if(nrow(j)!=1L)stop("K051 capture 8810 not found by decoded BIGINT ID; ",
+ "check original frozen snapshot record, not the production DB")
+if(is.na(j$tattoo)||j$tattoo!="K051" ||
+   is.na(j$encounter_type)||j$encounter_type!="FOUND_ALIVE" ||
+   is.na(j$location_type)||j$location_type!="BUILDING" ||
+   !isTRUE(as.numeric(j$location_easting)==382442) ||
+   !isTRUE(as.numeric(j$location_northing)==201956) ||
+   isTRUE(j$v12_fixed_sett_spatial))
+ stop("Capture 8810 K051 source classification or supplied XY differs; ",
+      "inspect printed snapshot row")
 # Source audit: all 159 previous blank-location captures were approved;
 # revised frozen data should preserve these counts until separate evidence changes.
 blank<-x[x$v12_spatial_evidence=="APPROVED_NAMED_SETT_BLANK_LOCATION",,drop=FALSE]
