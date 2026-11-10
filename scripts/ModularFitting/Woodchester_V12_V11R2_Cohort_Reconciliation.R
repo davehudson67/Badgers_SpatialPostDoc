@@ -59,11 +59,14 @@ raw$capture_date<-as.Date(raw$capture_date)
 raw$year<-as.integer(format(raw$capture_date,"%Y"))
 raw$quarter<-(as.integer(format(raw$capture_date,"%m"))-1L)%/%3L+1L
 raw<-raw[raw$year>=1977&raw$year<=2025,,drop=FALSE]
-raw$spatial_candidate<-is.finite(suppressWarnings(as.numeric(raw$location_easting)))&
- is.finite(suppressWarnings(as.numeric(raw$location_northing)))&
- !is.na(raw$location_type)&raw$location_type=="SETT"&
- !is.na(raw$location_quality)&raw$location_quality=="SETT_POINT_PROVISIONAL"&
- !is.na(raw$sett_id)&nzchar(raw$sett_id)
+# Investigator-approved 2026-11-10 rule. The original source context for
+# the 159 named-sett blank-location captures was checked against live Supabase.
+# Use a guarded, model-specific derivation; NEVER rewrite the frozen snapshot.
+source("scripts/database/Woodchester_V12_Spatial_Eligibility_Rules.R",local=TRUE)
+raw<-v12_spatial_eligibility(raw,enforce_20261106_snapshot=TRUE)
+raw$spatial_candidate<-raw$v12_fixed_sett_spatial
+cat("\nApproved spatial input evidence (whole snapshot):\n")
+print(table(raw$v12_spatial_evidence,useNA="ifany"))
 if(anyNA(raw$capture_date)||anyNA(raw$tattoo))stop("Missing curated identity or date")
 # Main comparison is on EXACTLY the original V11R2 population; full cohort is
 # reported as separate discovery, never silently included in a new refit.
@@ -167,6 +170,7 @@ overview<-data.frame(metric=c(
  "legacy_mapped_tattoos","legacy_model_latent_states_from_mapped_history",
  "legacy_model_latent_intervals_from_mapped_history",
  "curated_qualifying_live_rows_all_tattoos","curated_spatial_candidate_rows_all_tattoos",
+ "approved_named_sett_blank_location_all_tattoos",
  "curated_all_live_rows_in_legacy_cohort",
  "curated_spatial_rows_in_legacy_cohort",
  "curated_spatial_tattoos_in_legacy_cohort",
@@ -183,6 +187,7 @@ overview<-data.frame(metric=c(
  "date_key_comparison_differences"),
  value=c(length(ids),nrow(oldmapped),length(unique(oldmapped$tattoo)),
  sum(a$legacy_latent_states),sum(a$legacy_latent_intervals),nrow(raw),nrow(all_sp),
+ sum(raw$v12_spatial_evidence=="APPROVED_NAMED_SETT_BLANK_LOCATION"),
  nrow(new),nrow(new_sp),length(unique(new_sp$tattoo)),
  sum(!ids%in%new_sp$tattoo),length(full_extra),
  length(setdiff(unique(all_sp$tattoo),ids)),
@@ -209,7 +214,9 @@ utils::write.csv(data.frame(tattoo=ids[!ids%in%new_sp$tattoo]),
 writeLines(c(paste("snapshot",snap,sep="="),
  "READ ONLY. Historical V11R2 full movement cohort exactly 1932 tattoos.",
  "Legacy mapped capture eligibility reproduced using legacy alias code and reference CSV.",
- "New fixed-sett candidate: SETT + SETT_POINT_PROVISIONAL + finite XY + sett_id.",
+ "New fixed-sett candidate: approved explicit SETT point OR 159 investigator-approved blank-location named-sett TRAP associations with known XY.",
+ "The 159 category was source-audited 2026-11-10; frozen snapshot has no original MOC, so 49 inferred-method captures cannot be separately tagged in this output.",
+ "Future input snapshots must be re-audited before this category is automatically approved.",
  "Curated events with missing XY remain valid dated observations but not geographic detections.",
  "Date comparison = tattoo-date screening only, NOT event-level identity parity.",
  "Annual model span = last spatial year minus first spatial year plus one; NO interpolation of actual capture evidence.",
