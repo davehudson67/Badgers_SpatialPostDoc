@@ -757,7 +757,8 @@ code_V11_collapsed <- nimbleCode({
           lambda0[i, j, first[i]],
           H[i, j, 1:M, first[i]],
           ncap[i, j, first[i]],
-          campaign_active[j, first[i]]
+          campaign_active[j, first[i]],
+          site_active[1:R, j, first[i]]
         )
 
       Ones[i, j, first[i]] ~ dbern(quarterProb[i, j, first[i]])
@@ -1021,7 +1022,8 @@ code_V11_collapsed <- nimbleCode({
             lambda0[i, j, k],
             H[i, j, 1:M, k],
             ncap[i, j, k],
-            campaign_active[j, k]
+            campaign_active[j, k],
+            site_active[1:R, j, k]
           )
 
         Ones[i, j, k] ~ dbern(quarterProb[i, j, k])
