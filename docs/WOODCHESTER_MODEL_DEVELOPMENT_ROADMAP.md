@@ -5551,3 +5551,23 @@ The command reports true capture_id, canonical sett_id, capture date, tattoo, cu
 **Recorded implementation:** `sql/migrations/20261110_top_sett_todds_capture_alias_decisions_APPLIED.sql` is an exact executed SQL copy and `sql/audit/WECS_SETT_ALIAS_RULE_INTEGRITY_20261110.sql` is an ongoing read-only regression test. Documentation in `docs/database/02_MASTER_DATA_DICTIONARY_AND_AUDIT.md` and `docs/database/03_VERSIONING_AND_DECISIONS.md` was updated. This was a direct SQL data transaction, **not** a registered Supabase schema migration; do not count it in historic migration totals or replay on the live database. Future records need a source-backed capture-level decision, not just an implicit text join. Frozen input snapshots remain immutable and may predate this additional provenance; regenerate a new frozen snapshot only when beginning a new fit.
 
 **Next:** Finish reconciliation of curated fixed-sett capture observations and the original 1,932 badger V11R2 cohort, then implement a coverage-aware detection likelihood. Continuous-space movement remains the primary process; annual SG polygons are a separate postfit stage.
+
+
+### 10 November 2026 — V11R2 historical movement cohort versus curated Supabase snapshot, comparison script ready
+
+**Status: CODE COMMITTED / NOT RUN ON EXETER SERVER / NOT A REFIT.**
+
+**Question:** If we retain exactly the 1,932 movement-eligible tattoos used in V11R2, how do the dated spatial captures and annual modelled span from old local RDS/alias/detector inputs differ from the audited 1977–2025 Supabase frozen capture history? How many additional individuals are present outside the historic fitting cohort? Does the new canonical sett-point geometry include physical sites not present in the historical 119-location network?
+
+**Read-only script:** `scripts/ModularFitting/Woodchester_V12_V11R2_Cohort_Reconciliation.R` uses historic `results/V7_population_inclusion_audit.rds` and `data/badger_encounters_useful.rds` solely to reproduce old inclusion/geometry, `data/WoodchesterSettLocations.csv` for historic detector-coordinate matching, and vetted Supabase `qualifying_live.rds` from immutable `data/model_snapshots/v12_20261106T103144Z_1079872`. The old alias function is deliberately reproduced ONLY for historical parity; any unsafe old name merges must NOT be propagated into the new model. New fixed-sett candidate requires finite XY, canonical sett_id, SETT location type and SETT_POINT_PROVISIONAL quality, with original nonspatial encounters retained in the full evidence.
+
+**Output:** `outputs/v12_v11r2_reconciliation/run_<UTC>/` 01 overall numbers, 02 tattoo/date status, 03 old-cohort per-tattoo years/latent states/intervals, 04 changed tattoo-date rows, 05 canonical detector XY versus old CSV and 06–07 old/new cohort exceptions. Sensitive individual-level files remain local and should never be Git committed. A tattoo/date match checks existence and row count, **not source capture ID identity, same-day independence, or correct sett mapping**. No assumptions of documented zero-capture trap effort. Full years between first and last capture are latent annual model states, not directly observed capture years. No continuous-space parameters are refitted, no SG polygons are assigned.
+
+**Run:**
+
+    cd ~/Badgers_SpatialPostDoc
+    git pull --ff-only
+    Rscript -e 'invisible(parse(file="scripts/ModularFitting/Woodchester_V12_V11R2_Cohort_Reconciliation.R"));cat("Syntax OK\n")'
+    V12_SNAPSHOT="data/model_snapshots/v12_20261106T103144Z_1079872" Rscript scripts/ModularFitting/Woodchester_V12_V11R2_Cohort_Reconciliation.R
+
+**Decision gate:** Review exact old-cohort counts, capture-date discrepancies, changes in first/last spatial observation years and hence annual movement spans, and number of new vetted fixed-sett sites. Do not assume the spatial eligibility audit's 3,143 observed tattoos are all fit-ready movement trajectories. Only then freeze spatial observation input and compare historically always-open versus transparently hypothesised detector-availability models, while preserving an explicit observation state for captured-but-unlocated events.
