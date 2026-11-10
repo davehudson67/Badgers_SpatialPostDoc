@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # Read-only local follow-up to V11R2 cohort reconciliation; no DB connection.
-# Print only aggregated results except the single missing historic cohort tattoo.
+# Print aggregated summaries; list missing historic-cohort spatial tattoos, if any.
 d <- Sys.getenv("V12_RECONCILIATION_DIR","")
 if(!nzchar(d))stop("Set V12_RECONCILIATION_DIR to the output folder from prior reconciliation")
 paths <- file.path(d,c("01_overview.csv","03_LEGACY_COHORT_LOCAL.csv",
@@ -34,7 +34,8 @@ if(sum0(coh$legacy_latent_states)!=8248L ||
  stop("Legacy annual movement totals do not reproduce V11R2")
 cat("\n=== OLD-COHORT BADGERS WITH NO CURATED SPATIAL CAPTURE ===\n")
 print(missing,row.names=FALSE)
-if(nrow(missing)!=1L)warning("Expected exactly 1 absent spatial tattoo; observed ",nrow(missing))
+if(nrow(missing)!=sum(is.na(coh$curated_spatial_first)))
+ stop("Missing-spatial-tattoo export disagrees with cohort annual spans")
 cat("\n=== CHANGES IN FIRST/LAST OBSERVED YEAR ===\n")
 spok <- !is.na(coh$curated_spatial_first)
 liveok <- !is.na(coh$curated_all_live_first)
