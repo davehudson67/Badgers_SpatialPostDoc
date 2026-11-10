@@ -127,9 +127,17 @@ cmp$status<-ifelse(cmp$legacy_mapped_rows==0,"ONLY_CURATED",
 annualspan<-function(d,yearcol) {
  if(!nrow(d))return(data.frame(tattoo=character(),first=integer(),last=integer(),
   n_obs_years=integer(),latent_states=integer(),latent_intervals=integer()))
- z<-aggregate(d[[yearcol]],list(tattoo=d$tattoo),
-  function(y)c(first=min(y),last=max(y),n_obs_years=length(unique(y))))
- out<-data.frame(tattoo=z$tattoo,do.call(rbind,z$x))
+ # split() has stable list behaviour; aggregate() can simplify its vector-
+ # valued summary into a matrix, which previously broke do.call(rbind,z$x).
+ grouped<-split(as.integer(d[[yearcol]]),d$tattoo,drop=TRUE)
+ if(any(vapply(grouped,function(y)anyNA(y),logical(1))))
+  stop("Missing year in annual span input")
+ out<-data.frame(
+  tattoo=names(grouped),
+  first=as.integer(vapply(grouped,min,integer(1))),
+  last=as.integer(vapply(grouped,max,integer(1))),
+  n_obs_years=as.integer(vapply(grouped,function(y)length(unique(y)),integer(1))),
+  row.names=NULL,stringsAsFactors=FALSE)
  out$latent_states<-out$last-out$first+1L
  out$latent_intervals<-out$latent_states-1L
  out
