@@ -5571,3 +5571,8 @@ The command reports true capture_id, canonical sett_id, capture date, tattoo, cu
     V12_SNAPSHOT="data/model_snapshots/v12_20261106T103144Z_1079872" Rscript scripts/ModularFitting/Woodchester_V12_V11R2_Cohort_Reconciliation.R
 
 **Decision gate:** Review exact old-cohort counts, capture-date discrepancies, changes in first/last spatial observation years and hence annual movement spans, and number of new vetted fixed-sett sites. Do not assume the spatial eligibility audit's 3,143 observed tattoos are all fit-ready movement trajectories. Only then freeze spatial observation input and compare historically always-open versus transparently hypothesised detector-availability models, while preserving an explicit observation state for captured-but-unlocated events.
+
+
+### 10 November 2026 — Cohort reconciliation first-run R aggregation fix
+
+**Status: ERROR REPORTED / SCRIPT PATCH COMMITTED / NOT YET REEXECUTED ON RSTUDIO.** First run of `scripts/ModularFitting/Woodchester_V12_V11R2_Cohort_Reconciliation.R` against frozen Supabase `v12_20261106T103144Z_1079872` terminated in `annualspan` at `do.call(rbind, z$x)` with `second argument must be a list`. Reason: base R `aggregate` may simplify a function returning a vector into a matrix, not a list. Replaced annualspan with explicit per-tattoo `split`, deterministic `vapply` min/max/count, preserving intended derived annual latent-state and interval definitions; no data/model/DB modification. This is a code correction only, not scientific evidence or a successful audit run. Re-run the same command after `git pull --ff-only`; assess results before approving any spatial refit.
