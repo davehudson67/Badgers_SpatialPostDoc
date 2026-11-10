@@ -379,9 +379,11 @@ for (rr in seq_len(nrow(campaign_tbl))) {
 # Positive same-quarter mask is endogenous and should only be used for
 # bounding sensitivity; five-year capture-positive mask is also a scenario.
 site_active <- array(0L,dim=c(R,J,n_prim))
+# Use positives from ALL curated badgers at the fixed reference detector
+# sites, including individuals outside the historical 1932-animal fit cohort.
+# Otherwise known positive trapping sites would be incorrectly marked inactive.
 positives <- live_all %>%
-  filter(tattoo %in% historical_reference_pop$tattoo,
-         !is.na(detector)) %>%
+  filter(!is.na(detector)) %>%
   distinct(detector,primary_year,trap_season)
 for(rr in seq_len(nrow(positives))) {
  r<-as.integer(positives$detector[rr])
