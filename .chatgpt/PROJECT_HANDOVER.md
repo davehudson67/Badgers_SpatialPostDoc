@@ -194,3 +194,39 @@ For all new V12/V13 analyses use approved Supabase research/analysis data throug
 Initial work-in-progress extractor: scripts/database/freeze_woodchester_v12_inputs.R. It creates a SHA-256-labelled, Git-ignored evidence snapshot from analysis.encounters_clean_v1 and analysis.mortality_model_candidate_v1. It does NOT create approved V12 model matrices or fit a model. Review the live checks and assumptions before fitting.
 
 Historical Phase/RD-SCR scripts still read local RDS, but are archival/reproducibility code; update active models only after model-specific rule approval. Keep code and five authoritative documents in sync. Do not commit snapshot contents or credentials.
+
+
+## Sett-name curation handover update — 10 November 2026
+
+Approved standardisations **TOP SETT → TOP** (canonical sett ID 20) and
+**TODDS → TODD'S** (canonical sett ID 158) are now explicitly recorded for
+357 source-confirmed fixed-sett capture records (349 + 8) in
+`research.capture_sett_alias_decisions`. The existing underlying sett
+IDs and coordinates were already correctly joined; source names and
+`research.setts` coordinates were not rewritten. Nine additional
+`TOP SETT` source records do not satisfy fixed-sett capture-location
+eligibility and were intentionally not converted to trap-location
+decisions. The live database integrity check returned zero violations.
+
+**Five-document rule observed:** The scientific decision is logged in
+`docs/WOODCHESTER_MODEL_DEVELOPMENT_ROADMAP.md`, current data rule
+and provenance in `docs/database/02_MASTER_DATA_DICTIONARY_AND_AUDIT.md`,
+and applied database transaction in
+`docs/database/03_VERSIONING_AND_DECISIONS.md`. No sixth active
+scientific document was created. The exact guarded applied SQL lives at
+`sql/migrations/20261110_top_sett_todds_capture_alias_decisions_APPLIED.sql`
+and a reusable read-only check at
+`sql/audit/WECS_SETT_ALIAS_RULE_INTEGRITY_20261110.sql`.
+
+**Important distinction:** This was a **live SQL data transaction, not
+a registered Supabase schema migration**; it has no new
+`supabase_migrations.schema_migrations` entry and therefore must not
+be added as if registered to
+`sql/WOODCHESTER_APPLIED_MIGRATIONS.sql`. The transaction is
+already applied — do not rerun the file on production. New records
+need source-qualified decisions and a passing integrity check before
+freezing model inputs. Historical frozen V12 snapshots remain immutable.
+
+The next work remains reconciling the reviewed Supabase fixed-sett
+capture histories with the legacy 1,932-badger V11R2 modelling cohort,
+then testing an explicitly coverage-aware observation likelihood.
