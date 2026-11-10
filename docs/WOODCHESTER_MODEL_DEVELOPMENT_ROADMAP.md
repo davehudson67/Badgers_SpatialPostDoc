@@ -5821,3 +5821,27 @@ Outside denominator and value are unchanged because the same *global legacy dete
 - Ketwaroo, F. R., Matechou, E., Silk, M. & Delahay, R. (2025; online 2 Dec 2024), *Modeling Disease Dynamics From Spatially Explicit Capture-Recapture Data*, Environmetrics 36:e2888. https://doi.org/10.1002/env.2888 . Woodchester 2014–2018 open SCR with latent activity centres, entry, survival, imperfect disease tests and population size/density; Figure 3 gives population estimates showing decline. Uses NIMBLE; public code linked in paper at https://github.com/Fabian-Ketwaroo/Modelling-disease-dynamics-from-spatially-explicit-capture-recapture-data . Raw data available by request, not publicly downloadable per paper. Figure values/posteriors have not been imported. Review exact movement, entry, spatial support, effort and disease architecture before scientific comparison.
 
 **V12/V13 decision:** These are method/trajectory benchmarks with overlapping historical capture evidence, not new independent census observations. Match age/season, geographical support, groups and years before comparing N_t; do not feed estimates into the current capture likelihood as independent evidence. The 2016 geographic closure assumption cannot establish absence of exchange in our longer/changing-footprint series. The 2025 paper is close prior art for joint spatial demography/disease: do not claim general integration of abundance, spatial survival and latent infection as novel. Evaluate what our continuous interannual movement, changing monitoring coverage, recovery evidence and explicit outside availability add; those additions remain proposed and require validation/identifiability checks. Next: inspect public 2025 source and 2016 supplement/original outputs, compare architectures, and preserve parallel V12I-06 diagnostic run plan. No database changes.
+
+
+### 10 November 2026 — V12I-06 three-chain run completed: four parameters fail mixing screen; exact collapsed HMM prepared
+
+**Status: USER-REPORTED THREE-CHAIN SYNTHETIC RESULTS, CONVERGENCE SCREEN FAILED. NEW COLLAPSED SOURCE NOT YET R/NIMBLE-EXECUTED.** Completed run `outputs/v12_immigration_prototype/v12i06_parallel_20261110T115929Z_oh2hKc`, all three chain exit statuses zero. Same 60-candidate/8-occasion synthetic dataset; launcher 12,000 iterations, 4,000 burn-in, thin 2. User-supplied pooled table:
+
+|parameter|mean|95% interval|Rhat|bulk ESS|tail ESS|truth|screen|
+|---|---:|---|---:|---:|---:|---:|---|
+|c_to_p|.08534|.010702–.2177|1.005|677.5|1375.5|.075|pass|
+|gamma|.22383|.146053–.3398|1.027|172.4|419.5|.160|FAIL|
+|out_to_p|.20355|.027974–.4966|1.001|2920.3|4655.7|.190|pass|
+|p_to_c|.06719|.008372–.1730|1.002|1581.6|2531.3|.055|pass|
+|p_to_out|.08922|.011693–.2418|1.006|1195.7|2338.3|.050|pass|
+|pc|.42827|.254861–.6466|1.017|279.9|852.7|.420|FAIL|
+|phi|.76084|.597509–.8891|1.018|272.4|876.0|.860|FAIL|
+|pp|.16711|.064389–.3250|1.012|487.5|1671.3|.220|FAIL|
+
+All truth values fall within intervals, but this neither rescues convergence nor establishes repeated-simulation coverage. Single-dataset mean-minus-truth differences are not estimates of repeated-sampling bias. Entry is displaced upwards and survival downwards; distinguish sampling error, finite-data variation, prior influence and weak identification before interpreting.
+
+**Decision:** Do not yet fit real Woodchester demographic data or merely scale N to conceal mixing. New `scripts/ModularFitting/Woodchester_V12I_06c_Collapsed_HMM.R` retains EXACT original simulator, eight-parameter prior/model structure, known N, fixed recovery probability and outside detection. Replaces sampled per-animal latent state paths with a scaled forward likelihood. Recovery probability is transition-dependent and nonzero only on first entry into dead, preserving original joint live/recovery observation likelihood. No new biological information or change to survival estimand; marginalisation is a computational improvement candidate, not an identification remedy.
+
+**Verification and execution:** Independent Python mirror of forward recursion equals exhaustive latent-path summation for all 216 length-4 packed observation histories at two parameter settings (432 comparisons); history probabilities sum to one. Script additionally checks uncompiled AND compiled NIMBLE density against exact R state-path enumeration before MCMC. No local Rscript available, so actual R parsing/NIMBLE compilation and sampling remain UNEXECUTED here. Official custom-distribution interface checked against https://r-nimble.org/manual/cha-user-defined.html . Updated `launch_V12I06_Parallel_tmux.sh` supports `V12I06_ENGINE=collapsed`, runs likelihood gates plus an 800/400 compilation smoke before launching three concurrent 12,000/4,000 chains with same synthetic data/different sampler seeds, then existing multichain validator. Separate new timestamped output, old fits preserved; engine.txt identifies implementation. Bash syntax passed. Default latent mode remains available for provenance.
+
+**Run:** `V12I06_ENGINE=collapsed bash scripts/ModularFitting/launch_V12I06_Parallel_tmux.sh` after pull. Inspect smoke.log if launcher exits before chains, then validation.log/multichain_summary.csv. Next gate: convergence of collapsed fit and agreement with original target; if acceptable, replicated datasets and prior/recovery/effort sensitivities plus capture-conditioned or augmented real-population design. No claims of real survival/immigration or unbiased recovery; no database changes.
