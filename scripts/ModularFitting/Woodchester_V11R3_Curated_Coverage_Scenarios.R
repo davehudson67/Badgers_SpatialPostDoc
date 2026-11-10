@@ -178,6 +178,26 @@ if (nrow(full_pop) != EXPECTED_FULL_N) {
 if (anyNA(full_pop$sex_code)) {
   stop("Audited movement population contains unknown sex.")
 }
+# The old V11R2 'movement eligible' cohort can become a single-year
+# mapped history after properly excluding terminal death and off-sett captures.
+# This specific V11R3 annual-transition implementation requires >=2 distinct
+# fixed-sett capture years. Preserve the 1932 reference and explicitly report
+# excluded singletons; they remain available for V12 survival/entry analyses.
+historical_reference_pop <- full_pop
+fixed_years <- as_tibble(enc) %>%
+  filter(v12_fixed_sett_spatial) %>%
+  mutate(tattoo=toupper(trimws(as.character(tattoo))),
+         year=as.integer(format(as.Date(capture_date),"%Y"))) %>%
+  filter(year>=1977L,year<=MAX_YEAR) %>%
+  distinct(tattoo,year) %>%
+  count(tattoo,name="n_spatial_years")
+movement_ids <- fixed_years %>% filter(n_spatial_years>=2L) %>% pull(tattoo)
+full_pop <- full_pop %>% filter(tattoo %in% movement_ids)
+cat("Historic cohort:",nrow(historical_reference_pop),
+ " | >=2-year curated spatial histories:",nrow(full_pop),
+ " | single-year histories held for V12:",
+ nrow(historical_reference_pop)-nrow(full_pop),"\\n")
+if(nrow(full_pop)<1500L)stop("Unexpected major cohort eligibility loss")
 
 # Reproducible smoke subset. Production is MAX_BADGERS=1932.
 if (MAX_BADGERS < nrow(full_pop)) {
@@ -250,7 +270,7 @@ if(anyDuplicated(live_all$capture_id))
 # Detectors are defined from the full audited movement population, not the
 # smoke subset, so the detector geometry does not change with MAX_BADGERS.
 detectors <- live_all %>%
-  filter(tattoo %in% full_pop$tattoo) %>%
+  filter(tattoo %in% historical_reference_pop$tattoo) %>%
   distinct(Sett_Clean, x, y) %>%
   arrange(Sett_Clean) %>%
   mutate(detector = row_number())
@@ -359,7 +379,10 @@ for (rr in seq_len(nrow(campaign_tbl))) {
 # Positive same-quarter mask is endogenous and should only be used for
 # bounding sensitivity; five-year capture-positive mask is also a scenario.
 site_active <- array(0L,dim=c(R,J,n_prim))
-positives <- full_live %>% distinct(detector,primary_year,trap_season)
+positives <- live_all %>%
+  filter(tattoo %in% historical_reference_pop$tattoo,
+         !is.na(detector)) %>%
+  distinct(detector,primary_year,trap_season)
 for(rr in seq_len(nrow(positives))) {
  r<-as.integer(positives$detector[rr])
  j<-as.integer(positives$trap_season[rr])
