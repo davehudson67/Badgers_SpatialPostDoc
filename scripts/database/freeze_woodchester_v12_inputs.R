@@ -65,6 +65,10 @@ enc <- get_batches("
         e.episode_primary_capture_id, e.episode_record_role,
         e.encounter_type, e.outcome, e.location_type,
         e.location_easting, e.location_northing, e.location_quality,
+        c.recorded_sett_name AS source_recorded_sett_name,
+        c.capture_location_text AS source_capture_location_text,
+        c.moc AS source_moc, c.os_ref AS source_os_ref,
+        c.comment AS source_comment,
         i.sex_clean, i.age_first_capture_clean, i.year_first_capture
  FROM analysis.encounters_clean_v1 e
  JOIN research.captures c ON c.capture_id = e.capture_id
@@ -160,6 +164,7 @@ manifest <- c(
   paste("git_commit", git_sha[1], sep = "="),
   paste("last_recorded_migration", if(nrow(migration)) as.character(migration$version[1]) else "UNKNOWN", sep = "="),
   "source_encounters=analysis.encounters_clean_v1 + research.captures + research.individuals",
+  "source_record_evidence=research.captures recorded_sett_name capture_location_text moc os_ref comment, preserved without updates",
   "source_mortality=analysis.mortality_model_candidate_v1",
   "rule_live=non-PM non-companion TRAP/NET/SNARE/DART/FOUND_ALIVE; unknown episode role held",
   "rule_death=CANDIDATE_TERMINAL_DEATH; held candidates not treated as confirmed",
