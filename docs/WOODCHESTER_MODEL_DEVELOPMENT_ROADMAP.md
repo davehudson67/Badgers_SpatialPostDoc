@@ -5480,3 +5480,22 @@ Rscript scripts/ModularFitting/Woodchester_V11R2_Contracting_Footprint_Sensitivi
     Rscript scripts/ModularFitting/Woodchester_V12_Spatial_Coordinate_Exceptions.R
 
 **Next gate:** Review the 3 actual source exceptions and clarify their coordinates and sett identities. Then make a reproducible, investigator-approved spatial input manifest and compare with the original V11R2 1,932-badger movement cohort before modifying/refitting likelihood. Continuous activity centres remain the primary spatial process; moving annual social-group polygons are a separate postfit interpretation step.
+
+
+### 10 November 2026 — Three fixed-sett coordinate exceptions and BIGINT CSV ID printing defect
+
+**Status:** TARGETED EXCEPTION REVIEW INITIATED; original data untouched; read-only R code fixed on GitHub, not yet rerun on RStudio.
+
+**Observed original result:** Of 15,521 candidate fixed-sett encounter rows, 15,518 have exact XY equality with nearest legacy V11R2 detector; three are non-exact, of which one is >100 m. The displayed exception cases were: tattoo 002W, 2005-05-04, source XY (382191,199820), closest historical detector HOGARTHS (382627,200053), distance 494.353 m; tattoo H044, 1998-09-08, source XY (380742,201140), nearest CHESNUT (380834,201150), distance 92.542 m; tattoo D042, 1997-07-08, XY (382956,201126), nearest NETTLE (383024,201142), distance 69.857 m. DO NOT force the coordinates onto the nearest historic detector, infer false source error or silently delete; the correct source sett identity/recorded-name alias and reference provenance must be checked first. These three may be genuine additional/renamed sett points not present in the legacy detector universe. Original source coordinates are not independently validated by historical matching.
+
+**BUG:** The output of the original `Woodchester_V12_Spatial_Coordinate_Exceptions.R` printed capture_id and sett_id as tiny subnormal doubles (e.g. 5.48e-320). These are NOT genuine identifiers: RPostgres BIGINT/bit64 fields were carried through local CSV without a safe explicit character conversion. Do not use the displayed ID numbers for matching or correction. Scientific tattoo/date/XY and count remain interpretable. GitHub scripts have been corrected to cast capture_id and sett_id from the original frozen `qualifying_live.rds` data to decimal character strings before any local CSV export or reporting; the focused exceptions script now ignores the earlier potentially damaged ID columns and reads the frozen RDS directly. The full eligibility audit script also casts these source IDs as characters before CSV output; this ensures any future regenerated local review files have readable source IDs. No source mutation, no erroneous post-hoc decoding of corrupted CSV bit patterns.
+
+**Next specific command:**
+
+    cd ~/Badgers_SpatialPostDoc
+    git pull --ff-only
+    V12_SNAPSHOT="data/model_snapshots/v12_20261106T103144Z_1079872" \
+    ZONE_AUDIT_DIR="outputs/v11r2_core_periphery/audit_20261109T134751Z" \
+    Rscript scripts/ModularFitting/Woodchester_V12_Spatial_Coordinate_Exceptions.R
+
+The command reports true capture_id, canonical sett_id, capture date, tattoo, curated XY, nearest historical detector/XY and distance; when legacy encounter RDS is available, it also prints recorded historical sett text matched by tattoo/date as *context only* (not a unique event ID match). Review the 3 names and coordinates before approving the candidate set for fit. Original V11R2 and event histories unchanged; no new fitting work launched. Existing spatial data screening remains 15,521 candidate setts and 697 held spatial events, pending source approval.
