@@ -17,6 +17,19 @@ if (!any(grepl("^source_encounters=analysis.encounters_clean_v1",manifest)))
  stop("Unrecognised curated snapshot source")
 live <- as.data.frame(readRDS(required_files[2]))
 all_enc <- as.data.frame(readRDS(required_files[3]))
+# RPostgres BIGINT may arrive as bit64::integer64. Explicit conversion to
+# character before CSV output preserves decimal identifier text. Without this,
+# class can be lost when building review columns and values may print as
+# subnormal double notation (e.g. 5e-320), which are NOT genuine IDs.
+id_as_text <- function(x,label) {
+  if (is.double(x) && !inherits(x,"integer64") &&
+      any(is.finite(x) & x!=0 & abs(x)<1e-200))
+    stop(label, " appears to contain misinterpreted integer64 bit patterns")
+  as.character(x)
+}
+live$capture_id <- id_as_text(live$capture_id,"capture_id")
+live$sett_id <- id_as_text(live$sett_id,"sett_id")
+all_enc$capture_id <- id_as_text(all_enc$capture_id,"full encounter capture_id")
 required <- c("capture_id","tattoo","capture_date","is_pm","sett_id",
               "episode_record_role","encounter_type","location_type",
               "location_easting","location_northing","location_quality")
