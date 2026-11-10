@@ -22,9 +22,22 @@ all_enc <- as.data.frame(readRDS(required_files[3]))
 # class can be lost when building review columns and values may print as
 # subnormal double notation (e.g. 5e-320), which are NOT genuine IDs.
 id_as_text <- function(x,label) {
-  if (is.double(x) && !inherits(x,"integer64") &&
-      any(is.finite(x) & x!=0 & abs(x)<1e-200))
-    stop(label, " appears to contain misinterpreted integer64 bit patterns")
+  if (inherits(x,"integer64")) {
+    if (!requireNamespace("bit64",quietly=TRUE))
+      stop("Install bit64 to decode PostgreSQL BIGINT values")
+    return(bit64::as.character.integer64(x))
+  }
+  if (is.double(x) && any(is.finite(x) & x!=0 & abs(x)<1e-200)) {
+    if (!requireNamespace("bit64",quietly=TRUE))
+      stop("Install bit64 to interpret unclassed PostgreSQL BIGINT bytes")
+    if (any(is.finite(x) & x!=0 & abs(x)>=1e-200))
+      stop(label," contains mixed normal numeric and BIGINT-bit-pattern values")
+    return(bit64::as.character.integer64(structure(x,class="integer64")))
+  }
+  if (is.numeric(x)) {
+    if (any(is.finite(x) & x!=floor(x))) stop(label," contains fractional IDs")
+    return(format(x,scientific=FALSE,trim=TRUE))
+  }
   as.character(x)
 }
 live$capture_id <- id_as_text(live$capture_id,"capture_id")
