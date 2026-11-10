@@ -182,12 +182,12 @@ overview<-data.frame(metric=c(
  "curated_spatial_distinct_sett_ids_all_tattoos",
  "date_key_comparison_differences"),
  value=c(length(ids),nrow(oldmapped),length(unique(oldmapped$tattoo)),
- sum(a$latent_states),sum(a$latent_intervals),nrow(raw),nrow(all_sp),
+ sum(a$legacy_latent_states),sum(a$legacy_latent_intervals),nrow(raw),nrow(all_sp),
  nrow(new),nrow(new_sp),length(unique(new_sp$tattoo)),
  sum(!ids%in%new_sp$tattoo),length(full_extra),
  length(setdiff(unique(all_sp$tattoo),ids)),
- sum(b$latent_states),sum(b$latent_intervals),
- sum(c$latent_states),sum(c$latent_intervals),
+ sum(b$curated_spatial_latent_states),sum(b$curated_spatial_latent_intervals),
+ sum(c$curated_all_live_latent_states),sum(c$curated_all_live_latent_intervals),
  nrow(coords),sum(!coords$exact_xy_in_legacy_reference),
  length(unique(all_sp$sett_id)),
  sum(cmp$status!="MATCHED_SPATIAL_DATE_COUNT")))
@@ -220,6 +220,14 @@ writeLines(c(paste("snapshot",snap,sep="="),
  file.path(out,"README_ASSUMPTIONS.txt"))
 cat("\n=== V11R2 VERSUS CURATED SNAPSHOT RECONCILIATION ===\n")
 print(overview,row.names=FALSE)
+if(any(overview$value[overview$metric %in% c(
+ "legacy_model_latent_states_from_mapped_history",
+ "legacy_model_latent_intervals_from_mapped_history",
+ "curated_spatial_legacy_cohort_latent_states",
+ "curated_spatial_legacy_cohort_latent_intervals",
+ "curated_legacy_cohort_all_live_latent_states",
+ "curated_legacy_cohort_all_live_latent_intervals")] == 0L))
+ stop("Invalid zero annual span summary: inspect column names")
 cat("\nDate-level differences:\n")
 print(as.data.frame(table(cmp$status)),row.names=FALSE)
 cat("\nSaved local review files:",out,"\n")
