@@ -64,7 +64,7 @@ Rscript -e 'stopifnot(requireNamespace("nimble", quietly=TRUE), requireNamespace
 mkdir -p outputs/v12_immigration_prototype
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 run=$(mktemp -d "$root/outputs/v12_immigration_prototype/v12i06_parallel_$stamp"_"XXXXXX")
-session="v12i06_$stamp"_"$"
+session="v12i06_$stamp"_"$BASHPID"
 printf '%s\n' "$engine" >"$run/engine.txt"
 printf -v command '%q ' env V12I06_ENGINE="$engine" bash "$script" --worker "$run"
 tmux new-session -d -s "$session" "$command"
