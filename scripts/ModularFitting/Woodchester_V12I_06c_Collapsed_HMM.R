@@ -97,7 +97,9 @@ dV12I06HMM <- nimbleFunction(
     nxt[b] <- 0.0
     for(a in 1:5) {
      rq <- 0.0
-     if(b==5 && a!=5) rq <- q
+     if(b==5) {
+      if(a!=5) rq <- q
+     }
      rp <- 1.0-rq
      if(recovered==1) rp <- rq
      nxt[b] <- nxt[b]+alpha[a]*A[a,b]*E[b,live_code]*rp
@@ -141,7 +143,13 @@ enumerate_history <- function(x,A,E,q) {
  total
 }
 cat("Compiling forward density for independent likelihood checks.\n")
-compiled_density <- compileNimble(dV12I06HMM)
+compiled_density <- tryCatch(
+ compileNimble(dV12I06HMM, showCompilerOutput=TRUE),
+ error=function(e) {
+  # Rscript exits after an error, so preserve compiler diagnostics in smoke.log.
+  try(printErrors(), silent=TRUE)
+  stop(conditionMessage(e), call.=FALSE)
+ })
 histories <- as.matrix(expand.grid(rep(list(1:6),3L)))
 # Test truth and a second valid parameter setting.
 test_parameters <- list(truth, c(gamma=.31,phi=.67,core_to_periphery=.23,
