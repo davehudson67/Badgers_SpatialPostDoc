@@ -5,6 +5,12 @@ script_dir=$(cd -- "$(dirname -- "$0")" && pwd)
 root=$(cd -- "$script_dir/../.." && pwd)
 script="$script_dir/launch_V12I06_Parallel_tmux.sh"
 cd "$root"
+engine="${V12I06_ENGINE:-latent}"
+case "$engine" in
+  latent) fitter="scripts/ModularFitting/Woodchester_V12I_06_Core_Periphery_Entry_Survival_Smoke.R" ;;
+  collapsed) fitter="scripts/ModularFitting/Woodchester_V12I_06c_Collapsed_HMM.R" ;;
+  *) echo "V12I06_ENGINE must be latent or collapsed" >&2; exit 1 ;;
+esac
 
 if [[ "$#" -gt 0 && "$1" == "--worker" ]]; then
   run="$2"
@@ -14,13 +20,20 @@ if [[ "$#" -gt 0 && "$1" == "--worker" ]]; then
   export V12I06_N=60 V12I06_T=8
   export V12I06_NITER=12000 V12I06_NBURN=4000 V12I06_THIN=2
   export V12I06_DATA_SEED=20261110
+  if [[ "$engine" == "collapsed" ]]; then
+    echo "Running collapsed likelihood checks and compilation smoke first."
+    V12I06_NITER=800 V12I06_NBURN=400 V12I06_THIN=2 \
+      V12I06_SEED=20261110 V12I06_OUT="$run/smoke" \
+      Rscript "$fitter" >"$run/smoke.log" 2>&1
+    echo "Collapsed compilation smoke passed; starting three concurrent chains."
+  fi
   pids=()
   for ch in 1 2 3; do
     printf -v tag 'chain%02d' "$ch"
     (
       set +e
       V12I06_SEED=$((20261110 + ch)) V12I06_OUT="$run/$tag" \
-        Rscript scripts/ModularFitting/Woodchester_V12I_06_Core_Periphery_Entry_Survival_Smoke.R \
+        Rscript "$fitter" \
         >"$run/$tag.log" 2>&1
       rc=$?
       printf '%s\n' "$rc" >"$run/$tag.exit"
@@ -51,8 +64,9 @@ Rscript -e 'stopifnot(requireNamespace("nimble", quietly=TRUE), requireNamespace
 mkdir -p outputs/v12_immigration_prototype
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 run=$(mktemp -d "$root/outputs/v12_immigration_prototype/v12i06_parallel_$stamp"_"XXXXXX")
-session="v12i06_$stamp"_"$$"
-printf -v command '%q ' bash "$script" --worker "$run"
+session="v12i06_$stamp"_"$"
+printf '%s\n' "$engine" >"$run/engine.txt"
+printf -v command '%q ' env V12I06_ENGINE="$engine" bash "$script" --worker "$run"
 tmux new-session -d -s "$session" "$command"
 printf 'Session: %s\nOutput: %s\nAttach: tmux attach -t %s\n' "$session" "$run" "$session"
 printf 'Progress: tail -f "%s/launcher.log"\n' "$run"
