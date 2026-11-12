@@ -3,8 +3,11 @@ for(pkg in c("nimble","posterior","sf","digest"))if(!requireNamespace(pkg,quietl
 suppressPackageStartupMessages(library(nimble))
 source("scripts/ModularFitting/Woodchester_V12K_Likelihood.R",local=.GlobalEnv)
 source("scripts/ModularFitting/Woodchester_V12K_Covariates.R",local=.GlobalEnv)
+source("scripts/ModularFitting/Woodchester_V12K_Captures.R",local=.GlobalEnv)
 run<-Sys.getenv("V12K_RUN","")
 b<-readRDS(file.path(run,"joint_covariate_inputs.rds"))
+b$capture_events<-v12k_capture_events(b)
+b$counts<-NULL
 fits<-lapply(1:3,function(ch)readRDS(file.path(run,sprintf("chain%02d",ch),"joint_fit.rds")))
 stopifnot(length(unique(vapply(fits,`[[`,character(1),"input_sha256")))==1L,
  identical(fits[[1]]$input_sha256,digest::digest(file.path(run,"joint_covariate_inputs.rds"),file=TRUE,algo="sha256")),
@@ -32,7 +35,8 @@ annual_rows<-list();flow_rows<-list();counter<-0L
 for(ch in 1:3) {
  f<-fits[[ch]];SS<-f$spatial;colnames(SS)<-gsub("[[:space:]]","",colnames(SS))
  draws<-unique(round(seq(1,nrow(SS),length.out=min(nd,nrow(SS)))))
- NN<-length(f$ids);TT<-b$T;JJ<-b$J
+ NN<-length(f$ids);TT<-b$T
+ captures<-v12k_pack_captures(b,f$selected,NN)$packed
  for(row in draws) {
   grow<-as.integer(row*f$thin2/f$thin)
   if(grow<1||grow>nrow(f$samples))stop("Monitor streams cannot be aligned")
@@ -64,10 +68,10 @@ for(ch in 1:3) {
    for(t in seq_len(TT)) {
     pp<-plogis(g["alpha_p"]+p$detection_sex+c(0,g[paste0("season[",2:4,"]")])+
       if(b$period[t]==1)0 else g[paste0("era[",b$period[t],"]")])
-    ct<-matrix(0,JJ,4);au<-matrix(0,4,4)
+    marks<-matrix(captures[i,t,,,drop=FALSE],ncol=3L);au<-matrix(0,4,4)
     survey<-as.numeric(apply(b$availability[,,t,drop=FALSE],2,function(z)any(z>0)))
-    if(i<=f$Nobs) {ct<-b$counts[ii,t,,];au<-b$aux[ii,t,,];survey<-b$survey[ii,t,]}
-    ell[t,]<-v12k_emission(S[t,1],S[t,2],X,b$availability[,,t],ct,pp,
+    if(i<=f$Nobs) {au<-b$aux[ii,t,,];survey<-b$survey[ii,t,]}
+    ell[t,]<-v12k_emission(S[t,1],S[t,2],X,b$availability[,,t],marks,pp,
                          survey,p$sigma_det,au,f$aux_sd)
    }
    F<-v12k_factors_R(S,ell,pos,rec,risk,forced,p,b$bounds,f$reference_sd)

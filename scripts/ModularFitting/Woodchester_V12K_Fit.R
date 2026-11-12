@@ -4,6 +4,7 @@ for(pkg in c("nimble","digest"))if(!requireNamespace(pkg,quietly=TRUE))stop("Ins
 suppressPackageStartupMessages(library(nimble))
 source("scripts/ModularFitting/Woodchester_V12K_Likelihood.R",local=.GlobalEnv)
 source("scripts/ModularFitting/Woodchester_V12K_Covariates.R",local=.GlobalEnv)
+source("scripts/ModularFitting/Woodchester_V12K_Captures.R",local=.GlobalEnv)
 input<-Sys.getenv("V12K_INPUT",""); out<-Sys.getenv("V12K_OUT","")
 if(!nzchar(input)||!nzchar(out)||file.exists(out))stop("Set input and NEW V12K_OUT")
 getint<-function(key,default,lo=0L) {
@@ -28,10 +29,15 @@ if(maxn>0 && maxn<b$N) {
 }
 Nobs<-length(selected); NN<-Nobs+aug; TT<-b$T; JJ<-b$J
 if(NN<2||TT<2)stop("Insufficient dimensions")
-counts<-array(0,c(NN,TT,JJ,4)); pos<-rec<-risk<-array(0,c(NN,TT,4))
+capture_data<-v12k_pack_captures(b,selected,NN)
+b$counts<-NULL
+captures<-capture_data$packed
+NM<-dim(captures)[3]
+events<-capture_data$events
+event_rows<-split(seq_len(nrow(events)),events[,"badger"])
+pos<-rec<-risk<-array(0,c(NN,TT,4))
 forced<-array(0,c(NN,TT,4))
 aux<-array(0,c(NN,TT,4,4)); survey<-array(0,c(NN,TT,4))
-counts[seq_len(Nobs),,,]<-b$counts[selected,,,,drop=FALSE]
 pos[seq_len(Nobs),,]<-b$positive[selected,,,drop=FALSE]
 rec[seq_len(Nobs),,]<-b$recovery[selected,,,drop=FALSE]
 risk[seq_len(Nobs),,]<-b$at_risk[selected,,,drop=FALSE]
@@ -52,9 +58,13 @@ Sinit<-array(0,c(NN,TT,2))
 for(i in seq_len(NN)) {
  if(i<=Nobs) {
   anchors<-matrix(NA_real_,TT,2)
+  ie<-event_rows[[as.character(i)]]
   for(t in seq_len(TT)) {
-   n<-apply(counts[i,t,,,drop=FALSE],3,sum)
-   # counts subset dimensions N,T,J,Q; third margin is detector.
+   n<-numeric(JJ)
+   for(k in ie[events[ie,"year"]==t]) {
+    j<-events[k,"detector"]
+    n[j]<-n[j]+events[k,"count"]
+   }
    jj<-which(n>0 & b$detectors$known)
    if(length(jj))anchors[t,]<-colSums(Xdata[jj,,drop=FALSE]*n[jj])/sum(n[jj])
    aq<-aux[i,t,,1]
@@ -72,7 +82,7 @@ for(i in seq_len(NN)) {
  Sinit[i,,]<-Sinit[i,,]+rnorm(TT*2,0,.015)
 }
 for(j in which(!b$detectors$known)) {
- ij<-which(apply(counts[seq_len(Nobs),,j,,drop=FALSE],1,sum)>0)
+ ij<-sort(unique(events[events[,"detector"]==j,"badger"]))
  if(length(ij))Xinit[j,]<-apply(Sinit[ij,,,drop=FALSE],3,mean)
  Xinit[j,1]<-min(max(Xinit[j,1],b$bounds[1]+.001),b$bounds[2]-.001)
  Xinit[j,2]<-min(max(Xinit[j,2],b$bounds[3]+.001),b$bounds[4]-.001)
@@ -155,7 +165,7 @@ code<-nimbleCode({
    S[i,t,1] ~ dnorm(0,sd=reference_sd)
    S[i,t,2] ~ dnorm(0,sd=reference_sd)
    ell[i,t,1:4] <- v12k_emission(S[i,t,1],S[i,t,2],X[1:JJ,1:2],
-    availability[1:JJ,1:4,t],counts[i,t,1:JJ,1:4],p[sex_group[i],t,1:4],
+    availability[1:JJ,1:4,t],captures[i,t,1:NM,1:3],p[sex_group[i],t,1:4],
     survey[i,t,1:4],sigma_det[sex_group[i]],aux[i,t,1:4,1:4],aux_sd)
   }
   history[i] ~ dV12Covariate(S[i,1:TT,1:2],ell[i,1:TT,1:4],
@@ -165,10 +175,10 @@ code<-nimbleCode({
  }
 })
 if(NP==1L)stop("First executable requires >=2 five-year periods; use full study window")
-constants<-list(NN=NN,TT=TT,JJ=JJ,NP=NP,period=b$period,
+constants<-list(NN=NN,TT=TT,JJ=JJ,NM=NM,NP=NP,period=b$period,
  NB=NB,birth_min=as.numeric(min(b$birth_years)),birth_prior=rep(1/NB,NB),max_entry_age=b$birth_padding,
  age_is_adult=adult,adult_min_age=b$adult_min_age,first_age_year=first_age_year,years=as.numeric(b$years),
- availability=b$availability,counts=counts,positive=pos,recovery=rec,
+ availability=b$availability,captures=captures,positive=pos,recovery=rec,
  at_risk=risk,forced=forced,survey=survey,aux=aux,bounds=b$bounds,
  reference_sd=refsd,sigma_res=sigma_res,aux_sd=auxsd)
 inits<-list(phi0=.85,gamma=.08,gamma_initial=.15,psi=.8,rd0=.05,dd0=.3,qrec=.1,
@@ -184,6 +194,9 @@ cat("=== V12K REAL JOINT AGE / SEX / INDIVIDUAL MOVEMENT MODEL ===\n")
 cat("Observed:",Nobs,"augmented:",aug,"years:",TT,"detectors:",JJ,"\n")
 cat("Coverage:",b$coverage,"mortality:",b$mortality,"\n")
 cat("Unknown detector XY:",sum(!b$detectors$known),"\n")
+cat("Capture cells:",nrow(events),"packed slots:",length(captures),
+    "previous dense slots:",as.double(NN)*TT*JJ*4,"\n")
+build_started<-proc.time()[["elapsed"]]
 model<-nimbleModel(code,constants=constants,data=list(history=rep(1,NN),X=Xdata,
  sex=sex_data,birth_index=birth_data,age_ok=rep(1,NN)),
  inits=inits,check=TRUE,calculate=TRUE)
@@ -192,6 +205,7 @@ if(!is.finite(lp)) {
  model$initializeInfo();stop("Nonfinite initial joint density; no MCMC launched")
 }
 cat("Initial log density:",lp,"\n")
+cat("Model setup seconds:",proc.time()[["elapsed"]]-build_started,"\n")
 monitors<-c("phi0","alpha_phi","gamma","gamma_initial","psi","rd0","dd0","alpha_rd","alpha_dd",
  "qrec","sex_prop","age_rate_initial","age_rate_entry","sigma_individual","beta_phi_sex","beta_rd_sex","beta_dd_sex",
  "beta_highscale_sex","beta_sigma_sex","beta_p_sex","log_sigma_high","log_sigma_det","alpha_p",

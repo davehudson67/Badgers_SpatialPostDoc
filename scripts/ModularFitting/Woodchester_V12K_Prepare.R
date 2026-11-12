@@ -9,6 +9,7 @@ for(key in c("COVERAGE","MORTALITY","BUFFER_KM","CORE_FRACTION","FIRST_YEAR","LA
 }
 source("scripts/ModularFitting/Woodchester_V12J_Prepare.R",local=.GlobalEnv)
 source("scripts/ModularFitting/Woodchester_V12K_Covariates.R",local=.GlobalEnv)
+source("scripts/ModularFitting/Woodchester_V12K_Captures.R",local=.GlobalEnv)
 b<-readRDS(file.path(out,"joint_inputs.rds"))
 reference<-Sys.getenv("V12K_REFERENCE_INPUT","")
 comparison<-"Reference input not available; snapshot and baseline preparation rules retained"
@@ -29,6 +30,8 @@ adult_min<-as.integer(Sys.getenv("V12K_ADULT_MIN_AGE","1"))
 if(is.na(adult_min)||!adult_min %in% 1:2)stop("Adult minimum age must be 1 or 2")
 b$adult_min_age<-adult_min
 b$model<-"V12K age sex persistent individual movement / spatial demography"
+b$capture_events<-v12k_capture_events(b)
+b$counts<-NULL
 path<-file.path(out,"joint_covariate_inputs.rds")
 if(file.exists(path))stop("Refusing to overwrite covariate input")
 saveRDS(b,path)
@@ -38,6 +41,7 @@ agecounts<-table(cv$metadata$age_class,useNA="always")
 lines<-c(paste0("input_sha256=",digest::digest(path,file=TRUE,algo="sha256")),
  paste0("same_encounter_cohort_N=",b$N),paste0("source_snapshot=",b$snapshot),
  paste0("baseline_comparison=",comparison),
+ paste0("sparse_capture_cells=",nrow(b$capture_events)),
  paste0("birth_year_support=",min(b$birth_years),"-",max(b$birth_years)),
  paste0("birth_reference=discrete uniform reference cancelled at entry; CUB/YEARLING cohorts observed; ADULT lower bound=",adult_min),
  "entry_age=estimated truncated geometric distributions, separately for initial presence and subsequent entry",

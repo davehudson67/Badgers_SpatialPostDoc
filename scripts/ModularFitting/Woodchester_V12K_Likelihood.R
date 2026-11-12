@@ -40,31 +40,40 @@ v12k_rates <- nimbleFunction(
 
 v12k_emission <- nimbleFunction(
  run=function(sx=double(0),sy=double(0),X=double(2),
-   availability=double(2),counts=double(2),p=double(1),
+   availability=double(2),captures=double(2),p=double(1),
    survey=double(1),sigma=double(0),aux=double(2),
    aux_sd=double(0)) {
   returnType(double(1))
   ans <- rep(0.0,4)
+  mark <- rep(0.0,4)
+  nc <- rep(0.0,4)
+  # Rows are ordered by quarter and detector so each quarter's marks
+  # accumulate in the same order as in the dense encounter likelihood.
+  for(k in 1:dim(captures)[1]) {
+   detector <- as.integer(captures[k,1])
+   if(detector>0) {
+    quarter <- as.integer(captures[k,2])
+    if(availability[detector,quarter]<0.5) return(rep(-Inf,4))
+    count <- captures[k,3]
+    d2_mark <- (sx-X[detector,1])^2+(sy-X[detector,2])^2
+    lg_mark <- -d2_mark/(2.0*sigma*sigma)
+    mark[quarter] <- mark[quarter]+count*lg_mark
+    nc[quarter] <- nc[quarter]+count
+   }
+  }
   JJ <- dim(X)[1]
   for(q in 1:4) {
    gs <- 0.0
-   mark <- 0.0
-   nc <- 0.0
    for(j in 1:JJ) {
     d2 <- (sx-X[j,1])^2+(sy-X[j,2])^2
     lg <- -d2/(2.0*sigma*sigma)
     g <- availability[j,q]*exp(lg)
     gs <- gs+g
-    nc <- nc+counts[j,q]
-    if(counts[j,q]>0.0) {
-     if(availability[j,q]<0.5) return(rep(-Inf,4))
-     mark <- mark+counts[j,q]*lg
-    }
    }
    if(survey[q]>0.5) {
     hazard <- -log(1.0-p[q])*gs
     ans[q] <- -hazard
-    if(nc>0.0) {
+    if(nc[q]>0.0) {
      # Stable log(1-exp(-hazard)); no positive probability floor.
      if(hazard<=0.0) { ans[q] <- -Inf } else {
       # NIMBLE has no expm1. The Taylor expression avoids cancellation at
@@ -74,7 +83,7 @@ v12k_emission <- nimbleFunction(
        lc <- log(hazard)+log(1.0-hazard/2.0+hazard*hazard/6.0-
                   hazard*hazard*hazard/24.0)
       } else { lc <- log(1.0-exp(-hazard)) }
-      ans[q] <- lc+mark-nc*log(gs)
+      ans[q] <- lc+mark[q]-nc[q]*log(gs)
      }
     }
    }

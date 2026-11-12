@@ -7,6 +7,7 @@ if(r_only) {
 } else suppressPackageStartupMessages(library(nimble))
 source("scripts/ModularFitting/Woodchester_V12K_Likelihood.R",local=.GlobalEnv)
 source("scripts/ModularFitting/Woodchester_V12K_Covariates.R",local=.GlobalEnv)
+source("scripts/ModularFitting/Woodchester_V12K_Captures.R",local=.GlobalEnv)
 compile<-function(f)if(r_only)f else compileNimble(f,showCompilerOutput=TRUE)
 cd<-compile(dV12Covariate);ce<-compile(v12k_emission);cr<-compile(v12k_rates)
 enumerate<-function(F,k=1L,state=1L) {
@@ -48,14 +49,69 @@ for(TT in 1:2)for(w in 1:10) {
  }
  cases<-cases+1L
 }
-X<-rbind(c(0,0),c(.2,0));av<-matrix(1,2,4);ct<-matrix(0,2,4)
-ct[1,2]<-1;ct[,3]<-c(1,1)
-ea<-list(sx=.03,sy=.02,X=X,availability=av,counts=ct,p=rep(.4,4),
+X<-rbind(c(0,0),c(.2,0));av<-matrix(1,2,4)
+marks<-rbind(c(1,2,1),c(1,3,1),c(2,3,1),c(0,0,0))
+ea<-list(sx=.03,sy=.02,X=X,availability=av,captures=marks,p=rep(.4,4),
  survey=rep(1,4),sigma=.15,aux=matrix(0,4,4),aux_sd=.25)
 gg<-exp(-rowSums(sweep(X,2,c(.03,.02))^2)/(2*.15^2));h<--log(.6)*sum(gg)
 expected<-c(-h,log(-expm1(-h))+log(gg[1]/sum(gg)),
  log(-expm1(-h))+sum(log(gg/sum(gg))),-h)
 stopifnot(max(abs(do.call(ce,ea)-expected))<1e-10)
+
+# Independent dense observation calculation, including impossible captures.
+dense_emission<-function(ct,sx,sy,X,availability,p,survey,sigma,aux,aux_sd) {
+ if(any(ct>0 & availability<.5))return(rep(-Inf,4L))
+ lg<- -rowSums(sweep(X,2,c(sx,sy))^2)/(2*sigma^2)
+ mass<-colSums(availability*exp(lg))
+ hazard<- -log(1-p)*mass
+ nc<-colSums(ct)
+ ans<-numeric(4L)
+ surveyed<-survey>.5
+ ans[surveyed]<- -hazard[surveyed]
+ detected<-surveyed & nc>0
+ ans[detected & hazard<=0]<- -Inf
+ ok<-detected & hazard>0
+ ans[ok]<-log(-expm1(-hazard[ok]))+colSums(ct*lg)[ok]-nc[ok]*log(mass[ok])
+ ans-aux[,1]*log(2*pi*aux_sd^2)-
+  (aux[,4]-2*sx*aux[,2]-2*sy*aux[,3]+aux[,1]*(sx^2+sy^2))/(2*aux_sd^2)
+}
+set.seed(20261112)
+ct<-array(0,c(12L,4L,9L,4L))
+ct[sample.int(length(ct),90L)]<-sample.int(4L,90L,replace=TRUE)
+input<-list(N=12L,T=4L,J=9L,counts=ct)
+selected<-c(8L,1L,12L,4L,7L)
+packed<-v12k_pack_captures(input,selected,7L)
+sparse<-input
+sparse$capture_events<-v12k_capture_events(input)
+sparse$counts<-NULL
+stopifnot(identical(packed,v12k_pack_captures(sparse,selected,7L)))
+empty<-input
+empty$counts[]<-0
+stopifnot(identical(dim(v12k_pack_captures(empty,selected,7L)$packed),c(7L,4L,1L,3L)))
+for(i in 1:7)for(t in 1:4) {
+ original<-matrix(0,9L,4L)
+ if(i<=length(selected))original<-ct[selected[i],t,,]
+ marks<-matrix(packed$packed[i,t,,,drop=FALSE],ncol=3L)
+ used<-marks[,1]>0
+ recovered<-matrix(0,9L,4L)
+ recovered[marks[used,1:2,drop=FALSE]]<-marks[used,3]
+ stopifnot(identical(recovered,original))
+ av<-matrix(as.numeric(runif(36)>.35),9L,4L)
+ av[original>0]<-1
+ if(any(used) && t==4L)av[marks[which(used)[1],1],marks[which(used)[1],2]]<-0
+ points<-matrix(rnorm(4,sd=.2),2L,2L)
+ aux<-matrix(0,4L,4L)
+ aux[3,]<-c(nrow(points),colSums(points),sum(points^2))
+ args<-list(sx=.03,sy=.02,X=matrix(rnorm(18,sd=.2),9L,2L),availability=av,
+  p=c(.4,1e-10,0,.7),survey=c(1,1,1,0),sigma=.15,aux=aux,aux_sd=.25)
+ want<-do.call(dense_emission,c(list(ct=original),args))
+ for(fn in list(v12k_emission,ce)) {
+  got<-do.call(fn,c(list(captures=marks),args))
+  stopifnot(identical(is.finite(got),is.finite(want)),
+   all(got[!is.finite(got)]==want[!is.finite(want)]),
+   all(abs(got[is.finite(got)]-want[is.finite(want)])<1e-10))
+ }
+}
 g<-c(alpha_phi=qlogis(.86),alpha_rd=qlogis(.08),alpha_dd=qlogis(.3),
  beta_phi_sex=-.2,beta_rd_sex=.4,beta_dd_sex=.2,sigma_individual=.7,
  gamma=.2,gamma_initial=.4,psi=.8,qrec=.15,age_rate_initial=.4,age_rate_entry=.7,log_sigma_high=log(.8),
@@ -95,4 +151,4 @@ for(TT in 1:2) {
  }
  stopifnot(abs(mean(vals)-1)<1e-10)
 }
-cat("PASS:",cases,"state-path cases, emissions, 4 covariate cases, metadata and birth-reference normalization. Compiled:",!r_only,"\n")
+cat("PASS:",cases,"state-path cases, 28 sparse/dense emission cases, 4 covariate cases, metadata and birth-reference normalization. Compiled:",!r_only,"\n")
