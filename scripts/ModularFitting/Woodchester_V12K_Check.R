@@ -172,8 +172,11 @@ if(!r_only) {
  new<-v12k_configure_samplers(sampler_model,"mu",2L,3L,2L)
  signature<-function(conf)lapply(conf$getSamplers(),function(s)
   list(s$name,s$target,s$targetAsScalar,s$control,s$samplerFunction))
+ # addSampler's appended index can be double, whereas seq_along is integer.
+ # Compare the complete ordered index sequence in the same storage type.
  stopifnot(identical(signature(old),signature(new)),
-           identical(old$getSamplerExecutionOrder(),new$getSamplerExecutionOrder()))
+           identical(as.double(old$getSamplerExecutionOrder()),
+                     as.double(new$getSamplerExecutionOrder())))
  cat("PASS: batched sampler configuration matches original order, targets and controls.\n")
 }
 cat("PASS:",cases,"state-path cases, 28 sparse/dense emission cases, 4 covariate cases, metadata and birth-reference normalization. Compiled:",!r_only,"\n")
