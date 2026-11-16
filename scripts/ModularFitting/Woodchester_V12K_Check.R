@@ -151,4 +151,29 @@ for(TT in 1:2) {
  }
  stopifnot(abs(mean(vals)-1)<1e-10)
 }
+if(!r_only) {
+ source("scripts/ModularFitting/Woodchester_V12K_Samplers.R",local=.GlobalEnv)
+ sampler_code<-nimbleCode({
+  mu~dnorm(0,1)
+  sex~dbern(.5)
+  for(i in 1:2)for(t in 1:3)for(d in 1:2) S[i,t,d]~dnorm(mu,1)
+  for(j in 1:2)for(d in 1:2) X[j,d]~dnorm(mu,1)
+ })
+ sampler_model<-nimbleModel(sampler_code,data=list(X=rbind(c(0,0),c(NA,NA))),
+   inits=list(mu=0,sex=0,S=array(0,c(2,3,2)),X=rbind(c(NA,NA),c(0,0))))
+ old<-configureMCMC(sampler_model,monitors="mu",enableWAIC=FALSE,print=FALSE)
+ add_old_block<-function(nodes,scale) {
+  old$removeSamplers(nodes)
+  old$addSampler(nodes,type="RW_block",silent=TRUE,
+                 control=list(scale=scale,propCov=diag(2),adaptive=TRUE))
+ }
+ for(i in 1:2)for(t in 1:3)add_old_block(sprintf("S[%d,%d,%d]",i,t,1:2),.05)
+ add_old_block(sprintf("X[2,%d]",1:2),.1)
+ new<-v12k_configure_samplers(sampler_model,"mu",2L,3L,2L)
+ signature<-function(conf)lapply(conf$getSamplers(),function(s)
+  list(s$name,s$target,s$targetAsScalar,s$control,s$samplerFunction))
+ stopifnot(identical(signature(old),signature(new)),
+           identical(old$getSamplerExecutionOrder(),new$getSamplerExecutionOrder()))
+ cat("PASS: batched sampler configuration matches original order, targets and controls.\n")
+}
 cat("PASS:",cases,"state-path cases, 28 sparse/dense emission cases, 4 covariate cases, metadata and birth-reference normalization. Compiled:",!r_only,"\n")

@@ -5,6 +5,7 @@ suppressPackageStartupMessages(library(nimble))
 source("scripts/ModularFitting/Woodchester_V12K_Likelihood.R",local=.GlobalEnv)
 source("scripts/ModularFitting/Woodchester_V12K_Covariates.R",local=.GlobalEnv)
 source("scripts/ModularFitting/Woodchester_V12K_Captures.R",local=.GlobalEnv)
+source("scripts/ModularFitting/Woodchester_V12K_Samplers.R",local=.GlobalEnv)
 input<-Sys.getenv("V12K_INPUT",""); out<-Sys.getenv("V12K_OUT","")
 if(!nzchar(input)||!nzchar(out)||file.exists(out))stop("Set input and NEW V12K_OUT")
 getint<-function(key,default,lo=0L) {
@@ -211,21 +212,7 @@ monitors<-c("phi0","alpha_phi","gamma","gamma_initial","psi","rd0","dd0","alpha_
  "beta_highscale_sex","beta_sigma_sex","beta_p_sex","log_sigma_high","log_sigma_det","alpha_p",
  sprintf("beta_phi_age[%d]",1:3),sprintf("beta_move_age[%d]",1:3),
  sprintf("season[%d]",2:4),sprintf("era[%d]",2:NP))
-conf<-configureMCMC(model,monitors=monitors,enableWAIC=FALSE)
-# Joint coordinate updates preserve x/y geometry. The hidden demographic and
-# movement states are integrated, so no sticky sampled alive/dead histories.
-for(i in seq_len(NN))for(t in seq_len(TT)) {
- nodes<-sprintf("S[%d,%d,%d]",i,t,1:2)
- conf$removeSamplers(nodes)
- conf$addSampler(target=nodes,type="RW_block",silent=TRUE,
-                 control=list(scale=.05,propCov=diag(2),adaptive=TRUE))
-}
-for(j in which(!b$detectors$known)) {
- nodes<-sprintf("X[%d,%d]",j,1:2)
- conf$removeSamplers(nodes)
- conf$addSampler(target=nodes,type="RW_block",silent=TRUE,
-                 control=list(scale=.1,propCov=diag(2),adaptive=TRUE))
-}
+conf<-v12k_configure_samplers(model,monitors,NN,TT,which(!b$detectors$known))
 conf$addMonitors2(c("S","X","sex","birth_index","u_move"))
 # Spatial samples are thinned separately to keep full-cohort outputs manageable.
 thin2<-thin*max(1L,ceiling((niter-burn)/getint("V12K_SPATIAL_DRAWS",100,1)/thin))
