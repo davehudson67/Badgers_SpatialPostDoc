@@ -47,6 +47,14 @@ v12k_emission <- nimbleFunction(
   ans <- rep(0.0,4)
   mark <- rep(0.0,4)
   nc <- rep(0.0,4)
+  JJ <- dim(X)[1]
+  log_weight <- rep(0.0,JJ)
+  weight <- rep(0.0,JJ)
+  for(j in 1:JJ) {
+   d2 <- (sx-X[j,1])^2+(sy-X[j,2])^2
+   log_weight[j] <- -d2/(2.0*sigma*sigma)
+   weight[j] <- exp(log_weight[j])
+  }
   # Rows are ordered by quarter and detector so each quarter's marks
   # accumulate in the same order as in the dense encounter likelihood.
   for(k in 1:dim(captures)[1]) {
@@ -55,19 +63,14 @@ v12k_emission <- nimbleFunction(
     quarter <- as.integer(captures[k,2])
     if(availability[detector,quarter]<0.5) return(rep(-Inf,4))
     count <- captures[k,3]
-    d2_mark <- (sx-X[detector,1])^2+(sy-X[detector,2])^2
-    lg_mark <- -d2_mark/(2.0*sigma*sigma)
-    mark[quarter] <- mark[quarter]+count*lg_mark
+    mark[quarter] <- mark[quarter]+count*log_weight[detector]
     nc[quarter] <- nc[quarter]+count
    }
   }
-  JJ <- dim(X)[1]
   for(q in 1:4) {
    gs <- 0.0
    for(j in 1:JJ) {
-    d2 <- (sx-X[j,1])^2+(sy-X[j,2])^2
-    lg <- -d2/(2.0*sigma*sigma)
-    g <- availability[j,q]*exp(lg)
+    g <- availability[j,q]*weight[j]
     gs <- gs+g
    }
    if(survey[q]>0.5) {

@@ -238,3 +238,26 @@ q<-t(apply(as.matrix(sam$samples),2,function(x)c(mean=mean(x),
 write.csv(data.frame(parameter=rownames(q),q),file.path(out,"parameter_summary.csv"),row.names=FALSE)
 print(q,digits=4)
 cat("Saved:",out,"\nExecution success is not convergence or biological validation.\n")
+# Optional diagnostic continuation; the saved pilot above is unchanged.
+profile_iterations<-getint("V12K_PROFILE_NITER",0)
+if(profile_iterations>0L) {
+ cat("Profiling",profile_iterations,"additional iterations\n")
+ profile_elapsed<-system.time(compiled_mcmc$run(
+   niter=profile_iterations,reset=FALSE,time=TRUE,thin=thin,thin2=thin2,progressBar=TRUE))[["elapsed"]]
+ sampler_definitions<-conf$getSamplers()
+ times<-compiled_mcmc$getTimes()
+ stopifnot(length(times)==length(sampler_definitions))
+ timing<-data.frame(
+  sampler=vapply(sampler_definitions,function(s)s$name,character(1)),
+  target=vapply(sampler_definitions,function(s)paste(s$target,collapse=";"),character(1)),
+  seconds=as.numeric(times))
+ timing$variable<-sub("\\[.*","",sub(";.*","",timing$target))
+ write.csv(timing,file.path(out,"sampler_times.csv"),row.names=FALSE)
+ totals<-aggregate(seconds~variable+sampler,timing,sum)
+ totals<-totals[order(totals$seconds,decreasing=TRUE),]
+ totals$iterations<-profile_iterations
+ totals$seconds_per_iteration<-totals$seconds/profile_iterations
+ write.csv(totals,file.path(out,"sampler_time_totals.csv"),row.names=FALSE)
+ cat("Profile seconds:",profile_elapsed,"for",profile_iterations,"iterations\n")
+ print(totals,row.names=FALSE)
+}
