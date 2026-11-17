@@ -1,6 +1,6 @@
 # Woodchester Badgers — ChatGPT Project Handover
 
-Last reviewed: 6 November 2026.
+Last reviewed: 17 November 2026.
 
 This is a handover for future ChatGPT conversations.
 It is NOT a sixth authoritative scientific document.
@@ -34,8 +34,13 @@ davehudson67/Badgers_SpatialPostDoc
 5. docs/database/WECS_FLAGGED_INCONSISTENCIES_2026_11_04.md
    Outstanding data-quality questions and review status.
 
-These are the ONLY five active reference documents.
+These are the ONLY five authoritative evidence/reference documents.
 Do not create competing live roadmaps or data dictionaries.
+
+Supplementary reader's guide (not authoritative):
+docs/WOODCHESTER_MODELLING_OVERVIEW.md
+It gives a concise orientation derived from the roadmap and
+adds no separate evidence, results or scientific decisions.
 
 ## Repository organisation
 
@@ -79,9 +84,14 @@ Important: historical V11R2 sett aliases include
 unresolved or potentially incorrect biological mappings.
 Do not assume distinct canonical setts are equivalent.
 
-V12: next priority. Develop audited encounter/fate data,
-detection, apparent survival and movement-demography
-relationships. Do not equate disappearance with death.
+V12: active joint spatial and demographic development.
+V12K adds age, sex and individual movement effects to V12J.
+Computational likelihood/dependency checks and short
+full-cohort timing runs have passed. The latest reported
+full-cohort timing run had entered model setup; no completed,
+adequately long multi-chain fit, convergence result or
+biological estimate is established. Do not equate
+unobserved with dead or emigrated.
 
 V13: planned work on disease introduction,
 infectiousness, transmission and persistence.
@@ -161,11 +171,12 @@ large posterior outputs indiscriminately.
 ## Starting a new ChatGPT conversation
 
 1. Read this handover.
-2. Read the five authoritative documents.
-3. Inspect current Git branch, status and recent commits.
-4. Identify the most recent dated modelling decision.
-5. Resume from the current scientific decision gate.
-6. Keep documentation and code in sync.
+2. Read the supplementary plain-language overview for orientation.
+3. Read the five authoritative documents, especially the modelling roadmap.
+4. Inspect current Git branch, status and recent commits.
+5. Identify the most recent dated modelling decision.
+6. Resume from the current scientific decision gate.
+7. Keep documentation and code in sync.
 
 The objective is a coherent, traceable scientific
 programme, not simply a sequence of model versions.
