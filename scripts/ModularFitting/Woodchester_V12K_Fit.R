@@ -32,7 +32,8 @@ Nobs<-length(selected); NN<-Nobs+aug; TT<-b$T; JJ<-b$J
 if(NN<2||TT<2)stop("Insufficient dimensions")
 capture_data<-v12k_pack_captures(b,selected,NN)
 b$counts<-NULL
-captures<-capture_data$packed
+annual_detectors<-v12k_annual_detectors(b$availability,capture_data$packed)
+captures<-annual_detectors$packed
 NM<-dim(captures)[3]
 events<-capture_data$events
 event_rows<-split(seq_len(nrow(events)),events[,"badger"])
@@ -151,6 +152,16 @@ code<-nimbleCode({
   X[j,1] ~ dunif(bounds[1],bounds[2])
   X[j,2] ~ dunif(bounds[3],bounds[4])
  }
+ # Constant annual index lists create dependencies only on active detectors.
+ for(t in 1:TT) {
+  if(n_active[t]>0) {
+   for(j in 1:n_local[t])for(d in 1:2)
+    localX[t,j,d] <- X[detector_index[j,t],d]
+  } else {
+   # Empty coverage: a fixed zero-weight dummy, independent of every X.
+   for(d in 1:2)localX[t,1,d] <- 0
+  }
+ }
  for(i in 1:NN) {
   sex[i] ~ dbern(sex_prop)
   sex_group[i] <- sex[i]+1
@@ -165,8 +176,8 @@ code<-nimbleCode({
   for(t in 1:TT) {
    S[i,t,1] ~ dnorm(0,sd=reference_sd)
    S[i,t,2] ~ dnorm(0,sd=reference_sd)
-   ell[i,t,1:4] <- v12k_emission(S[i,t,1],S[i,t,2],X[1:JJ,1:2],
-    availability[1:JJ,1:4,t],captures[i,t,1:NM,1:3],p[sex_group[i],t,1:4],
+   ell[i,t,1:4] <- v12k_emission(S[i,t,1],S[i,t,2],localX[t,1:n_local[t],1:2],
+    availability[1:n_local[t],1:4,t],captures[i,t,1:NM,1:3],p[sex_group[i],t,1:4],
     survey[i,t,1:4],sigma_det[sex_group[i]],aux[i,t,1:4,1:4],aux_sd)
   }
   history[i] ~ dV12Covariate(S[i,1:TT,1:2],ell[i,1:TT,1:4],
@@ -179,7 +190,9 @@ if(NP==1L)stop("First executable requires >=2 five-year periods; use full study 
 constants<-list(NN=NN,TT=TT,JJ=JJ,NM=NM,NP=NP,period=b$period,
  NB=NB,birth_min=as.numeric(min(b$birth_years)),birth_prior=rep(1/NB,NB),max_entry_age=b$birth_padding,
  age_is_adult=adult,adult_min_age=b$adult_min_age,first_age_year=first_age_year,years=as.numeric(b$years),
- availability=b$availability,captures=captures,positive=pos,recovery=rec,
+ n_active=annual_detectors$n_active,n_local=annual_detectors$n_local,
+ detector_index=annual_detectors$indices,
+ availability=annual_detectors$availability,captures=captures,positive=pos,recovery=rec,
  at_risk=risk,forced=forced,survey=survey,aux=aux,bounds=b$bounds,
  reference_sd=refsd,sigma_res=sigma_res,aux_sd=auxsd)
 inits<-list(phi0=.85,gamma=.08,gamma_initial=.15,psi=.8,rd0=.05,dd0=.3,qrec=.1,
@@ -197,6 +210,13 @@ cat("Coverage:",b$coverage,"mortality:",b$mortality,"\n")
 cat("Unknown detector XY:",sum(!b$detectors$known),"\n")
 cat("Capture cells:",nrow(events),"packed slots:",length(captures),
     "previous dense slots:",as.double(NN)*TT*JJ*4,"\n")
+detector_usage<-data.frame(detector=seq_len(JJ),known=b$detectors$known,
+ active_years=vapply(seq_len(JJ),function(j)
+  sum(vapply(annual_detectors$active,function(x)j %in% x,logical(1))),integer(1)))
+write.csv(detector_usage,file.path(out,"detector_active_years.csv"),row.names=FALSE)
+cat("Annual detector rows:",sum(annual_detectors$n_active),"of",JJ*TT,"\n")
+cat("Unknown detector-year dependencies:",sum(detector_usage$active_years[!detector_usage$known]),
+    "of",sum(!detector_usage$known)*TT,"\n")
 build_started<-proc.time()[["elapsed"]]
 model<-nimbleModel(code,constants=constants,data=list(history=rep(1,NN),X=Xdata,
  sex=sex_data,birth_index=birth_data,age_ok=rep(1,NN)),

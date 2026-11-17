@@ -180,3 +180,5 @@ if(!r_only) {
  cat("PASS: batched sampler configuration matches original order, targets and controls.\n")
 }
 cat("PASS:",cases,"state-path cases, 28 sparse/dense emission cases, 4 covariate cases, metadata and birth-reference normalization. Compiled:",!r_only,"\n")
+
+source("scripts/ModularFitting/Woodchester_V12K_Annual_Check.R",local=.GlobalEnv)

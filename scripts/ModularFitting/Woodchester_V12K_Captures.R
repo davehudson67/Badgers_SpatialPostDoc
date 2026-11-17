@@ -33,3 +33,41 @@ v12k_pack_captures <- function(input, selected, NN) {
  }
  list(events=events, packed=packed)
 }
+
+# Exact annual detector subsets. Omit only rows whose coverage is zero in all
+# quarters and which have no capture marks. No distance cutoff is used.
+# Global detector order is retained to preserve floating-point summation order.
+v12k_annual_detectors <- function(availability, packed) {
+ dd <- dim(availability)
+ pp <- dim(packed)
+ if(length(dd)!=3L || dd[2]!=4L || length(pp)!=4L ||
+    pp[2]!=dd[3] || pp[4]!=3L || any(!is.finite(availability)) ||
+    any(availability<0)) stop("Invalid annual detector inputs")
+ JJ <- dd[1]; TT <- dd[3]
+ active <- vector("list",TT)
+ remapped <- packed
+ for(t in seq_len(TT)) {
+  ids <- as.vector(packed[,t,,1])
+  if(any(!is.finite(ids) | ids<0 | ids>JJ | ids!=floor(ids)))
+   stop("Invalid packed detector index")
+  marks <- sort(unique(as.integer(ids[ids>0])))
+  av <- matrix(availability[,,t],JJ,4L)
+  active[[t]] <- sort(unique(c(which(rowSums(av)>0),marks)))
+  map <- integer(JJ)
+  map[active[[t]]] <- seq_along(active[[t]])
+  positive <- ids>0
+  ids[positive] <- map[ids[positive]]
+  remapped[,t,,1] <- ids
+ }
+ n_active <- lengths(active)
+ n_local <- pmax(1L,n_active)
+ indices <- matrix(1L,max(n_local),TT)
+ local_availability <- array(0,c(max(n_local),4L,TT))
+ for(t in seq_len(TT))if(n_active[t]>0L) {
+  rows <- seq_len(n_active[t])
+  indices[rows,t] <- active[[t]]
+  local_availability[rows,,t] <- availability[active[[t]],,t]
+ }
+ list(indices=indices,n_active=n_active,n_local=n_local,
+      availability=local_availability,packed=remapped,active=active)
+}
