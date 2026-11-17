@@ -6,6 +6,7 @@ for(test in seq_len(100L)) {
  av<-array(rbinom(JJ*4L*TT,1,.4),c(JJ,4L,TT))
  av[1:3,,1]<-0
  av[,,3]<-0
+ if(test %% 3L==0L) {av[,,2]<-0;av[5,1,2]<-1}
  packed<-array(0,c(NN,TT,NM,3L))
  for(i in seq_len(NN))for(t in 1:2) {
   cells<-which(av[,,t]>0,arr.ind=TRUE)
@@ -19,7 +20,8 @@ for(test in seq_len(100L)) {
  X<-matrix(rnorm(JJ*2,sd=.2),JJ,2)
  for(i in seq_len(NN))for(t in seq_len(TT)) {
   selected<-local$active[[t]]
-  XX<-if(length(selected))X[selected,,drop=FALSE] else matrix(0,1,2)
+  XX<-matrix(0,local$n_local[t],2)
+  if(length(selected))XX[seq_along(selected),]<-X[selected,,drop=FALSE]
   args<-list(sx=rnorm(1,sd=.2),sy=rnorm(1,sd=.2),
     p=c(.2,1e-10,0,.6),survey=c(1,1,1,0),sigma=.15,
     aux=matrix(0,4,4),aux_sd=.25)
@@ -41,6 +43,9 @@ for(test in seq_len(100L)) {
   annual_cases<-annual_cases+1L
  }
 }
+singleton<-v12k_annual_detectors(array(0,c(1,4,1)),array(0,c(1,1,1,3)))
+stopifnot(identical(dim(singleton$packed),c(1L,1L,2L,3L)),
+          singleton$n_local==2L,all(singleton$packed==0))
 cat("PASS:",annual_cases,"annual-subset emission cases, including empty coverage and invalid marks.\n")
 
 if(!r_only) {
@@ -54,13 +59,14 @@ if(!r_only) {
   for(j in 1:4)for(d in 1:2) X[j,d]~dunif(-2,2)
   for(t in 1:3) {
    if(n_active[t]>0) {
-    for(j in 1:n_local[t])for(d in 1:2)
+    for(j in 1:n_active[t])for(d in 1:2)
      localX[t,j,d]<-X[detector_index[j,t],d]
-   } else {
-    for(d in 1:2)localX[t,1,d]<-0
+   }
+   if(n_active[t]<n_local[t]) {
+    for(j in (n_active[t]+1):n_local[t])for(d in 1:2)localX[t,j,d]<-0
    }
    ell[t,1:4]<-v12k_emission(0,0,localX[t,1:n_local[t],1:2],
-     availability[1:n_local[t],1:4,t],captures[1,t,1:1,1:3],
+     availability[1:n_local[t],1:4,t],captures[1,t,1:2,1:3],
      p[1:4],survey[1:4],.15,aux[1:4,1:4],.25)
    y[t]~dnorm(sum(ell[t,1:4]),sd=1)
   }
@@ -74,8 +80,11 @@ if(!r_only) {
  for(j in 2:4) {
   deps<-gsub(" ","",annual_model$getDependencies(sprintf("X[%d,1]",j)),fixed=TRUE)
   want<-if(j==2)1L else if(j==3)2L else integer(0)
-  stopifnot(identical(sort(as.integer(sub("y\\[([0-9]+)\\]","\\1",
-    grep("^y\\[",deps,value=TRUE)))),want))
+  got<-sort(as.integer(sub("y\\[([0-9]+)\\]","\\1",
+    grep("^y\\[",deps,value=TRUE))))
+  if(!identical(got,want))stop("X[",j,"] dependency years: got ",
+    paste(got,collapse=","),"; expected ",paste(want,collapse=","),
+    ". All dependencies: ",paste(deps,collapse="; "))
  }
  ac<-configureMCMC(annual_model,monitors="X",enableWAIC=FALSE,print=FALSE)
  am<-buildMCMC(ac)

@@ -155,11 +155,12 @@ code<-nimbleCode({
  # Constant annual index lists create dependencies only on active detectors.
  for(t in 1:TT) {
   if(n_active[t]>0) {
-   for(j in 1:n_local[t])for(d in 1:2)
+   for(j in 1:n_active[t])for(d in 1:2)
     localX[t,j,d] <- X[detector_index[j,t],d]
-  } else {
-   # Empty coverage: a fixed zero-weight dummy, independent of every X.
-   for(d in 1:2)localX[t,1,d] <- 0
+  }
+  # Zero-weight padding preserves matrix rank for zero/one active detector.
+  if(n_active[t]<n_local[t]) {
+   for(j in (n_active[t]+1):n_local[t])for(d in 1:2)localX[t,j,d] <- 0
   }
  }
  for(i in 1:NN) {

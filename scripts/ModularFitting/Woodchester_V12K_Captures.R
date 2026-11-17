@@ -45,6 +45,13 @@ v12k_annual_detectors <- function(availability, packed) {
     any(availability<0)) stop("Invalid annual detector inputs")
  JJ <- dd[1]; TT <- dd[3]
  active <- vector("list",TT)
+ # Two rows keep NIMBLE's model-side slices matrix-valued, even when
+ # there is only one capture slot. Additional rows are zero padding.
+ if(pp[3]<2L) {
+  expanded <- array(0,c(pp[1],pp[2],2L,3L))
+  expanded[,,1,] <- packed[,,1,]
+  packed <- expanded
+ }
  remapped <- packed
  for(t in seq_len(TT)) {
   ids <- as.vector(packed[,t,,1])
@@ -60,7 +67,7 @@ v12k_annual_detectors <- function(availability, packed) {
   remapped[,t,,1] <- ids
  }
  n_active <- lengths(active)
- n_local <- pmax(1L,n_active)
+ n_local <- pmax(2L,n_active)
  indices <- matrix(1L,max(n_local),TT)
  local_availability <- array(0,c(max(n_local),4L,TT))
  for(t in seq_len(TT))if(n_active[t]>0L) {
