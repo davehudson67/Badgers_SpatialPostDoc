@@ -1,6 +1,6 @@
 # Woodchester Badger Modelling Development Roadmap
 
-## Model status at a glance — 6 November 2026
+## Model status at a glance — 17 November 2026
 
 This table is a navigation summary, not a replacement for
 the dated analyses and scientific decisions below. See the
@@ -14,7 +14,7 @@ full history before interpreting any model result.
 | V11 / V11S | Age, individual heterogeneity and movement-state development | Fitted and diagnostically investigated; limitations documented | Superseded as primary movement reference |
 | **V11R2** | Resolution-aware geographic movement estimation | Fitted with resolution sensitivities; legacy-input reconciliation outstanding | Current movement reference, subject to input audit |
 | Behavioural/social pathways | Excursions, residence changes, group reassignment and dispersal | Exploratory analyses completed; some interpretations depend on location and territory validation | Preserve uncertainty; review before publication |
-| **V12** | Detection, apparent survival, disappearance and movement–demography | Planned; data eligibility and source reconciliation underway | Next modelling priority |
+| **V12** | Joint spatial detection, movement, entry, survival and disappearance | V12K real-data developmental model built; exact likelihood and compiled dependency checks pass; short full-cohort timing runs completed; annual-detector timing run passed checks and was in model setup at the last report | Finish the current timing trial, then assess setup/runtime and run adequate multi-chain validation; no biological or convergence result yet |
 | **V13** | Infectiousness, introduction, transmission and persistence | Planned research programme | Develop after appropriate V12 and disease-data validation |
 
 ### Evidence and status conventions
@@ -35,7 +35,7 @@ full history before interpreting any model result.
 
 ## Living record: current position and update protocol
 
-**Last structural review:** 6 November 2026.
+**Last structural review:** 17 November 2026.
 
 This document is the sole authoritative scientific record
 for Woodchester model development.
@@ -49,9 +49,7 @@ for Woodchester model development.
 - **Sett/location review:** awaiting further field-team
   evidence; do not invent missing locations or merge
   biologically distinct sett identities.
-- **V12:** next main scientific development programme,
-  beginning with auditable encounter/fate histories,
-  detection and apparent survival.
+- **V12:** active joint spatial/demographic development. The full-cohort age/sex/individual V12K model has passed computational likelihood and dependency gates. The latest run was reported in model setup; no later completion report, converged full-cohort posterior or biological estimate is yet established.
 - **V13:** subsequent disease and transmission modelling,
   informed by movement, demography and dynamic social
   structure.
@@ -84,11 +82,9 @@ Append dated corrections or revised interpretations.
 
 ### Scientific priorities
 
-**Immediate:** Reconcile V11R2 legacy inputs with the
-curated spatial and encounter data.
+**Immediate:** Complete the current V12K full-cohort timing/build trial and record its stage timings. Then decide whether the new annual detector dependencies improve speed enough to proceed to longer multi-chain runs.
 
-**Next:** Establish V12 survival and observation models
-before integrating movement/dispersal with survival.
+**Next:** Validate mixing, individual latent movement centres, survival/entry and detection against the full likelihood, including sensitivity to coverage, augmentation, mortality/recovery and entry-age assumptions. Keep these estimates preliminary until diagnostics and simulation or recovery checks support them.
 
 **Longer term:** Investigate disease introduction,
 infectiousness, transmission, persistence and the effects
@@ -5950,3 +5946,34 @@ Investigator requests age, sex and individual effects and a simultaneous run on 
 **Executed local validation:** six R scripts parsed, Bash syntax passed; NIMBLE 1.4.3 / scratch R 4.6.2 compiled the custom density, spatial emission and covariate-rate function. **20** short-history likelihood cases matched independent feasible-path enumeration, including time-varying survival/movement, birth support, contradictory records, recoveries and forced death. Four nonzero age/sex/individual rate combinations matched the R implementation. Initial/subsequent birth-reference normalization and metadata handling passed. A miniature **4-observed + 1 augmented, 8-year, 5-detector (one unknown XY)** model compiled, sampled 40 iterations / 20 burn-in and saved finite global/spatial/covariate draws. Paired monitor streams and **200** FFBS histories respected known sex/birth cohorts, the adult lower bound, live/dead evidence and birth-before-alive constraints. This is computational validation, not parameter recovery, convergence, real-data age auditing or publication-grade validation. Full sf/posterior reporting and full-cohort performance remain server checks. A NIMBLE dynamic-index-of-constant restriction was caught locally and replaced by arithmetic lookup of the contiguous birth-year index.
 
 **Launch on rstudio02n:** after `git pull --ff-only`, run `V12_SNAPSHOT=data/model_snapshots/v12_20261110T105256Z_2681271 bash scripts/ModularFitting/launch_V12K_Covariates_tmux.sh`. The launcher prepares/audits once, checks compiled likelihoods, runs a 12-observed + 4-augmented real-data compilation smoke (80/40 iterations), then automatically starts three concurrent full-cohort chains (default 2,000 iterations / 1,000 burn-in / thin 2, 200 augmentation candidates) and pooled diagnostics/zone summaries. Inspect preparation.log and COVARIATE_MANIFEST.txt for actual covariate counts and baseline comparison, then likelihood_checks.log/smoke.log/chain logs. Preserve baseline on rstudio04n. Birth support/entry-age distribution, adult lower bound, coverage, augmentation and recovery sensitivities plus individual/abundance mixing remain scientific gates; no data/database changes.
+
+
+### 17 November 2026 — V12K full-cohort computational scaling and detector-year dependencies
+
+**Status: PRELIMINARY COMPUTATIONAL PROGRESS.** The V12K joint age/sex/individual movement model is now executable against the full observed cohort in short timing runs. Compiled likelihood, annual detector dependency and cached-versus-full-recalculation checks pass. One short full-cohort run has entered model setup; no adequate multi-chain fit, convergence result, parameter estimate or biological conclusion has been reported.
+
+#### Model question and data retained
+
+The computational question is whether sparse capture storage, batched samplers and year-specific detector dependencies can make the already specified full-cohort joint likelihood practical without changing its data or target density. V12K extends the V12J continuous-space joint observation/demographic likelihood with calendar-age and sex effects plus a persistent individual movement propensity. Its latent annual movement centres, capture process, entry, survival/apparent disappearance and candidate mortality histories remain jointly represented; the hidden demographic/movement states remain marginalized. The annual detector optimisation changes which zero-coverage detector rows enter each year's emission calculation, not the scientific model or the animal cohort.
+
+The full-cohort timing runs use the frozen V12K input based on snapshot `data/model_snapshots/v12_20261110T105256Z_2681271`: **3,156 observed badgers + 200 augmented candidates, 49 years, 138 detectors, including 17 uncertain detector XY locations**. Earlier sparse preparation reported 15,136 nonzero capture cells and 3,946,656 packed capture slots, versus 90,773,088 dense slots. The same full detector-coverage arrays and all eligible animals are retained; no individuals or trap records were excluded to gain speed. This remains the trapping-cohort model described above, not every auxiliary-only or mortality-only badger.
+
+#### Computational bottlenecks and changes
+
+The first simultaneous dense full-data V12K chains did not yield a usable fit: chain02 exited 137, the other chain logs supplied remained at model definition, and no full fit or multichain summary was located. Sparse storage reduced capture-array size, but an unbatched coordinate-sampler build remained impractically slow. The batched sampler implementation on `v12k-batched-samplers` (commit `a4dbccd94d170726e7cf52b740525a1764ed0e9e`) completed a short full-cohort run and supplied the reference timing below. The short fit is a runtime benchmark, not a convergence assessment.
+
+In `sparse_batched_timing_ehs2t3`, using 20 iterations, 10 burn-in, thin 1 and 200 augmentation candidates, reported stages were: model setup **9,498.172 s**; sampler configuration **223.836 s**; MCMC build **1,975.279 s**; model compilation **272.075 s**; MCMC compilation **8,640.968 s**; sampling **986.572 s**. The fit was saved. Twenty iterations do not support interpretation of posterior means as biological estimates.
+
+The first speed change, on `v12k-emission-speed` commit `747a116df7b3de90a8515c358adac561cfd271a7`, computes each detector's distance/kernel once per annual badger position and reuses it across that year's four quarters. It does not cache distances across MCMC updates: a proposed movement centre or detection scale changes them. In `sparse_speed_timing_1BaqQk`, 20 sampling iterations took **594.365 s** (**29.7 s/iteration**) compared with **986.572 s** (**49.3 s/iteration**) in the batched reference, about a **40% reduction** in this paired short benchmark. The run also profiled five additional iterations after saving its 20-iteration fit. That five-iteration profile attributed about **12.13 s/iteration** to unknown detector coordinates (X), **6.30 s** to annual badger centres (S), **2.14 s** to seasonal effects and **1.78 s** to era effects. These short sampler timings identify candidates for profiling; they are not precise long-run cost estimates.
+
+The second change, `v12k-annual-detectors` commit `8d26b8ed6cda771981f9a37603ffae81eb090689`, connects a detector's coordinates only to years in which it is covered by the assumed network or has a capture mark. It retains all covered-detector contributions to the probability of a missed capture, uses the original time-varying coverage masks and preserves the original likelihood when a capture conflicts with assumed coverage. A first compiled attempt at commit `e73446a3df4715a2b4885f448dd112968b5560f3` correctly stopped at a failed dependency assertion and never started the full build. The corrected code removed loop-dependent model-definition conditionals, fixed zero/one-row padding and was retested.
+
+The corrected server gate passed. This branch changes `scripts/ModularFitting/Woodchester_V12K_Captures.R`, `_Fit.R`, `_Check.R` and adds `_Annual_Check.R`. It reported **3,132 annual detector rows of 6,762 possible** and **177 unknown-detector/year dependencies of 833 possible**. The checks include 600 annual-subset emission comparisons and a compiled check that the model graph connects each uncertain detector only to its relevant years and that MCMC's stored likelihood agrees with full recalculation. These checks support computational equivalence of the tested likelihood construction; they do not demonstrate posterior recovery, convergence or biological validity.
+
+#### Current run and decision
+
+The corrected full-cohort run is in `outputs/v12_covariates/v12k_20261110T164403Z_22qmQd/annual_detector_timing_enW9Mz`, using detached source commit `8d26b8ed6cda771981f9a37603ffae81eb090689` on `v12k-annual-detectors`. The user-reported log passed the compiled checks and reached **Model setup**, which began at **09:33:34 on 17 November**; the last report at 09:51 still showed model setup. No later setup completion, sampling timing, saved output or exit status has been reported. It was configured for 20 iterations / 10 burn-in plus five profiling iterations, full 3,156 + 200 cohort, and thin 1. Its launch uses `V12K_CHECK_R_ONLY=0 Rscript scripts/ModularFitting/Woodchester_V12K_Check.R` followed by the timed fit script. Treat this as RUNNING at the last reported checkpoint, not completed.
+
+**Interpretation and limits:** the distance-reuse speed-up is measured; the annual-detector speed-up is not yet measured. Setup and compilation still take hours and varied between the short trials. The current trial's timing will show whether reducing detector-year dependencies helps setup, sampler invalidation and per-iteration runtime. Neither successful compilation nor a short saved fit establishes good mixing, identifiable survival versus permanent emigration, valid abundance, age effects, or individual trajectories.
+
+**Next actions:** inspect the current run's stage timings, exit code and saved pilot; compare with the reference and distance-reuse runs. If it completes, plan a separate adequately long multi-chain run and check global and latent-state mixing, posterior predictive behaviour and sensitivity to coverage, augmentation, mortality/recovery and birth/entry-age assumptions. Do not treat the 20-iteration timing fit or five-iteration sampler profile as an inferential result. Preserve the failed trial logs and old outputs for provenance. No data or database changes were made.
