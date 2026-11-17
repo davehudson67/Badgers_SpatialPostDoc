@@ -152,17 +152,12 @@ code<-nimbleCode({
   X[j,1] ~ dunif(bounds[1],bounds[2])
   X[j,2] ~ dunif(bounds[3],bounds[4])
  }
- # Constant annual index lists create dependencies only on active detectors.
- for(t in 1:TT) {
-  if(n_active[t]>0) {
-   for(j in 1:n_active[t])for(d in 1:2)
-    localX[t,j,d] <- X[detector_index[j,t],d]
-  }
-  # Zero-weight padding preserves matrix rank for zero/one active detector.
-  if(n_active[t]<n_local[t]) {
-   for(j in (n_active[t]+1):n_local[t])for(d in 1:2)localX[t,j,d] <- 0
-  }
- }
+ # Index zero denotes a fixed zero-weight padding detector. This avoids
+ # model-definition if statements that depend on a loop index.
+ for(d in 1:2)paddedX[1,d] <- 0
+ for(j in 1:JJ)for(d in 1:2)paddedX[j+1,d] <- X[j,d]+0.0
+ for(t in 1:TT)for(j in 1:n_local[t])for(d in 1:2)
+  localX[t,j,d] <- paddedX[detector_index[j,t]+1,d]+0.0
  for(i in 1:NN) {
   sex[i] ~ dbern(sex_prop)
   sex_group[i] <- sex[i]+1

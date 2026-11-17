@@ -68,7 +68,7 @@ v12k_annual_detectors <- function(availability, packed) {
  }
  n_active <- lengths(active)
  n_local <- pmax(2L,n_active)
- indices <- matrix(1L,max(n_local),TT)
+ indices <- matrix(0L,max(n_local),TT)
  local_availability <- array(0,c(max(n_local),4L,TT))
  for(t in seq_len(TT))if(n_active[t]>0L) {
   rows <- seq_len(n_active[t])

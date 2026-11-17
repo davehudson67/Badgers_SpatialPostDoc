@@ -52,19 +52,16 @@ if(!r_only) {
  # Check the actual graph and compiled ordinary sampler restore/recalculate
  # behaviour: X[2] influences year 1, X[3] year 2, X[4] neither.
  av<-array(0,c(4,4,3))
- av[c(1,2),,1]<-1;av[c(1,3),,2]<-1
+ av[c(1,2),,1]<-1;av[3,,2]<-1
  packed<-array(0,c(1,3,1,3))
  local<-v12k_annual_detectors(av,packed)
  annual_code<-nimbleCode({
   for(j in 1:4)for(d in 1:2) X[j,d]~dunif(-2,2)
+  for(d in 1:2)paddedX[1,d]<-0
+  for(j in 1:4)for(d in 1:2)paddedX[j+1,d]<-X[j,d]+0.0
   for(t in 1:3) {
-   if(n_active[t]>0) {
-    for(j in 1:n_active[t])for(d in 1:2)
-     localX[t,j,d]<-X[detector_index[j,t],d]
-   }
-   if(n_active[t]<n_local[t]) {
-    for(j in (n_active[t]+1):n_local[t])for(d in 1:2)localX[t,j,d]<-0
-   }
+   for(j in 1:n_local[t])for(d in 1:2)
+    localX[t,j,d]<-paddedX[detector_index[j,t]+1,d]+0.0
    ell[t,1:4]<-v12k_emission(0,0,localX[t,1:n_local[t],1:2],
      availability[1:n_local[t],1:4,t],captures[1,t,1:2,1:3],
      p[1:4],survey[1:4],.15,aux[1:4,1:4],.25)
@@ -77,6 +74,7 @@ if(!r_only) {
    captures=local$packed,p=rep(.3,4),survey=rep(1,4),aux=matrix(0,4,4)),
   data=list(y=rep(0,3),X=rbind(c(0,0),matrix(NA,3,2))),
   inits=list(X=rbind(c(NA,NA),c(.1,.2),c(.2,.1),c(.3,.3))))
+ stopifnot(is.finite(annual_model$calculate()))
  for(j in 2:4) {
   deps<-gsub(" ","",annual_model$getDependencies(sprintf("X[%d,1]",j)),fixed=TRUE)
   want<-if(j==2)1L else if(j==3)2L else integer(0)
