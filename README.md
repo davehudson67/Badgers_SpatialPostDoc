@@ -22,6 +22,10 @@ and bovine tuberculosis.
 5. [Outstanding Inconsistencies](docs/database/WECS_FLAGGED_INCONSISTENCIES_2026_11_04.md)
    - Review issues and their recorded resolution status.
 
+## Quick orientation
+
+[Plain-language modelling overview](docs/WOODCHESTER_MODELLING_OVERVIEW.md) — a concise reader's guide to the model sequence, data and current V12 position. It is derived from the roadmap and is not a separate evidence record.
+
 ## Working principles
 
 The modelling roadmap is the one authoritative, continuously
@@ -40,6 +44,8 @@ decision log and executable SQL migrations.
 Older modelling guides, technical reports and previous
 database documentation are retained for historical
 reference, not maintained as additional live roadmaps.
+The plain-language overview is a reader's guide only; the
+roadmap remains the sole scientific evidence record.
 
 Large model outputs and confidential database credentials
 must not be committed to Git.
@@ -50,9 +56,12 @@ V11R2 is the current fitted geographic movement reference.
 Its historical inputs must be reconciled with curated
 Supabase data before deciding whether refitting is necessary.
 
-V12 will address survival, observation, disappearance and
-potential emigration, with uncertainty propagated from
-the movement analysis where justified.
+V12 is in active joint spatial and demographic development,
+combining movement centres, capture, entry, survival and
+disappearance. V12K adds age, sex and individual movement
+effects. Computational checks and short full-cohort runs
+have passed, but no adequate converged full-data fit or
+biological estimates have been reported.
 
 V13 will investigate disease introduction, infectiousness,
 transmission pathways and persistence.
