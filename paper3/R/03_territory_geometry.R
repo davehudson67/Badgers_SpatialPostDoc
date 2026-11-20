@@ -13,20 +13,28 @@ pairs <- list(); polys <- list()
 for (f in files) {
   yr <- as.integer(sub(".*_(\\d{4})\\.shp$", "\\1", f))
   p <- st_read(f, quiet = TRUE)
-  lab <- intersect(c("SocialName", "Sett"), names(p))[1]
-  if (is.na(lab)) p3_fail("No SocialName/Sett label in ", f)
-  p$group <- p3_alias(p3_norm_group(p[[lab]]))
+  lab <- intersect(c("SocialName", "Sett", "SETT", "Social_grp"), names(p))[1]
+  if (is.na(lab)) p3_fail("No group label field in ", f)
+  # Labels as mapped: "?" = uncertain; "A-B" / "A/B" / "A_B" = joint
+  # territory, kept whole as "A+B"; a bare "?" becomes UNNAMED_k.
+  raw <- as.character(p[[lab]])
+  parts <- strsplit(gsub("?", "", raw, fixed = TRUE), "[-/_]")
+  p$group <- vapply(parts, function(z)
+    paste(p3_alias(p3_norm_group(z[nzchar(trimws(z))])), collapse = "+"), "")
+  bad <- p$group == "" | grepl("(^|\\+)NA(\\+|$)", p$group)
+  p$group[bad] <- paste0("UNNAMED_", seq_len(sum(bad)))
+  p$uncertain <- grepl("?", raw, fixed = TRUE)
+  p$label_raw <- raw
   p <- st_make_valid(p)
-  if (anyNA(p$group)) p3_fail("Unlabelled polygon in ", f)
-  p <- do.call(rbind, lapply(split(p, p$group), function(q)
-    st_sf(group = q$group[1], geometry = st_union(q))))
-  cen <- st_coordinates(st_point_on_surface(p))
+  if (anyDuplicated(p$group)) p3_fail("Duplicate group label in ", f)
+  cen <- st_coordinates(st_point_on_surface(st_geometry(p)))
   edge <- st_distance(p); cd <- as.matrix(dist(cen))
   ij <- which(upper.tri(cd), arr.ind = TRUE)
   pairs[[f]] <- data.frame(year = yr, g1 = p$group[ij[, 1]],
     g2 = p$group[ij[, 2]], centroid_dist_m = round(cd[ij], 1),
     edge_dist_m = round(as.numeric(edge[ij]), 1))
-  polys[[f]] <- data.frame(year = yr, group = p$group,
+  polys[[f]] <- data.frame(year = yr, group = p$group, label_raw = p$label_raw,
+    uncertain = p$uncertain, joint = grepl("+", p$group, fixed = TRUE),
     area_ha = round(as.numeric(st_area(p)) / 1e4, 2), x = cen[, 1], y = cen[, 2])
 }
 pairs <- do.call(rbind, pairs); polys <- do.call(rbind, polys)
@@ -39,7 +47,7 @@ h <- utils::read.csv(file.path(s$out, "group_year_histories.csv"))
 cap <- unique(h[!is.na(h$group), c("year", "group")])
 cap$trapped <- TRUE; polys$mapped <- TRUE
 cw <- merge(cap, polys[, c("year", "group", "mapped")], all = TRUE)
-cw[is.na(cw)] <- FALSE
+cw$trapped[is.na(cw$trapped)] <- FALSE; cw$mapped[is.na(cw$mapped)] <- FALSE
 cw <- cw[cw$year >= 1980 & !(cw$trapped & cw$mapped), ]
 utils::write.csv(cw, file.path(s$out, "check_group_name_crosswalk.csv"),
                  row.names = FALSE)
@@ -49,4 +57,6 @@ cat("Adjacent pairs per year (median):",
     median(tapply(pairs$adjacent, pairs$year, sum)), "\n")
 cat("Group-years trapped but not mapped:", sum(cw$trapped),
     "; mapped but not trapped:", sum(cw$mapped), "\n")
+cat("Mapped polygons: uncertain label", sum(polys$uncertain), "; joint",
+    sum(polys$joint), "; unnamed", sum(grepl("^UNNAMED", polys$group)), "\n")
 cat("Resolve names via paper3/group_name_aliases.csv, then re-run 02-04.\n")
