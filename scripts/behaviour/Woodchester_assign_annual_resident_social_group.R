@@ -15,8 +15,9 @@
 library(tidyverse)
 library(lubridate)
 
-encounter_file <- "data/badger_encounters_useful.rds"
-population_file <- "results/V7_population_inclusion_audit.rds"
+# Paths can be overridden (Paper 3 re-runs this on the frozen snapshot).
+encounter_file <- Sys.getenv("VICENTE_ENCOUNTERS", "data/badger_encounters_useful.rds")
+population_file <- Sys.getenv("VICENTE_POPULATION", "results/V7_population_inclusion_audit.rds")
 
 enc <- readRDS(encounter_file)
 pop_obj <- readRDS(population_file)
@@ -390,8 +391,8 @@ res <- res %>%
   ) %>%
   arrange(tattoo, primary_year)
 
-dir.create("results", showWarnings = FALSE, recursive = TRUE)
-out_file <- "results/annual_resident_social_group_vicente.csv"
+out_file <- Sys.getenv("VICENTE_OUT", "results/annual_resident_social_group_vicente.csv")
+dir.create(dirname(out_file), showWarnings = FALSE, recursive = TRUE)
 write_csv(res, out_file)
 
 cat("\n============================================================\n")
