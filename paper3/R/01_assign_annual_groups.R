@@ -13,10 +13,11 @@ trap <- live[live$encounter_type == "TRAP", ]
 trap$recorded_social_group_name <-
   g$recorded_social_group_name[match(trap$capture_id, g$capture_id)]
 d <- as.Date(trap$capture_date)
-enc <- data.frame(tattoo = trap$tattoo, capture_date = d,
+# Tibbles, as the original inputs were (its print(n = Inf) needs one).
+enc <- tibble::tibble(tattoo = trap$tattoo, capture_date = d,
   primary_year = as.integer(format(d, "%Y")), has_live_capture = TRUE,
   recorded_social_group_name = trap$recorded_social_group_name)
-pop <- list(population = data.frame(tattoo = unique(enc$tattoo),
+pop <- list(population = tibble::tibble(tattoo = unique(enc$tattoo),
                                      movement_eligible = TRUE))
 fe <- file.path(s$out, "vicente_input_encounters.rds")
 fp <- file.path(s$out, "vicente_input_population.rds")
